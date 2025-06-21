@@ -12,6 +12,7 @@ import java.util.Objects;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
+@Table(name = "users")
 public class User extends BaseTimeEntity {
 
     @Id
