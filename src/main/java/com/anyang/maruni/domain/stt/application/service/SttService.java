@@ -1,5 +1,6 @@
 package com.anyang.maruni.domain.stt.application.service;
 
+import com.anyang.maruni.domain.llm.application.port.LlmClient;
 import com.anyang.maruni.domain.stt.application.port.SttClient;
 import com.anyang.maruni.domain.stt.domain.entity.Conversation;
 import com.anyang.maruni.domain.stt.domain.repository.ConversationRepository;
@@ -14,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class SttService {
 
     private final SttClient sttClient;
+    private final LlmClient llmClient;
     private final ConversationRepository conversationRepository;
 
     public Conversation processAudio(MultipartFile audioFile) {
@@ -21,8 +23,8 @@ public class SttService {
         // 1️ STT 변환
         String sttText = sttClient.transcribe(audioFile);
 
-        // TODO: ChatGPT 호출 후 gptResponse 받아오기 → 지금은 일단 null 넣기
-        String gptResponse = "TODO: GPT response";
+        // 2️ LLM 응답 생성
+        String llmResponse = llmClient.chat(sttText);
 
         // TODO: audio 저장 (S3 or local) → 지금은 임시로 null
         String audioUrl = "TODO: audio url";
@@ -31,7 +33,7 @@ public class SttService {
         Conversation conversation = Conversation.builder()
                 .originalAudioUrl(audioUrl)
                 .sttText(sttText)
-                .gptResponse(gptResponse)
+                .gptResponse(llmResponse)
                 .build();
 
         return conversationRepository.save(conversation);

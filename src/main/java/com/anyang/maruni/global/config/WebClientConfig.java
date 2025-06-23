@@ -15,7 +15,7 @@ public class WebClientConfig {
     @Bean
     public WebClient openAiWebClient() {
         return WebClient.builder()
-                .baseUrl("https://api.openai.com/v1/audio/transcriptions")
+                .baseUrl("https://api.openai.com")
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + openAiApiKey)
                 .build();
     }
