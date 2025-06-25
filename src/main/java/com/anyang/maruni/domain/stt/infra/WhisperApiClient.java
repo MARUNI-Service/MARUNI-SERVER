@@ -33,6 +33,7 @@ public class WhisperApiClient implements SttClient {
             body.add("language", "ko");
 
             String response = openAiWebClient.post()
+                    .uri("/audio/transcriptions")
                     .body(BodyInserters.fromMultipartData(body))
                     .retrieve()
                     .bodyToMono(String.class)
