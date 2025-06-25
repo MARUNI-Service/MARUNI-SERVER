@@ -15,8 +15,9 @@ public class WebClientConfig {
     @Bean
     public WebClient openAiWebClient() {
         return WebClient.builder()
-                .baseUrl("https://api.openai.com")
+                .baseUrl("https://api.openai.com/v1")
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + openAiApiKey)
+                .codecs(config -> config.defaultCodecs().maxInMemorySize(10 * 1024 * 1024))  // 10MB 까지 허용
                 .build();
     }
 }

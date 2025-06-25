@@ -4,6 +4,7 @@ import com.anyang.maruni.domain.llm.application.port.LlmClient;
 import com.anyang.maruni.domain.stt.application.port.SttClient;
 import com.anyang.maruni.domain.stt.domain.entity.Conversation;
 import com.anyang.maruni.domain.stt.domain.repository.ConversationRepository;
+import com.anyang.maruni.domain.tts.application.port.TtsClient;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ public class SttService {
 
     private final SttClient sttClient;
     private final LlmClient llmClient;
+    private final TtsClient ttsClient;
     private final ConversationRepository conversationRepository;
 
     public Conversation processAudio(MultipartFile audioFile) {
@@ -37,5 +39,18 @@ public class SttService {
                 .build();
 
         return conversationRepository.save(conversation);
+    }
+
+    // NEW: STT → GPT → TTS → mp3 byte[] 리턴
+    public byte[] processAudioAndSynthesize(MultipartFile audioFile) {
+
+        // 1️ STT 변환
+        String sttText = sttClient.transcribe(audioFile);
+
+        // 2️ LLM 응답 생성
+        String llmResponse = llmClient.chat(sttText);
+
+        // 3️ TTS 음성 합성
+        return ttsClient.synthesizeSpeech(llmResponse);
     }
 }

@@ -25,11 +25,11 @@ public class OpenAiChatClient implements LlmClient {
                         Map.of("role", "system", "content", "너는 친절한 노인 돌봄 비서야."),
                         Map.of("role", "user", "content", prompt)
                 },
-                "max_tokens", 500
+                "max_tokens", 200
         );
 
         Map<String, Object> response = openAiWebClient.post()
-                .uri("/v1/chat/completions")
+                .uri("/chat/completions")
                 .body(BodyInserters.fromValue(requestBody))
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
