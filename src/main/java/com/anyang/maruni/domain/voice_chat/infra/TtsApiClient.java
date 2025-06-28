@@ -1,6 +1,6 @@
-package com.anyang.maruni.domain.tts.infra;
+package com.anyang.maruni.domain.voice_chat.infra;
 
-import com.anyang.maruni.domain.tts.application.port.TtsClient;
+import com.anyang.maruni.domain.voice_chat.application.port.TtsClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;

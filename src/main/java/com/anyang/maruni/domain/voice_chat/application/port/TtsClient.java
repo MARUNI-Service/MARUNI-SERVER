@@ -1,4 +1,4 @@
-package com.anyang.maruni.domain.tts.application.port;
+package com.anyang.maruni.domain.voice_chat.application.port;
 
 public interface TtsClient {
     byte[] synthesizeSpeech(String text);

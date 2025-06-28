@@ -1,4 +1,4 @@
-package com.anyang.maruni.domain.stt.application.port;
+package com.anyang.maruni.domain.voice_chat.application.port;
 
 import org.springframework.web.multipart.MultipartFile;
 

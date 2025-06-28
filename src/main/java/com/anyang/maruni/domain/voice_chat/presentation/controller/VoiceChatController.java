@@ -1,8 +1,8 @@
-package com.anyang.maruni.domain.stt.presentation.controller;
+package com.anyang.maruni.domain.voice_chat.presentation.controller;
 
-import com.anyang.maruni.domain.stt.application.service.SttService;
-import com.anyang.maruni.domain.stt.domain.entity.Conversation;
-import com.anyang.maruni.domain.stt.presentation.dto.response.ConversationResponse;
+import com.anyang.maruni.domain.voice_chat.application.service.AudioProcessingService;
+import com.anyang.maruni.domain.voice_chat.domain.entity.Conversation;
+import com.anyang.maruni.domain.voice_chat.presentation.dto.response.ConversationResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -15,25 +15,19 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/stt")
-public class SttController {
+public class VoiceChatController {
 
-    private final SttService sttService;
+    private final AudioProcessingService audioProcessingService;
 
     @PostMapping
     public ResponseEntity<ConversationResponse> transcribeAudio(@RequestParam("file") MultipartFile audioFile) {
-
-        Conversation conversation = sttService.processAudio(audioFile);
-
-        ConversationResponse response = new ConversationResponse(conversation);
-
-        return ResponseEntity.ok(response);
+        Conversation conversation = audioProcessingService.processAudio(audioFile);
+        return ResponseEntity.ok(new ConversationResponse(conversation));
     }
 
     @PostMapping(value = "/tts", produces = "audio/mpeg")
     public ResponseEntity<byte[]> transcribeAndSynthesize(@RequestParam("file") MultipartFile audioFile) {
-
-        byte[] ttsAudio = sttService.processAudioAndSynthesize(audioFile);
-
+        byte[] ttsAudio = audioProcessingService.processAudioAndSynthesize(audioFile);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"response.mp3\"")
                 .body(ttsAudio);

@@ -1,6 +1,6 @@
-package com.anyang.maruni.domain.stt.infra;
+package com.anyang.maruni.domain.voice_chat.infra;
 
-import com.anyang.maruni.domain.stt.application.port.SttClient;
+import com.anyang.maruni.domain.voice_chat.application.port.SttClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.FileSystemResource;

@@ -1,6 +1,6 @@
-package com.anyang.maruni.domain.llm.infra;
+package com.anyang.maruni.domain.voice_chat.infra;
 
-import com.anyang.maruni.domain.llm.application.port.LlmClient;
+import com.anyang.maruni.domain.voice_chat.application.port.LlmClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
@@ -25,7 +25,7 @@ public class OpenAiChatClient implements LlmClient {
                         Map.of("role", "system", "content", "너는 친절한 노인 돌봄 비서야."),
                         Map.of("role", "user", "content", prompt)
                 },
-                "max_tokens", 200
+                "max_tokens", 100
         );
 
         Map<String, Object> response = openAiWebClient.post()
