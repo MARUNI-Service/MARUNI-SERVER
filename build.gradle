@@ -22,6 +22,7 @@ dependencies {
 
 	// Spring Web (Controller, RestController 등 웹 어플리케이션 기본 구성)
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
 
 	// Thymeleaf 템플릿 엔진 (HTML 템플릿 처리용)
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
