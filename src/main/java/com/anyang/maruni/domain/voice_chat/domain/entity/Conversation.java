@@ -20,5 +20,6 @@ public class Conversation extends BaseTimeEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     private User user;
     private String sttText;            // Whisper 변환 텍스트
-    private String gptResponse;        // ChatGPT 응답 텍스트
+    @Column(columnDefinition = "TEXT")
+    private String gptResponse;
 }
