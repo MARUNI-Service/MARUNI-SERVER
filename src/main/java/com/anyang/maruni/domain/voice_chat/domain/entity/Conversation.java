@@ -19,8 +19,6 @@ public class Conversation extends BaseTimeEntity {
     // 유저 정보 (연관관계)
     @ManyToOne(fetch = FetchType.LAZY)
     private User user;
-
-    private String originalAudioUrl;   // S3 URL 또는 local 저장 경로
     private String sttText;            // Whisper 변환 텍스트
     private String gptResponse;        // ChatGPT 응답 텍스트
 }

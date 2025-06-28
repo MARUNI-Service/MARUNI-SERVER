@@ -28,12 +28,8 @@ public class SttService {
         // 2️ LLM 응답 생성
         String llmResponse = llmClient.chat(sttText);
 
-        // TODO: audio 저장 (S3 or local) → 지금은 임시로 null
-        String audioUrl = "TODO: audio url";
-
         // 2 Conversation 저장
         Conversation conversation = Conversation.builder()
-                .originalAudioUrl(audioUrl)
                 .sttText(sttText)
                 .gptResponse(llmResponse)
                 .build();
