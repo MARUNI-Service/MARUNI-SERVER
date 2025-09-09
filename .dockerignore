@@ -1,0 +1,61 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Build 결과물
+build/
+target/
+out/
+*.jar
+*.war
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+*.md
+!CLAUDE.md
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.swp
+*.swo
+
+# Node.js (if any frontend tools)
+node_modules/
+npm-debug.log*
+
+# Gradle cache
+.gradle/
+
+# Docker
+docker-compose.yml
+docker-compose.*.yml
+Dockerfile*
+
+# Test results
+test-results/
+coverage/
+
+# Scripts
+Scripts/

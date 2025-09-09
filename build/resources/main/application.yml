@@ -3,48 +3,20 @@ server:
 
 spring:
   profiles:
-    active: dev # ???? ??
+    active: dev # 기본 프로파일: dev
   config:
     import:
       - optional:file:.env[.properties]
 
-  datasource:
-    url: jdbc:postgresql://localhost:5432/maruni
-    driver-class-name: org.postgresql.Driver
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+# 공통 보안 설정
+security:
+  public-urls:
+    - "/api-docs"
+    - "/v3/api-docs/**"
+    - "/swagger-ui/**"
+  cors-max-age: 3600
 
-  data:
-    redis:
-      host: redis
-      port: 6379
-      password: ${REDIS_PASSWORD}
-
-  jpa:
-    hibernate:
-      ddl-auto: create
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
-
-cookie:
-  secure: false
-
-jwt:
-  secret: ${JWT_SECRET_KEY}
-  access-token-expiration: ${JWT_ACCESS_EXPIRATION}
-  refresh-token-expiration: ${JWT_REFRESH_EXPIRATION}
-
-logging:
-  level:
-    org.hibernate.SQL: debug
-    org.hibernate.type.descriptor.sql.BasicBinder: trace
-
+# 공통 Swagger 설정
 springdoc:
   swagger-ui:
     path: /api-docs
-
-openai:
-  api:
-    key: ${OPENAI_API_KEY}

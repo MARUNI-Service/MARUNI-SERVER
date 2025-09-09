@@ -162,4 +162,22 @@ replay_pid*
 
 .env
 .env.*
+
+### Gradle ###
+.gradle
+build/
+gradle-app.setting
+!gradle-wrapper.jar
+!gradle-wrapper.properties
+
+### Spring Boot ###
+*.pid
+*.log.*
+logs/
+
+### Custom ###
+application-local.yml
+application-*.yml
+!application.yml
+
 # End of https://www.toptal.com/developers/gitignore/api/intellij,java,git,redis
