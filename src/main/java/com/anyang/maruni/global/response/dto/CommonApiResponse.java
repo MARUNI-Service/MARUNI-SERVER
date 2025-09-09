@@ -1,7 +1,7 @@
 package com.anyang.maruni.global.response.dto;
 
 import com.anyang.maruni.global.response.error.ErrorType;
-import com.anyang.maruni.global.response.success.MemberSuccessCode;
+import com.anyang.maruni.global.response.success.SuccessType;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
@@ -20,11 +20,11 @@ public class CommonApiResponse<T> {
 	private final T data;
 
 	// 성공 응답
-	public static <T> CommonApiResponse<T> success(MemberSuccessCode successCode, T data) {
+	public static <T> CommonApiResponse<T> success(SuccessType successCode, T data) {
 		return new CommonApiResponse<>(successCode.getCode(), successCode.getMessage(), data);
 	}
 
-	public static CommonApiResponse<Void> success(MemberSuccessCode successCode) {
+	public static CommonApiResponse<Void> success(SuccessType successCode) {
 		return new CommonApiResponse<>(successCode.getCode(), successCode.getMessage(), null);
 	}
 

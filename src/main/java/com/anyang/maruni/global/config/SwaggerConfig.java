@@ -17,8 +17,10 @@ import org.springframework.web.method.HandlerMethod;
 import com.anyang.maruni.global.advice.ParameterData;
 import com.anyang.maruni.global.response.dto.CommonApiResponse;
 import com.anyang.maruni.global.response.error.ErrorCode;
+import com.anyang.maruni.global.response.success.SuccessCode;
 import com.anyang.maruni.global.swagger.CustomExceptionDescription;
 import com.anyang.maruni.global.swagger.ExampleHolder;
+import com.anyang.maruni.global.swagger.SuccessResponseDescription;
 import com.anyang.maruni.global.swagger.SwaggerResponseDescription;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
@@ -84,12 +86,20 @@ public class SwaggerConfig {
         return (Operation operation, HandlerMethod handlerMethod) -> {
             CustomExceptionDescription customExceptionDescription = handlerMethod.getMethodAnnotation(
                 CustomExceptionDescription.class);
+            SuccessResponseDescription successResponseDescription = handlerMethod.getMethodAnnotation(
+                SuccessResponseDescription.class);
             PreAuthorize preAuthorize = handlerMethod.getMethodAnnotation(PreAuthorize.class);
 
             // CustomExceptionDescription 어노테이션을 단 메소드에만 적용
             if (customExceptionDescription != null) {
                 generateErrorCodeResponseExample(operation, customExceptionDescription.value());
             }
+            
+            // SuccessResponseDescription 어노테이션을 단 메소드에만 적용
+            if (successResponseDescription != null) {
+                generateSuccessResponseExample(operation, successResponseDescription.value());
+            }
+            
             if (preAuthorize != null) {
                 operation.addSecurityItem(new SecurityRequirement().addList("JWT"));
             }
@@ -148,5 +158,36 @@ public class SwaggerConfig {
                 apiResponse.setContent(content);
                 responses.addApiResponse(status.toString(), apiResponse);
             });
+    }
+
+    private void generateSuccessResponseExample(Operation operation, SuccessCode successCode) {
+        ApiResponses responses = operation.getResponses();
+
+        Example successExample = getSuccessSwaggerExample(successCode);
+        ExampleHolder exampleHolder = ExampleHolder.builder()
+            .holder(successExample)
+            .code(200)  // 성공 응답은 200으로 통일
+            .name(successCode.toString())
+            .build();
+
+        Content content = new Content();
+        MediaType mediaType = new MediaType();
+        ApiResponse apiResponse = new ApiResponse();
+        
+        mediaType.addExamples(exampleHolder.getName(), exampleHolder.getHolder());
+        content.addMediaType("application/json", mediaType);
+        apiResponse.setDescription("성공 응답");
+        apiResponse.setContent(content);
+        
+        responses.addApiResponse("200", apiResponse);
+    }
+
+    private Example getSuccessSwaggerExample(SuccessCode successCode) {
+        CommonApiResponse<Void> successResponse = CommonApiResponse.success(successCode);
+
+        Example example = new Example();
+        example.description(successCode.getMessage());
+        example.setValue(successResponse);
+        return example;
     }
 }
