@@ -4,7 +4,6 @@ import static java.util.stream.Collectors.*;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 import org.springdoc.core.customizers.OperationCustomizer;
@@ -92,12 +91,12 @@ public class SwaggerConfig {
 
             // CustomExceptionDescription 어노테이션을 단 메소드에만 적용
             if (customExceptionDescription != null) {
-                generateErrorCodeResponseExample(operation, customExceptionDescription.value());
+                addErrorExamples(operation, customExceptionDescription.value());
             }
             
             // SuccessResponseDescription 어노테이션을 단 메소드에만 적용
             if (successResponseDescription != null) {
-                generateSuccessResponseExample(operation, successResponseDescription.value());
+                addSuccessExample(operation, successResponseDescription.value());
             }
             
             if (preAuthorize != null) {
@@ -108,7 +107,7 @@ public class SwaggerConfig {
         };
     }
 
-    private void generateErrorCodeResponseExample(Operation operation, SwaggerResponseDescription type) {
+    private void addErrorExamples(Operation operation, SwaggerResponseDescription type) {
         ApiResponses responses = operation.getResponses();
 
         Set<ErrorCode> errorCodeList = type.getErrorCodeList();
@@ -127,20 +126,32 @@ public class SwaggerConfig {
         addExamplesToResponses(responses, statusWithExampleHolders);
     }
 
-    private Example getSwaggerExample(ErrorCode errorCode) {
-        Object details = null;
-
-        if (Objects.equals(errorCode.getCode(), ErrorCode.PARAMETER_VALIDATION_ERROR.getCode())) {
-            ParameterData parameterData = new ParameterData("memberEmail", "invalid-email", "이메일 형식이 올바르지 않습니다");
-            details = List.of(parameterData);
+    private Object getErrorDetails(ErrorCode errorCode) {
+        if (errorCode == ErrorCode.PARAMETER_VALIDATION_ERROR) {
+            return List.of(new ParameterData("field", "invalid-value", "검증 실패 예시"));
         }
+        return null;
+    }
 
-        CommonApiResponse<Void> failResponse = CommonApiResponse.fail(errorCode);
-
+    private <T> Example createExample(T type, String description, Object details) {
+        CommonApiResponse<?> response;
+        if (type instanceof ErrorCode) {
+            response = details != null 
+                ? CommonApiResponse.failWithDetails((ErrorCode) type, details)
+                : CommonApiResponse.fail((ErrorCode) type);
+        } else {
+            response = CommonApiResponse.success((SuccessCode) type);
+        }
+        
         Example example = new Example();
-        example.description(errorCode.getMessage());
-        example.setValue(failResponse);
+        example.description(description);
+        example.setValue(response);
         return example;
+    }
+
+    private Example getSwaggerExample(ErrorCode errorCode) {
+        Object details = getErrorDetails(errorCode);
+        return createExample(errorCode, errorCode.getMessage(), details);
     }
 
     private void addExamplesToResponses(ApiResponses responses,
@@ -160,7 +171,7 @@ public class SwaggerConfig {
             });
     }
 
-    private void generateSuccessResponseExample(Operation operation, SuccessCode successCode) {
+    private void addSuccessExample(Operation operation, SuccessCode successCode) {
         ApiResponses responses = operation.getResponses();
 
         Example successExample = getSuccessSwaggerExample(successCode);
@@ -183,11 +194,6 @@ public class SwaggerConfig {
     }
 
     private Example getSuccessSwaggerExample(SuccessCode successCode) {
-        CommonApiResponse<Void> successResponse = CommonApiResponse.success(successCode);
-
-        Example example = new Example();
-        example.description(successCode.getMessage());
-        example.setValue(successResponse);
-        return example;
+        return createExample(successCode, successCode.getMessage(), null);
     }
 }
