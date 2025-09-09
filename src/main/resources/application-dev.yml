@@ -1,7 +1,7 @@
 # 개발 환경 설정
 spring:
   datasource:
-    url: jdbc:postgresql://db:5432/MARUNI-DB
+    url: jdbc:postgresql://db:5432/maruni-db
     driver-class-name: org.postgresql.Driver
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}

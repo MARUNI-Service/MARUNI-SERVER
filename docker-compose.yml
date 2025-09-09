@@ -6,7 +6,7 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: MARUNI-DB
+      POSTGRES_DB: maruni-db
       POSTGRES_USER: ${DB_USERNAME}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_INITDB_ARGS: "--encoding=UTF8"
@@ -15,7 +15,7 @@ services:
     networks:
       - backend
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d MARUNI-DB"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d maruni-db"]
       start_period: 10s
       interval: 5s
       timeout: 10s
