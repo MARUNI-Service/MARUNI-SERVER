@@ -8,27 +8,12 @@ spring:
     import:
       - optional:file:.env[.properties]
 
-# 공통 JWT 설정
-jwt:
-  secret: ${JWT_SECRET_KEY}
-  access-token-expiration: ${JWT_ACCESS_EXPIRATION:3600000}
-  refresh-token-expiration: ${JWT_REFRESH_EXPIRATION:86400000}
-
 # 공통 보안 설정
 security:
   public-urls:
-    - "/api/join"
-    - "/api/join/email-check"
-    - "/api/auth/login"
-    - "/api/auth/token/refresh"
-    - "/api/auth/token/refresh/full"
-    - "/api/auth/logout"
     - "/api-docs"
     - "/v3/api-docs/**"
     - "/swagger-ui/**"
-  admin-urls:
-    - "/api/admin/**"
-  default-role: "USER"
   cors-max-age: 3600
 
 # 공통 Swagger 설정

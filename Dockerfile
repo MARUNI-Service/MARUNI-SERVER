@@ -1,12 +1,20 @@
 # Multi-stage build for better optimization
 FROM gradle:8.5-jdk21 AS builder
 
-# 소스코드 복사
 WORKDIR /app
+
+# 의존성 캐싱을 위해 build 파일들만 먼저 복사
+COPY build.gradle settings.gradle ./
+COPY gradle/ gradle/
+
+# 의존성 다운로드 (캐싱됨)
+RUN gradle dependencies --no-daemon
+
+# 소스코드 복사
 COPY . .
 
 # Gradle build (테스트 스킵하고 빌드만)
-RUN gradle clean build -x test
+RUN gradle clean build -x test --no-daemon
 
 # Runtime stage
 FROM openjdk:21-jdk-slim

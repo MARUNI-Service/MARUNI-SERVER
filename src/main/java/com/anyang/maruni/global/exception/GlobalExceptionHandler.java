@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -60,13 +59,5 @@ public class GlobalExceptionHandler {
 		return ResponseEntity
 			.status(ErrorCode.PARAMETER_VALIDATION_ERROR.getStatus())
 			.body(CommonApiResponse.failWithDetails(ErrorCode.PARAMETER_VALIDATION_ERROR, errors));
-	}
-
-	// 4. 회원 없음 예외
-	@ExceptionHandler(UsernameNotFoundException.class)
-	public ResponseEntity<?> handleUsernameNotFound(UsernameNotFoundException e) {
-		return ResponseEntity
-			.status(ErrorCode.MEMBER_NOT_FOUND.getStatus())
-			.body(CommonApiResponse.fail(ErrorCode.MEMBER_NOT_FOUND));
 	}
 }
