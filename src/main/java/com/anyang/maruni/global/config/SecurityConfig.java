@@ -78,9 +78,7 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(PUBLIC_URLS).permitAll()
-                        .requestMatchers(ADMIN_URLS).hasRole("ADMIN")
-                        .anyRequest().authenticated())
+                        .anyRequest().permitAll())
 
                 .exceptionHandling(except -> except
                         .authenticationEntryPoint((request, response, authException) ->
