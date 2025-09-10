@@ -8,7 +8,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.anyang.maruni.domain.auth.infrastructure.BlacklistTokenStorage;
+import com.anyang.maruni.domain.auth.domain.service.TokenValidator;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -22,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 	private final JWTUtil jwtUtil;
-	private final BlacklistTokenStorage blacklistTokenStorage;
+	private final TokenValidator tokenValidator;
 	private final CustomUserDetailsService userDetailsService;
 
 	@Override
@@ -52,15 +52,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 	}
 
 	private boolean validateAccessToken(String token, HttpServletResponse response) {
-		if (!jwtUtil.validateToken(token, "access")) {
+		// 도메인 서비스에 토큰 검증 위임
+		if (!tokenValidator.isValidAccessToken(token)) {
 			log.warn("토큰 검증 실패");
 			sendUnauthorized(response, "유효하지 않은 토큰입니다.");
-			return false;
-		}
-
-		if (blacklistTokenStorage.isTokenBlacklisted(token)) {
-			log.warn("블랙리스트에 등록된 토큰입니다.");
-			sendUnauthorized(response, "TOKEN_BLACKLISTED");
 			return false;
 		}
 

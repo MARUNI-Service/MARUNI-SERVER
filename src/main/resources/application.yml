@@ -18,7 +18,7 @@ security:
 
 # 공통 JWT 설정
 jwt:
-  secret-key: ${JWT_SECRET_KEY:your_jwt_secret_key_at_least_32_characters}
+  secret: ${JWT_SECRET_KEY:your_jwt_secret_key_at_least_32_characters}
   access-token:
     expiration: ${JWT_ACCESS_EXPIRATION:3600000}  # 1시간 (밀리초)
   refresh-token:

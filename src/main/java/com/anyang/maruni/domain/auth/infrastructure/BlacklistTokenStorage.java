@@ -41,7 +41,7 @@ public class BlacklistTokenStorage implements TokenBlacklistRepository {
 	 */
 	public boolean isTokenBlacklisted(String accessToken) {
 		String key = BLACKLIST_PREFIX + accessToken;
-		boolean isBlacklisted = Boolean.TRUE.equals(redisTemplate.hasKey(key));
+		boolean isBlacklisted = redisTemplate.hasKey(key);
 		log.debug("Blacklist check for token: {} - Result: {}", maskToken(accessToken), isBlacklisted);
 		return isBlacklisted;
 	}
