@@ -8,7 +8,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.anyang.maruni.domain.auth.application.service.AuthenticationService;
-import com.anyang.maruni.domain.auth.application.service.BlacklistService;
+import com.anyang.maruni.domain.auth.infrastructure.BlacklistTokenStorage;
 import com.anyang.maruni.global.security.CustomUserDetailsService;
 import com.anyang.maruni.global.security.JWTUtil;
 import com.anyang.maruni.global.security.JwtAuthenticationFilter;
@@ -23,7 +23,7 @@ public class JwtSecurityConfig {
 
 	private final JWTUtil jwtUtil;
 	private final ObjectMapper objectMapper;
-	private final BlacklistService blacklistService;
+	private final BlacklistTokenStorage blacklistTokenStorage;
 	private final CustomUserDetailsService customUserDetailsService;
 	private final AuthenticationService authenticationService;
 
@@ -47,6 +47,6 @@ public class JwtSecurityConfig {
 
 	@Bean
 	public JwtAuthenticationFilter jwtAuthenticationFilter() {
-		return new JwtAuthenticationFilter(jwtUtil, blacklistService, customUserDetailsService);
+		return new JwtAuthenticationFilter(jwtUtil, blacklistTokenStorage, customUserDetailsService);
 	}
 }

@@ -4,6 +4,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.anyang.maruni.domain.auth.application.dto.response.TokenResponse;
+import com.anyang.maruni.domain.auth.domain.service.RefreshTokenDomainService;
+import com.anyang.maruni.domain.auth.infrastructure.BlacklistTokenStorage;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
 import com.anyang.maruni.global.exception.BaseException;
 import com.anyang.maruni.global.security.JWTUtil;
@@ -24,8 +26,8 @@ public class AuthenticationService {
 	private final JWTUtil jwtUtil;
 	private final JwtTokenService jwtTokenService;
 	private final TokenValidator tokenValidator;
-	private final RefreshTokenService refreshTokenService;
-	private final BlacklistService blacklistService;
+	private final RefreshTokenDomainService refreshTokenService;
+	private final BlacklistTokenStorage blacklistTokenStorage;
 
 	public void issueTokensOnLogin(HttpServletResponse response, MemberEntity member) {
 		log.info("Issuing tokens for member: {}", member.getMemberEmail());
@@ -57,7 +59,7 @@ public class AuthenticationService {
 			throw new BaseException(ErrorCode.INVALID_TOKEN);
 		}
 
-		refreshTokenService.deleteRefreshToken(validation.getMemberId());
+		refreshTokenService.revokeToken(validation.getMemberId());
 		jwtTokenService.reissueAllTokens(response, validation.getMemberId(), validation.getEmail());
 
 		log.info("Full token refresh completed for member: {}", validation.getMemberId());
@@ -72,7 +74,7 @@ public class AuthenticationService {
 			.filter(jwtUtil::isRefreshToken)
 			.flatMap(jwtUtil::getId)
 			.ifPresent(memberId -> {
-				refreshTokenService.deleteRefreshToken(memberId);
+				refreshTokenService.revokeToken(memberId);
 				log.info("Refresh token deleted for member: {}", memberId);
 			});
 
@@ -82,7 +84,7 @@ public class AuthenticationService {
 			.filter(jwtUtil::isAccessToken)
 			.ifPresent(accessToken -> {
 				jwtUtil.getExpiration(accessToken).ifPresent(expiration ->
-					blacklistService.addToBlacklist(accessToken, expiration)
+					blacklistTokenStorage.addToBlacklist(accessToken, expiration)
 				);
 			});
 

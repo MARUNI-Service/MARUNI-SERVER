@@ -5,7 +5,8 @@ import java.util.Optional;
 import org.springframework.stereotype.Component;
 
 import com.anyang.maruni.domain.auth.domain.entity.RefreshToken;
-import com.anyang.maruni.domain.auth.domain.repository.RefreshTokenRepository;
+import com.anyang.maruni.domain.auth.domain.service.RefreshTokenDomainService;
+import com.anyang.maruni.domain.auth.infrastructure.BlacklistTokenStorage;
 import com.anyang.maruni.global.security.JWTUtil;
 
 import lombok.Getter;
@@ -22,7 +23,8 @@ import lombok.extern.slf4j.Slf4j;
 public class TokenValidator {
 
 	private final JWTUtil jwtUtil;
-	private final RefreshTokenRepository refreshTokenRepository;
+	private final RefreshTokenDomainService refreshTokenService;
+	private final BlacklistTokenStorage blacklistTokenStorage;
 
 	/**
 	 * Refresh Token의 종합적 검증
@@ -43,9 +45,8 @@ public class TokenValidator {
 
 		String memberId = memberIdOpt.get();
 
-		// 3. Redis에 저장된 토큰과 일치 여부 확인
-		RefreshToken storedToken = refreshTokenRepository.findById(memberId).orElse(null);
-		if (storedToken == null || !storedToken.getToken().equals(refreshToken)) {
+		// 3. 도메인 서비스를 통한 토큰 일치 여부 확인
+		if (!refreshTokenService.isValidTokenForMember(memberId, refreshToken)) {
 			log.warn("Refresh token not found or mismatched for member: {}", memberId);
 			return TokenValidationResult.invalid("Token not found or mismatched");
 		}
@@ -66,7 +67,13 @@ public class TokenValidator {
 	 * Access Token의 블랙리스트 및 만료 검증
 	 */
 	public boolean isValidAccessToken(String accessToken) {
-		return jwtUtil.isAccessToken(accessToken);
+		// 1. JWT 형식 및 만료 시간 검증
+		if (!jwtUtil.isAccessToken(accessToken)) {
+			return false;
+		}
+		
+		// 2. 블랙리스트 확인
+		return !blacklistTokenStorage.isTokenBlacklisted(accessToken);
 	}
 
 	/**

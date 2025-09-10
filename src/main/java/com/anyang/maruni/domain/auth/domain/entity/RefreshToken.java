@@ -20,10 +20,14 @@ public class RefreshToken {
 
 	private String token;
 
-	public RefreshToken update(String newToken) {
+	public RefreshToken withNewToken(String newToken) {
 		return RefreshToken.builder()
 			.memberId(this.memberId)
 			.token(newToken)
 			.build();
+	}
+
+	public boolean isValidFor(String memberId) {
+		return this.memberId != null && this.memberId.equals(memberId);
 	}
 }
