@@ -1,4 +1,4 @@
-package com.anyang.maruni.domain.member.domain.security;
+package com.anyang.maruni.global.security;
 
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

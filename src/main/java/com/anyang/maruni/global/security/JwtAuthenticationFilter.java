@@ -1,4 +1,4 @@
-package com.anyang.maruni.global.jwt;
+package com.anyang.maruni.global.security;
 
 import java.io.IOException;
 
@@ -9,7 +9,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.anyang.maruni.domain.auth.application.service.BlacklistService;
-import com.anyang.maruni.domain.member.domain.security.CustomUserDetailsService;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

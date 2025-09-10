@@ -1,4 +1,4 @@
-package com.anyang.maruni.global.jwt;
+package com.anyang.maruni.global.security;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;

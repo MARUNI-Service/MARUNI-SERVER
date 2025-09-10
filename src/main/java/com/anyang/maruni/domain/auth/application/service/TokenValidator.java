@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 
 import com.anyang.maruni.domain.auth.domain.entity.RefreshToken;
 import com.anyang.maruni.domain.auth.domain.repository.RefreshTokenRepository;
-import com.anyang.maruni.global.jwt.JWTUtil;
+import com.anyang.maruni.global.security.JWTUtil;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

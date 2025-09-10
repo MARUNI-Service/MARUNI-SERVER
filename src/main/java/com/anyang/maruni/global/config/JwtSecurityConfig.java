@@ -9,10 +9,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.anyang.maruni.domain.auth.application.service.AuthenticationService;
 import com.anyang.maruni.domain.auth.application.service.BlacklistService;
-import com.anyang.maruni.domain.member.domain.security.CustomUserDetailsService;
-import com.anyang.maruni.global.jwt.JWTUtil;
-import com.anyang.maruni.global.jwt.JwtAuthenticationFilter;
-import com.anyang.maruni.global.jwt.LoginFilter;
+import com.anyang.maruni.global.security.CustomUserDetailsService;
+import com.anyang.maruni.global.security.JWTUtil;
+import com.anyang.maruni.global.security.JwtAuthenticationFilter;
+import com.anyang.maruni.global.security.LoginFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;

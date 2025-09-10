@@ -1,4 +1,4 @@
-package com.anyang.maruni.global.jwt;
+package com.anyang.maruni.global.security;
 
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -6,8 +6,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import com.anyang.maruni.domain.auth.application.dto.request.MemberLoginRequest;
 import com.anyang.maruni.domain.auth.application.service.AuthenticationService;
-import com.anyang.maruni.domain.member.domain.security.CustomUserDetails;
 import com.anyang.maruni.global.response.dto.CommonApiResponse;
 import com.anyang.maruni.global.response.error.ErrorCode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,11 +16,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import java.io.IOException;
 @Slf4j

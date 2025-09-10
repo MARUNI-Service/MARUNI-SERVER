@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">0.011s</div>
+<div class="counter">0.029s</div>
 <p>duration</p>
 </div>
 </td>
@@ -79,7 +79,7 @@
 <a name="contextLoads()"></a>
 <h3 class="failures">contextLoads()</h3>
 <span class="code">
-<pre>java.lang.IllegalStateException: Failed to load ApplicationContext for [WebMergedContextConfiguration@49c4118b testClass = com.anyang.maruni.MaruniApplicationTests, locations = [], classes = [com.anyang.maruni.MaruniApplication], contextInitializerClasses = [], activeProfiles = [], propertySourceDescriptors = [], propertySourceProperties = [&quot;org.springframework.boot.test.context.SpringBootTestContextBootstrapper=true&quot;], contextCustomizers = [org.springframework.boot.test.autoconfigure.OnFailureConditionReportContextCustomizerFactory$OnFailureConditionReportContextCustomizer@246f8b8b, org.springframework.boot.test.autoconfigure.actuate.observability.ObservabilityContextCustomizerFactory$DisableObservabilityContextCustomizer@1f, org.springframework.boot.test.autoconfigure.properties.PropertyMappingContextCustomizer@0, org.springframework.boot.test.autoconfigure.web.servlet.WebDriverContextCustomizer@57459491, org.springframework.boot.test.context.filter.ExcludeFilterContextCustomizer@7e22550a, org.springframework.boot.test.json.DuplicateJsonObjectContextCustomizerFactory$DuplicateJsonObjectContextCustomizer@5bc9ba1d, org.springframework.boot.test.mock.mockito.MockitoContextCustomizer@0, org.springframework.boot.test.web.client.TestRestTemplateContextCustomizer@4b20ca2b, org.springframework.boot.test.web.reactor.netty.DisableReactorResourceFactoryGlobalResourcesContextCustomizerFactory$DisableReactorResourceFactoryGlobalResourcesContextCustomizerCustomizer@4d18aa28, org.springframework.test.context.support.DynamicPropertiesContextCustomizer@0, org.springframework.boot.test.context.SpringBootTestAnnotation@69eab68a], resourceBasePath = &quot;src/main/webapp&quot;, contextLoader = org.springframework.boot.test.context.SpringBootContextLoader, parent = null]
+<pre>java.lang.IllegalStateException: Failed to load ApplicationContext for [WebMergedContextConfiguration@74cff17c testClass = com.anyang.maruni.MaruniApplicationTests, locations = [], classes = [com.anyang.maruni.MaruniApplication], contextInitializerClasses = [], activeProfiles = [], propertySourceDescriptors = [], propertySourceProperties = [&quot;org.springframework.boot.test.context.SpringBootTestContextBootstrapper=true&quot;], contextCustomizers = [org.springframework.boot.test.autoconfigure.OnFailureConditionReportContextCustomizerFactory$OnFailureConditionReportContextCustomizer@3542162a, org.springframework.boot.test.autoconfigure.actuate.observability.ObservabilityContextCustomizerFactory$DisableObservabilityContextCustomizer@1f, org.springframework.boot.test.autoconfigure.properties.PropertyMappingContextCustomizer@0, org.springframework.boot.test.autoconfigure.web.servlet.WebDriverContextCustomizer@1a7288a3, org.springframework.boot.test.context.filter.ExcludeFilterContextCustomizer@68b6f0d6, org.springframework.boot.test.json.DuplicateJsonObjectContextCustomizerFactory$DuplicateJsonObjectContextCustomizer@3b7ff809, org.springframework.boot.test.mock.mockito.MockitoContextCustomizer@0, org.springframework.boot.test.web.client.TestRestTemplateContextCustomizer@75390459, org.springframework.boot.test.web.reactor.netty.DisableReactorResourceFactoryGlobalResourcesContextCustomizerFactory$DisableReactorResourceFactoryGlobalResourcesContextCustomizerCustomizer@57eda880, org.springframework.test.context.support.DynamicPropertiesContextCustomizer@0, org.springframework.boot.test.context.SpringBootTestAnnotation@6fa8336d], resourceBasePath = &quot;src/main/webapp&quot;, contextLoader = org.springframework.boot.test.context.SpringBootContextLoader, parent = null]
 	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContext(DefaultCacheAwareContextLoaderDelegate.java:180)
 	at org.springframework.test.context.support.DefaultTestContext.getApplicationContext(DefaultTestContext.java:130)
 	at org.springframework.test.context.web.ServletTestExecutionListener.setUpRequestContextIfNecessary(ServletTestExecutionListener.java:200)
@@ -167,7 +167,7 @@ Caused by: org.hibernate.HibernateException: Unable to determine Dialect without
 </thead>
 <tr>
 <td class="failures">contextLoads()</td>
-<td class="failures">0.011s</td>
+<td class="failures">0.029s</td>
 <td class="failures">failed</td>
 </tr>
 </table>
@@ -175,8 +175,8 @@ Caused by: org.hibernate.HibernateException: Unable to determine Dialect without
 <div class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>21:04:03.538 [Test worker] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.anyang.maruni.MaruniApplicationTests]: MaruniApplicationTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
-21:04:03.752 [Test worker] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.anyang.maruni.MaruniApplication for test class com.anyang.maruni.MaruniApplicationTests
+<pre>21:21:30.855 [Test worker] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.anyang.maruni.MaruniApplicationTests]: MaruniApplicationTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+21:21:31.043 [Test worker] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.anyang.maruni.MaruniApplication for test class com.anyang.maruni.MaruniApplicationTests
 
   .   ____          _            __ _ _
  /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
@@ -187,22 +187,24 @@ Caused by: org.hibernate.HibernateException: Unable to determine Dialect without
 
  :: Spring Boot ::                (v3.5.3)
 
-2025-09-09T21:04:04.580+09:00  INFO 12544 --- [    Test worker] c.anyang.maruni.MaruniApplicationTests   : Starting MaruniApplicationTests using Java 21.0.8 with PID 12544 (started by rlarb in C:\Users\rlarb\coding\maruni)
-2025-09-09T21:04:04.582+09:00  INFO 12544 --- [    Test worker] c.anyang.maruni.MaruniApplicationTests   : The following 1 profile is active: &quot;dev&quot;
-2025-09-09T21:04:06.313+09:00  INFO 12544 --- [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
-2025-09-09T21:04:06.316+09:00  INFO 12544 --- [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
-2025-09-09T21:04:06.352+09:00  INFO 12544 --- [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 22 ms. Found 0 JPA repository interfaces.
-2025-09-09T21:04:06.374+09:00  INFO 12544 --- [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
-2025-09-09T21:04:06.378+09:00  INFO 12544 --- [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
-2025-09-09T21:04:06.402+09:00  INFO 12544 --- [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 7 ms. Found 0 Redis repository interfaces.
-2025-09-09T21:04:07.486+09:00  INFO 12544 --- [    Test worker] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
-2025-09-09T21:04:07.627+09:00  INFO 12544 --- [    Test worker] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.18.Final
-2025-09-09T21:04:07.679+09:00  INFO 12544 --- [    Test worker] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
-2025-09-09T21:04:08.259+09:00  INFO 12544 --- [    Test worker] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
-2025-09-09T21:04:08.297+09:00  INFO 12544 --- [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
-2025-09-09T21:04:12.099+09:00  WARN 12544 --- [    Test worker] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 0, SQLState: 08001
-2025-09-09T21:04:12.100+09:00 ERROR 12544 --- [    Test worker] o.h.engine.jdbc.spi.SqlExceptionHelper   : The connection attempt failed.
-2025-09-09T21:04:12.102+09:00  WARN 12544 --- [    Test worker] o.h.e.j.e.i.JdbcEnvironmentInitiator     : HHH000342: Could not obtain connection to query metadata
+2025-09-10T21:21:31.771+09:00  INFO 1208 --- [    Test worker] c.anyang.maruni.MaruniApplicationTests   : Starting MaruniApplicationTests using Java 21.0.8 with PID 1208 (started by rlarb in C:\Users\rlarb\coding\maruni)
+2025-09-10T21:21:31.773+09:00  INFO 1208 --- [    Test worker] c.anyang.maruni.MaruniApplicationTests   : The following 1 profile is active: &quot;dev&quot;
+2025-09-10T21:21:33.739+09:00  INFO 1208 --- [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2025-09-10T21:21:33.742+09:00  INFO 1208 --- [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2025-09-10T21:21:33.850+09:00  INFO 1208 --- [    Test worker] .RepositoryConfigurationExtensionSupport : Spring Data JPA - Could not safely identify store assignment for repository candidate interface com.anyang.maruni.domain.auth.domain.repository.RefreshTokenRepository; If you want this repository to be a JPA repository, consider annotating your entities with one of these annotations: jakarta.persistence.Entity, jakarta.persistence.MappedSuperclass (preferred), or consider extending one of the following types with your repository: org.springframework.data.jpa.repository.JpaRepository
+2025-09-10T21:21:34.039+09:00  INFO 1208 --- [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 273 ms. Found 1 JPA repository interface.
+2025-09-10T21:21:34.064+09:00  INFO 1208 --- [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2025-09-10T21:21:34.067+09:00  INFO 1208 --- [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2025-09-10T21:21:34.128+09:00  INFO 1208 --- [    Test worker] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.anyang.maruni.domain.member.domain.repository.MemberRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-10T21:21:34.160+09:00  INFO 1208 --- [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 77 ms. Found 1 Redis repository interface.
+2025-09-10T21:21:35.294+09:00  INFO 1208 --- [    Test worker] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2025-09-10T21:21:35.401+09:00  INFO 1208 --- [    Test worker] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.18.Final
+2025-09-10T21:21:35.452+09:00  INFO 1208 --- [    Test worker] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2025-09-10T21:21:35.851+09:00  INFO 1208 --- [    Test worker] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2025-09-10T21:21:35.891+09:00  INFO 1208 --- [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2025-09-10T21:21:39.691+09:00  WARN 1208 --- [    Test worker] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 0, SQLState: 08001
+2025-09-10T21:21:39.691+09:00 ERROR 1208 --- [    Test worker] o.h.engine.jdbc.spi.SqlExceptionHelper   : The connection attempt failed.
+2025-09-10T21:21:39.692+09:00  WARN 1208 --- [    Test worker] o.h.e.j.e.i.JdbcEnvironmentInitiator     : HHH000342: Could not obtain connection to query metadata
 
 org.hibernate.exception.JDBCConnectionException: unable to obtain isolated JDBC connection [The connection attempt failed.] [n/a]
 	at org.hibernate.exception.internal.SQLStateConversionDelegate.convert(SQLStateConversionDelegate.java:100) ~[hibernate-core-6.6.18.Final.jar:6.6.18.Final]
@@ -368,12 +370,12 @@ Caused by: java.net.UnknownHostException: db
 	at org.postgresql.core.v3.ConnectionFactoryImpl.openConnectionImpl(ConnectionFactoryImpl.java:289) ~[postgresql-42.7.7.jar:42.7.7]
 	... 145 common frames omitted
 
-2025-09-09T21:04:12.139+09:00 ERROR 12544 --- [    Test worker] j.LocalContainerEntityManagerFactoryBean : Failed to initialize JPA EntityManagerFactory: Unable to create requested service [org.hibernate.engine.jdbc.env.spi.JdbcEnvironment] due to: Unable to determine Dialect without JDBC metadata (please set 'jakarta.persistence.jdbc.url' for common cases or 'hibernate.dialect' when a custom Dialect implementation must be provided)
-2025-09-09T21:04:12.143+09:00  WARN 12544 --- [    Test worker] o.s.w.c.s.GenericWebApplicationContext   : Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'entityManagerFactory' defined in class path resource [org/springframework/boot/autoconfigure/orm/jpa/HibernateJpaConfiguration.class]: Unable to create requested service [org.hibernate.engine.jdbc.env.spi.JdbcEnvironment] due to: Unable to determine Dialect without JDBC metadata (please set 'jakarta.persistence.jdbc.url' for common cases or 'hibernate.dialect' when a custom Dialect implementation must be provided)
-2025-09-09T21:04:12.204+09:00  INFO 12544 --- [    Test worker] .s.b.a.l.ConditionEvaluationReportLogger : 
+2025-09-10T21:21:39.714+09:00 ERROR 1208 --- [    Test worker] j.LocalContainerEntityManagerFactoryBean : Failed to initialize JPA EntityManagerFactory: Unable to create requested service [org.hibernate.engine.jdbc.env.spi.JdbcEnvironment] due to: Unable to determine Dialect without JDBC metadata (please set 'jakarta.persistence.jdbc.url' for common cases or 'hibernate.dialect' when a custom Dialect implementation must be provided)
+2025-09-10T21:21:39.714+09:00  WARN 1208 --- [    Test worker] o.s.w.c.s.GenericWebApplicationContext   : Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'entityManagerFactory' defined in class path resource [org/springframework/boot/autoconfigure/orm/jpa/HibernateJpaConfiguration.class]: Unable to create requested service [org.hibernate.engine.jdbc.env.spi.JdbcEnvironment] due to: Unable to determine Dialect without JDBC metadata (please set 'jakarta.persistence.jdbc.url' for common cases or 'hibernate.dialect' when a custom Dialect implementation must be provided)
+2025-09-10T21:21:39.801+09:00  INFO 1208 --- [    Test worker] .s.b.a.l.ConditionEvaluationReportLogger : 
 
 Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
-2025-09-09T21:04:12.234+09:00 ERROR 12544 --- [    Test worker] o.s.boot.SpringApplication               : Application run failed
+2025-09-10T21:21:39.847+09:00 ERROR 1208 --- [    Test worker] o.s.boot.SpringApplication               : Application run failed
 
 org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'entityManagerFactory' defined in class path resource [org/springframework/boot/autoconfigure/orm/jpa/HibernateJpaConfiguration.class]: Unable to create requested service [org.hibernate.engine.jdbc.env.spi.JdbcEnvironment] due to: Unable to determine Dialect without JDBC metadata (please set 'jakarta.persistence.jdbc.url' for common cases or 'hibernate.dialect' when a custom Dialect implementation must be provided)
 	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.initializeBean(AbstractAutowireCapableBeanFactory.java:1826) ~[spring-beans-6.2.8.jar:6.2.8]
@@ -517,9 +519,9 @@ Caused by: org.hibernate.HibernateException: Unable to determine Dialect without
 	at org.hibernate.service.internal.AbstractServiceRegistryImpl.createService(AbstractServiceRegistryImpl.java:263) ~[hibernate-core-6.6.18.Final.jar:6.6.18.Final]
 	... 126 common frames omitted
 
-2025-09-09T21:04:12.243+09:00  WARN 12544 --- [    Test worker] o.s.test.context.TestContextManager      : Caught exception while allowing TestExecutionListener [org.springframework.test.context.web.ServletTestExecutionListener] to prepare test instance [com.anyang.maruni.MaruniApplicationTests@7ef7f414]
+2025-09-10T21:21:39.865+09:00  WARN 1208 --- [    Test worker] o.s.test.context.TestContextManager      : Caught exception while allowing TestExecutionListener [org.springframework.test.context.web.ServletTestExecutionListener] to prepare test instance [com.anyang.maruni.MaruniApplicationTests@7a053795]
 
-java.lang.IllegalStateException: Failed to load ApplicationContext for [WebMergedContextConfiguration@49c4118b testClass = com.anyang.maruni.MaruniApplicationTests, locations = [], classes = [com.anyang.maruni.MaruniApplication], contextInitializerClasses = [], activeProfiles = [], propertySourceDescriptors = [], propertySourceProperties = [&quot;org.springframework.boot.test.context.SpringBootTestContextBootstrapper=true&quot;], contextCustomizers = [org.springframework.boot.test.autoconfigure.OnFailureConditionReportContextCustomizerFactory$OnFailureConditionReportContextCustomizer@246f8b8b, org.springframework.boot.test.autoconfigure.actuate.observability.ObservabilityContextCustomizerFactory$DisableObservabilityContextCustomizer@1f, org.springframework.boot.test.autoconfigure.properties.PropertyMappingContextCustomizer@0, org.springframework.boot.test.autoconfigure.web.servlet.WebDriverContextCustomizer@57459491, org.springframework.boot.test.context.filter.ExcludeFilterContextCustomizer@7e22550a, org.springframework.boot.test.json.DuplicateJsonObjectContextCustomizerFactory$DuplicateJsonObjectContextCustomizer@5bc9ba1d, org.springframework.boot.test.mock.mockito.MockitoContextCustomizer@0, org.springframework.boot.test.web.client.TestRestTemplateContextCustomizer@4b20ca2b, org.springframework.boot.test.web.reactor.netty.DisableReactorResourceFactoryGlobalResourcesContextCustomizerFactory$DisableReactorResourceFactoryGlobalResourcesContextCustomizerCustomizer@4d18aa28, org.springframework.test.context.support.DynamicPropertiesContextCustomizer@0, org.springframework.boot.test.context.SpringBootTestAnnotation@69eab68a], resourceBasePath = &quot;src/main/webapp&quot;, contextLoader = org.springframework.boot.test.context.SpringBootContextLoader, parent = null]
+java.lang.IllegalStateException: Failed to load ApplicationContext for [WebMergedContextConfiguration@74cff17c testClass = com.anyang.maruni.MaruniApplicationTests, locations = [], classes = [com.anyang.maruni.MaruniApplication], contextInitializerClasses = [], activeProfiles = [], propertySourceDescriptors = [], propertySourceProperties = [&quot;org.springframework.boot.test.context.SpringBootTestContextBootstrapper=true&quot;], contextCustomizers = [org.springframework.boot.test.autoconfigure.OnFailureConditionReportContextCustomizerFactory$OnFailureConditionReportContextCustomizer@3542162a, org.springframework.boot.test.autoconfigure.actuate.observability.ObservabilityContextCustomizerFactory$DisableObservabilityContextCustomizer@1f, org.springframework.boot.test.autoconfigure.properties.PropertyMappingContextCustomizer@0, org.springframework.boot.test.autoconfigure.web.servlet.WebDriverContextCustomizer@1a7288a3, org.springframework.boot.test.context.filter.ExcludeFilterContextCustomizer@68b6f0d6, org.springframework.boot.test.json.DuplicateJsonObjectContextCustomizerFactory$DuplicateJsonObjectContextCustomizer@3b7ff809, org.springframework.boot.test.mock.mockito.MockitoContextCustomizer@0, org.springframework.boot.test.web.client.TestRestTemplateContextCustomizer@75390459, org.springframework.boot.test.web.reactor.netty.DisableReactorResourceFactoryGlobalResourcesContextCustomizerFactory$DisableReactorResourceFactoryGlobalResourcesContextCustomizerCustomizer@57eda880, org.springframework.test.context.support.DynamicPropertiesContextCustomizer@0, org.springframework.boot.test.context.SpringBootTestAnnotation@6fa8336d], resourceBasePath = &quot;src/main/webapp&quot;, contextLoader = org.springframework.boot.test.context.SpringBootContextLoader, parent = null]
 	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContext(DefaultCacheAwareContextLoaderDelegate.java:180) ~[spring-test-6.2.8.jar:6.2.8]
 	at org.springframework.test.context.support.DefaultTestContext.getApplicationContext(DefaultTestContext.java:130) ~[spring-test-6.2.8.jar:6.2.8]
 	at org.springframework.test.context.web.ServletTestExecutionListener.setUpRequestContextIfNecessary(ServletTestExecutionListener.java:200) ~[spring-test-6.2.8.jar:6.2.8]
@@ -1056,6 +1058,10 @@ Positive matches:
    NoOpCacheConfiguration matched:
       - Cache org.springframework.boot.autoconfigure.cache.NoOpCacheConfiguration automatic cache type (CacheCondition)
 
+   OAuth2ClientAutoConfiguration matched:
+      - @ConditionalOnClass found required class 'org.springframework.security.oauth2.client.registration.ClientRegistration' (OnClassCondition)
+      - NoneNestedConditions 0 matched 1 did not; NestedCondition on OAuth2ClientAutoConfiguration.NonReactiveWebApplicationCondition.ReactiveWebApplicationCondition did not find reactive web application classes (OAuth2ClientAutoConfiguration.NonReactiveWebApplicationCondition)
+
    ObservationAutoConfiguration matched:
       - @ConditionalOnClass found required class 'io.micrometer.observation.ObservationRegistry' (OnClassCondition)
 
@@ -1340,6 +1346,9 @@ Positive matches:
       - @ConditionalOnExpression (#{${springdoc.api-docs.enabled:true} and ${springdoc.enable-spring-security:true}}) resulted in true (OnExpressionCondition)
       - @ConditionalOnBean (types: org.springdoc.core.configuration.SpringDocConfiguration; SearchStrategy: all) found bean 'org.springdoc.core.configuration.SpringDocConfiguration' (OnBeanCondition)
 
+   SpringDocSecurityConfiguration.SpringDocSecurityOAuth2ClientConfiguration matched:
+      - @ConditionalOnClass found required class 'org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient' (OnClassCondition)
+
    SpringDocSecurityConfiguration.SpringSecurityLoginEndpointConfiguration matched:
       - @ConditionalOnClass found required class 'jakarta.servlet.Filter' (OnClassCondition)
 
@@ -1516,12 +1525,6 @@ Positive matches:
 
    TransactionManagerCustomizationAutoConfiguration#platformTransactionManagerCustomizers matched:
       - @ConditionalOnMissingBean (types: org.springframework.boot.autoconfigure.transaction.TransactionManagerCustomizers; SearchStrategy: all) did not find any beans (OnBeanCondition)
-
-   UserDetailsServiceAutoConfiguration matched:
-      - @ConditionalOnClass found required class 'org.springframework.security.authentication.AuthenticationManager' (OnClassCondition)
-      - found 'session' scope (OnWebApplicationCondition)
-      - AnyNestedCondition 1 matched 2 did not; NestedCondition on UserDetailsServiceAutoConfiguration.MissingAlternativeOrUserPropertiesConfigured.PasswordConfigured @ConditionalOnProperty (spring.security.user.password) did not find property 'spring.security.user.password'; NestedCondition on UserDetailsServiceAutoConfiguration.MissingAlternativeOrUserPropertiesConfigured.NameConfigured @ConditionalOnProperty (spring.security.user.name) did not find property 'spring.security.user.name'; NestedCondition on UserDetailsServiceAutoConfiguration.MissingAlternativeOrUserPropertiesConfigured.MissingAlternative @ConditionalOnMissingClass did not find unwanted classes 'org.springframework.security.oauth2.client.registration.ClientRegistrationRepository', 'org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector', 'org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistrationRepository' (UserDetailsServiceAutoConfiguration.MissingAlternativeOrUserPropertiesConfigured)
-      - @ConditionalOnBean (types: org.springframework.security.config.ObjectPostProcessor; SearchStrategy: all) found beans 'objectPostProcessor', 'webAuthorizationManagerPostProcessor', 'filterChainDecoratorPostProcessor', 'authenticationManagerPostProcessor'; @ConditionalOnMissingBean (types: org.springframework.security.authentication.AuthenticationManager,org.springframework.security.authentication.AuthenticationProvider,org.springframework.security.core.userdetails.UserDetailsService,org.springframework.security.authentication.AuthenticationManagerResolver,?; SearchStrategy: all) did not find any beans (OnBeanCondition)
 
    ValidationAutoConfiguration matched:
       - @ConditionalOnClass found required class 'jakarta.validation.executable.ExecutableValidator' (OnClassCondition)
@@ -2308,7 +2311,7 @@ Negative matches:
 
    ManagementWebSecurityAutoConfiguration:
       Did not match:
-         - AllNestedConditions 1 matched 1 did not; NestedCondition on DefaultWebSecurityCondition.Beans @ConditionalOnMissingBean (types: org.springframework.security.web.SecurityFilterChain; SearchStrategy: all) found beans of type 'org.springframework.security.web.SecurityFilterChain' filterChain; NestedCondition on DefaultWebSecurityCondition.Classes @ConditionalOnClass found required classes 'org.springframework.security.web.SecurityFilterChain', 'org.springframework.security.config.annotation.web.builders.HttpSecurity' (DefaultWebSecurityCondition)
+         - AllNestedConditions 1 matched 1 did not; NestedCondition on DefaultWebSecurityCondition.Beans @ConditionalOnMissingBean (types: org.springframework.security.web.SecurityFilterChain; SearchStrategy: all) found beans of type 'org.springframework.security.web.SecurityFilterChain' securityFilterChain; NestedCondition on DefaultWebSecurityCondition.Classes @ConditionalOnClass found required classes 'org.springframework.security.web.SecurityFilterChain', 'org.springframework.security.config.annotation.web.builders.HttpSecurity' (DefaultWebSecurityCondition)
       Matched:
          - found 'session' scope (OnWebApplicationCondition)
 
@@ -2432,15 +2435,22 @@ Negative matches:
 
    OAuth2AuthorizationServerJwtAutoConfiguration:
       Did not match:
-         - @ConditionalOnClass did not find required class 'com.nimbusds.jose.jwk.source.JWKSource' (OnClassCondition)
+         - @ConditionalOnClass did not find required class 'org.springframework.security.oauth2.server.authorization.OAuth2Authorization' (OnClassCondition)
 
-   OAuth2ClientAutoConfiguration:
+   OAuth2ClientConfigurations.ClientRegistrationRepositoryConfiguration:
       Did not match:
-         - @ConditionalOnClass did not find required class 'org.springframework.security.oauth2.client.registration.ClientRegistration' (OnClassCondition)
+         - OAuth2 Clients Configured Condition registered clients is not available (ClientsConfiguredCondition)
+
+   OAuth2ClientConfigurations.OAuth2AuthorizedClientServiceConfiguration:
+      Did not match:
+         - @ConditionalOnBean (types: org.springframework.security.oauth2.client.registration.ClientRegistrationRepository; SearchStrategy: all) did not find any beans of type org.springframework.security.oauth2.client.registration.ClientRegistrationRepository (OnBeanCondition)
 
    OAuth2ClientWebSecurityAutoConfiguration:
       Did not match:
-         - @ConditionalOnClass did not find required class 'org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository' (OnClassCondition)
+         - @ConditionalOnBean (types: org.springframework.security.oauth2.client.OAuth2AuthorizedClientService; SearchStrategy: all) did not find any beans of type org.springframework.security.oauth2.client.OAuth2AuthorizedClientService (OnBeanCondition)
+      Matched:
+         - @ConditionalOnClass found required classes 'org.springframework.security.config.annotation.web.configuration.EnableWebSecurity', 'org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository' (OnClassCondition)
+         - found 'session' scope (OnWebApplicationCondition)
 
    OAuth2ResourceServerAutoConfiguration:
       Did not match:
@@ -2611,11 +2621,13 @@ Negative matches:
 
    ReactiveOAuth2ClientAutoConfiguration:
       Did not match:
-         - @ConditionalOnClass did not find required class 'org.springframework.security.oauth2.client.registration.ClientRegistration' (OnClassCondition)
+         - NoneNestedConditions 1 matched 0 did not; NestedCondition on ReactiveOAuth2ClientAutoConfiguration.NonServletApplicationCondition.ServletApplicationCondition found 'session' scope (ReactiveOAuth2ClientAutoConfiguration.NonServletApplicationCondition)
+      Matched:
+         - @ConditionalOnClass found required classes 'reactor.core.publisher.Flux', 'org.springframework.security.oauth2.client.registration.ClientRegistration' (OnClassCondition)
 
    ReactiveOAuth2ClientWebSecurityAutoConfiguration:
       Did not match:
-         - @ConditionalOnClass did not find required class 'org.springframework.security.oauth2.client.web.server.ServerOAuth2AuthorizedClientRepository' (OnClassCondition)
+         - @ConditionalOnWebApplication did not find reactive web application classes (OnWebApplicationCondition)
 
    ReactiveOAuth2ResourceServerAutoConfiguration:
       Did not match:
@@ -2627,10 +2639,9 @@ Negative matches:
 
    ReactiveUserDetailsServiceAutoConfiguration:
       Did not match:
-         - AnyNestedCondition 0 matched 2 did not; NestedCondition on ReactiveUserDetailsServiceAutoConfiguration.RSocketEnabledOrReactiveWebApplication.ReactiveWebApplicationCondition did not find reactive web application classes; NestedCondition on ReactiveUserDetailsServiceAutoConfiguration.RSocketEnabledOrReactiveWebApplication.RSocketSecurityEnabledCondition @ConditionalOnBean (types: ?; SearchStrategy: all) did not find any beans of type ? (ReactiveUserDetailsServiceAutoConfiguration.RSocketEnabledOrReactiveWebApplication)
+         - AnyNestedCondition 0 matched 3 did not; NestedCondition on ReactiveUserDetailsServiceAutoConfiguration.MissingAlternativeOrUserPropertiesConfigured.PasswordConfigured @ConditionalOnProperty (spring.security.user.password) did not find property 'spring.security.user.password'; NestedCondition on ReactiveUserDetailsServiceAutoConfiguration.MissingAlternativeOrUserPropertiesConfigured.NameConfigured @ConditionalOnProperty (spring.security.user.name) did not find property 'spring.security.user.name'; NestedCondition on ReactiveUserDetailsServiceAutoConfiguration.MissingAlternativeOrUserPropertiesConfigured.MissingAlternative @ConditionalOnMissingClass found unwanted class 'org.springframework.security.oauth2.client.registration.ClientRegistrationRepository' (ReactiveUserDetailsServiceAutoConfiguration.MissingAlternativeOrUserPropertiesConfigured)
       Matched:
          - @ConditionalOnClass found required class 'org.springframework.security.authentication.ReactiveAuthenticationManager' (OnClassCondition)
-         - AnyNestedCondition 1 matched 2 did not; NestedCondition on ReactiveUserDetailsServiceAutoConfiguration.MissingAlternativeOrUserPropertiesConfigured.PasswordConfigured @ConditionalOnProperty (spring.security.user.password) did not find property 'spring.security.user.password'; NestedCondition on ReactiveUserDetailsServiceAutoConfiguration.MissingAlternativeOrUserPropertiesConfigured.NameConfigured @ConditionalOnProperty (spring.security.user.name) did not find property 'spring.security.user.name'; NestedCondition on ReactiveUserDetailsServiceAutoConfiguration.MissingAlternativeOrUserPropertiesConfigured.MissingAlternative @ConditionalOnMissingClass did not find unwanted classes 'org.springframework.security.oauth2.client.registration.ClientRegistrationRepository', 'org.springframework.security.oauth2.server.resource.introspection.ReactiveOpaqueTokenIntrospector' (ReactiveUserDetailsServiceAutoConfiguration.MissingAlternativeOrUserPropertiesConfigured)
 
    ReactiveWebServerFactoryAutoConfiguration:
       Did not match:
@@ -2725,7 +2736,7 @@ Negative matches:
 
    SpringBootWebSecurityConfiguration.SecurityFilterChainConfiguration:
       Did not match:
-         - AllNestedConditions 1 matched 1 did not; NestedCondition on DefaultWebSecurityCondition.Beans @ConditionalOnMissingBean (types: org.springframework.security.web.SecurityFilterChain; SearchStrategy: all) found beans of type 'org.springframework.security.web.SecurityFilterChain' filterChain; NestedCondition on DefaultWebSecurityCondition.Classes @ConditionalOnClass found required classes 'org.springframework.security.web.SecurityFilterChain', 'org.springframework.security.config.annotation.web.builders.HttpSecurity' (DefaultWebSecurityCondition)
+         - AllNestedConditions 1 matched 1 did not; NestedCondition on DefaultWebSecurityCondition.Beans @ConditionalOnMissingBean (types: org.springframework.security.web.SecurityFilterChain; SearchStrategy: all) found beans of type 'org.springframework.security.web.SecurityFilterChain' securityFilterChain; NestedCondition on DefaultWebSecurityCondition.Classes @ConditionalOnClass found required classes 'org.springframework.security.web.SecurityFilterChain', 'org.springframework.security.config.annotation.web.builders.HttpSecurity' (DefaultWebSecurityCondition)
 
    SpringBootWebSecurityConfiguration.WebSecurityEnablerConfiguration:
       Did not match:
@@ -2792,10 +2803,6 @@ Negative matches:
    SpringDocKotlinxConfiguration:
       Did not match:
          - @ConditionalOnClass did not find required class 'kotlinx.coroutines.flow.Flow' (OnClassCondition)
-
-   SpringDocSecurityConfiguration.SpringDocSecurityOAuth2ClientConfiguration:
-      Did not match:
-         - @ConditionalOnClass did not find required class 'org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient' (OnClassCondition)
 
    SpringDocSecurityConfiguration.SpringDocSecurityOAuth2Configuration:
       Did not match:
@@ -2886,6 +2893,13 @@ Negative matches:
    TransactionAutoConfiguration.EnableTransactionManagementConfiguration.JdkDynamicAutoProxyConfiguration:
       Did not match:
          - @ConditionalOnBooleanProperty (spring.aop.proxy-target-class=false) did not find property 'spring.aop.proxy-target-class' (OnPropertyCondition)
+
+   UserDetailsServiceAutoConfiguration:
+      Did not match:
+         - AnyNestedCondition 0 matched 3 did not; NestedCondition on UserDetailsServiceAutoConfiguration.MissingAlternativeOrUserPropertiesConfigured.PasswordConfigured @ConditionalOnProperty (spring.security.user.password) did not find property 'spring.security.user.password'; NestedCondition on UserDetailsServiceAutoConfiguration.MissingAlternativeOrUserPropertiesConfigured.NameConfigured @ConditionalOnProperty (spring.security.user.name) did not find property 'spring.security.user.name'; NestedCondition on UserDetailsServiceAutoConfiguration.MissingAlternativeOrUserPropertiesConfigured.MissingAlternative @ConditionalOnMissingClass found unwanted class 'org.springframework.security.oauth2.client.registration.ClientRegistrationRepository' (UserDetailsServiceAutoConfiguration.MissingAlternativeOrUserPropertiesConfigured)
+      Matched:
+         - @ConditionalOnClass found required class 'org.springframework.security.authentication.AuthenticationManager' (OnClassCondition)
+         - found 'session' scope (OnWebApplicationCondition)
 
    WavefrontAutoConfiguration:
       Did not match:
@@ -3024,7 +3038,7 @@ Unconditional classes:
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="https://www.gradle.org">Gradle 8.14.2</a> at 2025. 9. 9. 오후 9:04:12</p>
+<a href="https://www.gradle.org">Gradle 8.14.2</a> at 2025. 9. 10. 오후 9:21:40</p>
 </div>
 </div>
 </body>

@@ -1,4 +1,4 @@
-package com.anyang.maruni.domain.member.application.dto.response;
+package com.anyang.maruni.domain.auth.application.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;

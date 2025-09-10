@@ -2,7 +2,6 @@ package com.anyang.maruni.domain.member.application.service;
 
 import java.util.List;
 
-import org.springframework.boot.autoconfigure.security.SecurityProperties;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.anyang.maruni.domain.member.application.dto.request.MemberSaveRequest;
 import com.anyang.maruni.domain.member.application.dto.request.MemberUpdateRequest;
 import com.anyang.maruni.domain.member.application.dto.response.MemberResponse;
+import com.anyang.maruni.domain.member.application.mapper.MemberMapper;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
 import com.anyang.maruni.domain.member.domain.repository.MemberRepository;
 import com.anyang.maruni.global.exception.BaseException;
@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 public class MemberService {
 	private final MemberRepository memberRepository;
 	private final PasswordEncoder passwordEncoder;
-	private final SecurityProperties securityProperties;
+	private final MemberMapper memberMapper;
 
 
 	@Transactional // 쓰기 작업
@@ -39,34 +39,20 @@ public class MemberService {
 
 		log.info("[회원가입] 이메일: {}, 이름: {}", req.getMemberEmail(), req.getMemberName());
 
-
-		MemberEntity memberEntity = MemberEntity.createRegularMember(
-			req.getMemberEmail(),
-			req.getMemberName(),
-			encodedPassword
-		);
-
+		MemberEntity memberEntity = memberMapper.toEntity(req, encodedPassword);
 		memberRepository.save(memberEntity);
 	}
 
 
 	public List<MemberResponse> findAll() {
-		return memberRepository.findAll()
-			.stream()
-			.map(MemberResponse::fromEntity)
-			.toList();
+		List<MemberEntity> entities = memberRepository.findAll();
+		return memberMapper.toResponseList(entities);
 	}
 
 	public MemberResponse findById(Long id) {
-		return memberRepository.findById(id)
-			.map(MemberResponse::fromEntity)
+		MemberEntity entity = memberRepository.findById(id)
 			.orElseThrow(() -> memberNotFound());
-	}
-
-	public MemberResponse findMemberForUpdate(String myEmail) {
-		return memberRepository.findByMemberEmail(myEmail)
-			.map(MemberResponse::fromEntity)
-			.orElseThrow(() -> memberNotFound());
+		return memberMapper.toResponse(entity);
 	}
 
 	@Transactional // 쓰기 작업

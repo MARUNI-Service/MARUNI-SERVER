@@ -6,8 +6,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.anyang.maruni.domain.auth.application.dto.response.TokenResponse;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
 import com.anyang.maruni.global.exception.BaseException;
-import com.anyang.maruni.global.jwt.JWTUtil;
-import com.anyang.maruni.global.jwt.JwtTokenService;
+import com.anyang.maruni.global.security.JWTUtil;
+import com.anyang.maruni.global.security.JwtTokenService;
 import com.anyang.maruni.global.response.error.ErrorCode;
 
 import jakarta.servlet.http.HttpServletRequest;

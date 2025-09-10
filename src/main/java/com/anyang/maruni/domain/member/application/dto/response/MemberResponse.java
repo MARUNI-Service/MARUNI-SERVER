@@ -1,7 +1,5 @@
 package com.anyang.maruni.domain.member.application.dto.response;
 
-import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
-
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,13 +23,4 @@ public class MemberResponse {
 
 	@Schema(description = "회원 이메일", example = "hong@example.com")
 	private String memberEmail;
-
-
-	public static MemberResponse fromEntity(MemberEntity memberEntity) {
-		return MemberResponse.builder()
-			.id(memberEntity.getId())
-			.memberName(memberEntity.getMemberName())
-			.memberEmail(memberEntity.getMemberEmail())
-			.build();
-	}
 }

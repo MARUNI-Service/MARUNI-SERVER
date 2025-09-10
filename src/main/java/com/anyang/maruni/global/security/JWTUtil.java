@@ -1,4 +1,4 @@
-package com.anyang.maruni.global.jwt;
+package com.anyang.maruni.global.security;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Date;

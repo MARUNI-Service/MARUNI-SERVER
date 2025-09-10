@@ -10,8 +10,8 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import com.anyang.maruni.global.config.properties.SecurityProperties;
-import com.anyang.maruni.global.jwt.JwtAuthenticationFilter;
-import com.anyang.maruni.global.jwt.LoginFilter;
+import com.anyang.maruni.global.security.JwtAuthenticationFilter;
+import com.anyang.maruni.global.security.LoginFilter;
 
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
