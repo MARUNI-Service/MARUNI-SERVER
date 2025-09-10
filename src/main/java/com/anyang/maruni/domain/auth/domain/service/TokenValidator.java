@@ -2,7 +2,7 @@ package com.anyang.maruni.domain.auth.domain.service;
 
 import java.util.Optional;
 
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import com.anyang.maruni.domain.auth.domain.repository.TokenBlacklistRepository;
 
@@ -15,7 +15,7 @@ import lombok.extern.slf4j.Slf4j;
  * 재사용 가능한 토큰 검증 로직을 중앙화
  */
 @Slf4j
-@Component
+@Service
 @RequiredArgsConstructor
 public class TokenValidator {
 
