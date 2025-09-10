@@ -23,16 +23,16 @@ public class JwtTokenService implements TokenService {
 	private final JwtProperties jwtProperties;
 
 	public void issueTokens(HttpServletResponse response, MemberTokenInfo memberInfo) {
-		String memberId = memberInfo.getMemberId();
-		String accessToken = jwtUtil.createAccessToken(memberId, memberInfo.getEmail());
-		String refreshToken = jwtUtil.createRefreshToken(memberId, memberInfo.getEmail());
+		String memberId = memberInfo.memberId();
+		String accessToken = jwtUtil.createAccessToken(memberId, memberInfo.email());
+		String refreshToken = jwtUtil.createRefreshToken(memberId, memberInfo.email());
 
 		saveRefreshTokenWithTtl(memberId, refreshToken);
 
 		setAccessToken(response, accessToken);
 		setRefreshCookie(response, refreshToken);
 
-		log.info("Access / Refresh 토큰 발급 완료 - Member: {}", memberInfo.getEmail());
+		log.info("Access / Refresh 토큰 발급 완료 - Member: {}", memberInfo.email());
 	}
 
 	public void reissueAccessToken(HttpServletResponse response, String memberId, String email) {

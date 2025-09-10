@@ -31,7 +31,7 @@ public class AuthenticationService {
 	private final TokenBlacklistRepository tokenBlacklistRepository;
 
 	public void issueTokensOnLogin(HttpServletResponse response, MemberTokenInfo memberInfo) {
-		log.info("Issuing tokens for member: {}", memberInfo.getEmail());
+		log.info("Issuing tokens for member: {}", memberInfo.email());
 		tokenService.issueTokens(response, memberInfo);
 	}
 
