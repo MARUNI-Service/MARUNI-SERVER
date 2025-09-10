@@ -6,7 +6,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import com.anyang.maruni.domain.auth.application.dto.request.MemberLoginRequest;
+import com.anyang.maruni.domain.member.application.dto.request.MemberLoginRequest;
 import com.anyang.maruni.domain.auth.application.service.AuthenticationService;
 import com.anyang.maruni.global.response.dto.CommonApiResponse;
 import com.anyang.maruni.global.response.error.ErrorCode;

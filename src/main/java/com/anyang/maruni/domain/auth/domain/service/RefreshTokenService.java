@@ -17,7 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class RefreshTokenDomainService {
+public class RefreshTokenService {
 
 	private final RefreshTokenRepository refreshTokenRepository;
 

@@ -1,11 +1,9 @@
-package com.anyang.maruni.domain.auth.application.service;
+package com.anyang.maruni.domain.auth.domain.service;
 
 import java.util.Optional;
 
 import org.springframework.stereotype.Component;
 
-import com.anyang.maruni.domain.auth.domain.entity.RefreshToken;
-import com.anyang.maruni.domain.auth.domain.service.RefreshTokenDomainService;
 import com.anyang.maruni.domain.auth.infrastructure.BlacklistTokenStorage;
 import com.anyang.maruni.global.security.JWTUtil;
 
@@ -23,7 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 public class TokenValidator {
 
 	private final JWTUtil jwtUtil;
-	private final RefreshTokenDomainService refreshTokenService;
+	private final RefreshTokenService refreshTokenService;
 	private final BlacklistTokenStorage blacklistTokenStorage;
 
 	/**

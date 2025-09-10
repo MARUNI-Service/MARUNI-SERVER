@@ -1,4 +1,4 @@
-package com.anyang.maruni.domain.auth.application.dto.request;
+package com.anyang.maruni.domain.member.application.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;

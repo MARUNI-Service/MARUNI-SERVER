@@ -4,7 +4,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.anyang.maruni.domain.auth.application.dto.response.TokenResponse;
-import com.anyang.maruni.domain.auth.domain.service.RefreshTokenDomainService;
+import com.anyang.maruni.domain.auth.domain.service.RefreshTokenService;
+import com.anyang.maruni.domain.auth.domain.service.TokenValidator;
 import com.anyang.maruni.domain.auth.infrastructure.BlacklistTokenStorage;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
 import com.anyang.maruni.global.exception.BaseException;
@@ -26,7 +27,7 @@ public class AuthenticationService {
 	private final JWTUtil jwtUtil;
 	private final JwtTokenService jwtTokenService;
 	private final TokenValidator tokenValidator;
-	private final RefreshTokenDomainService refreshTokenService;
+	private final RefreshTokenService refreshTokenService;
 	private final BlacklistTokenStorage blacklistTokenStorage;
 
 	public void issueTokensOnLogin(HttpServletResponse response, MemberEntity member) {

@@ -4,7 +4,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
 
-import com.anyang.maruni.domain.auth.domain.service.RefreshTokenDomainService;
+import com.anyang.maruni.domain.auth.domain.service.RefreshTokenService;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
 
 import jakarta.servlet.http.HttpServletResponse;
@@ -17,7 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 public class JwtTokenService {
 
 	private final JWTUtil jwtUtil;
-	private final RefreshTokenDomainService refreshTokenService;
+	private final RefreshTokenService refreshTokenService;
 
 	public void issueTokens(HttpServletResponse response, MemberEntity member) {
 		String memberId = member.getId().toString();
