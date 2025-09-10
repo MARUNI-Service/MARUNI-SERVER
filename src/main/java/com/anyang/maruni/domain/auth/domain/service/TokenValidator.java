@@ -4,7 +4,7 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Component;
 
-import com.anyang.maruni.domain.auth.infrastructure.BlacklistTokenStorage;
+import com.anyang.maruni.domain.auth.domain.repository.TokenBlacklistRepository;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +21,7 @@ public class TokenValidator {
 
 	private final TokenManager tokenManager;
 	private final RefreshTokenService refreshTokenService;
-	private final BlacklistTokenStorage blacklistTokenStorage;
+	private final TokenBlacklistRepository tokenBlacklistRepository;
 
 	/**
 	 * Refresh Token의 종합적 검증
@@ -70,7 +70,7 @@ public class TokenValidator {
 		}
 		
 		// 2. 블랙리스트 확인
-		return !blacklistTokenStorage.isTokenBlacklisted(accessToken);
+		return !tokenBlacklistRepository.isTokenBlacklisted(accessToken);
 	}
 
 	/**

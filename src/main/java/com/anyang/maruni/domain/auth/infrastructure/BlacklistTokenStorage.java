@@ -5,6 +5,8 @@ import java.time.Duration;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
+import com.anyang.maruni.domain.auth.domain.repository.TokenBlacklistRepository;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -15,7 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class BlacklistTokenStorage {
+public class BlacklistTokenStorage implements TokenBlacklistRepository {
 
 	private final RedisTemplate<String, String> redisTemplate;
 

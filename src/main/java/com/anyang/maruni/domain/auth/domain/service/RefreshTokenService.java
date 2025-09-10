@@ -24,10 +24,10 @@ public class RefreshTokenService {
 	/**
 	 * 새로운 Refresh Token 저장 또는 기존 토큰 갱신
 	 */
-	public RefreshToken saveOrUpdateToken(String memberId, String token) {
-		RefreshToken refreshToken = new RefreshToken(memberId, token);
+	public RefreshToken saveOrUpdateToken(String memberId, String token, Long ttlSeconds) {
+		RefreshToken refreshToken = new RefreshToken(memberId, token, ttlSeconds);
 		RefreshToken saved = refreshTokenRepository.save(refreshToken);
-		log.debug("Refresh token saved for member: {}", memberId);
+		log.debug("Refresh token saved for member: {} with TTL: {}s", memberId, ttlSeconds);
 		return saved;
 	}
 

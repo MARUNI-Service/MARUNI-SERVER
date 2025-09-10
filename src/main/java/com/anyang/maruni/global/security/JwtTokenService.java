@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import com.anyang.maruni.domain.auth.domain.service.RefreshTokenService;
 import com.anyang.maruni.domain.auth.domain.service.TokenService;
 import com.anyang.maruni.domain.auth.domain.vo.MemberTokenInfo;
+import com.anyang.maruni.global.config.JwtProperties;
 
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -19,13 +20,14 @@ public class JwtTokenService implements TokenService {
 
 	private final JWTUtil jwtUtil;
 	private final RefreshTokenService refreshTokenService;
+	private final JwtProperties jwtProperties;
 
 	public void issueTokens(HttpServletResponse response, MemberTokenInfo memberInfo) {
 		String memberId = memberInfo.getMemberId();
 		String accessToken = jwtUtil.createAccessToken(memberId, memberInfo.getEmail());
 		String refreshToken = jwtUtil.createRefreshToken(memberId, memberInfo.getEmail());
 
-		refreshTokenService.saveOrUpdateToken(memberId, refreshToken);
+		saveRefreshTokenWithTtl(memberId, refreshToken);
 
 		setAccessToken(response, accessToken);
 		setRefreshCookie(response, refreshToken);
@@ -43,7 +45,7 @@ public class JwtTokenService implements TokenService {
 		String accessToken = jwtUtil.createAccessToken(memberId, email);
 		String refreshToken = jwtUtil.createRefreshToken(memberId, email);
 
-		refreshTokenService.saveOrUpdateToken(memberId, refreshToken);
+		saveRefreshTokenWithTtl(memberId, refreshToken);
 
 		setAccessToken(response, accessToken);
 		setRefreshCookie(response, refreshToken);
@@ -63,5 +65,10 @@ public class JwtTokenService implements TokenService {
 	private void setRefreshCookie(HttpServletResponse response, String refreshToken) {
 		ResponseCookie cookie = jwtUtil.createRefreshTokenCookie(refreshToken);
 		response.setHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+	}
+	
+	private void saveRefreshTokenWithTtl(String memberId, String refreshToken) {
+		Long ttlSeconds = jwtProperties.getRefreshToken().getExpiration() / 1000;
+		refreshTokenService.saveOrUpdateToken(memberId, refreshToken, ttlSeconds);
 	}
 }

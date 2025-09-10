@@ -9,7 +9,7 @@ import com.anyang.maruni.domain.auth.domain.service.TokenManager;
 import com.anyang.maruni.domain.auth.domain.service.TokenService;
 import com.anyang.maruni.domain.auth.domain.service.TokenValidator;
 import com.anyang.maruni.domain.auth.domain.vo.MemberTokenInfo;
-import com.anyang.maruni.domain.auth.infrastructure.BlacklistTokenStorage;
+import com.anyang.maruni.domain.auth.domain.repository.TokenBlacklistRepository;
 import com.anyang.maruni.global.exception.BaseException;
 import com.anyang.maruni.global.response.error.ErrorCode;
 
@@ -28,7 +28,7 @@ public class AuthenticationService {
 	private final TokenService tokenService;
 	private final TokenValidator tokenValidator;
 	private final RefreshTokenService refreshTokenService;
-	private final BlacklistTokenStorage blacklistTokenStorage;
+	private final TokenBlacklistRepository tokenBlacklistRepository;
 
 	public void issueTokensOnLogin(HttpServletResponse response, MemberTokenInfo memberInfo) {
 		log.info("Issuing tokens for member: {}", memberInfo.getEmail());
@@ -85,7 +85,7 @@ public class AuthenticationService {
 			.filter(tokenManager::isAccessToken)
 			.ifPresent(accessToken -> {
 				tokenManager.getExpiration(accessToken).ifPresent(expiration ->
-					blacklistTokenStorage.addToBlacklist(accessToken, expiration)
+					tokenBlacklistRepository.addToBlacklist(accessToken, expiration)
 				);
 			});
 

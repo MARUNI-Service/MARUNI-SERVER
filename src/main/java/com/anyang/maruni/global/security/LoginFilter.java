@@ -49,7 +49,10 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
 
 		CustomUserDetails customUserDetails = (CustomUserDetails) authentication.getPrincipal();
 
-		MemberTokenInfo memberTokenInfo = MemberTokenInfo.from(customUserDetails.getMember());
+		MemberTokenInfo memberTokenInfo = MemberTokenInfo.of(
+			customUserDetails.getMember().getId(),
+			customUserDetails.getMember().getMemberEmail()
+		);
 		authenticationService.issueTokensOnLogin(response, memberTokenInfo);
 
 		log.info("로그인 성공 - 사용자: {}", customUserDetails.getUsername());
