@@ -8,6 +8,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import com.anyang.maruni.domain.member.application.dto.request.MemberLoginRequest;
 import com.anyang.maruni.domain.auth.application.service.AuthenticationService;
+import com.anyang.maruni.domain.auth.domain.vo.MemberTokenInfo;
 import com.anyang.maruni.global.response.dto.CommonApiResponse;
 import com.anyang.maruni.global.response.error.ErrorCode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -48,7 +49,8 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
 
 		CustomUserDetails customUserDetails = (CustomUserDetails) authentication.getPrincipal();
 
-		authenticationService.issueTokensOnLogin(response, customUserDetails.getMember());
+		MemberTokenInfo memberTokenInfo = MemberTokenInfo.from(customUserDetails.getMember());
+		authenticationService.issueTokensOnLogin(response, memberTokenInfo);
 
 		log.info("로그인 성공 - 사용자: {}", customUserDetails.getUsername());
 

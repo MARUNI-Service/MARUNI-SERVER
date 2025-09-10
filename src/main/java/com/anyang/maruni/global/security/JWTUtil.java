@@ -11,6 +11,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
 
+import com.anyang.maruni.domain.auth.domain.service.TokenManager;
+
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -22,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
-public class JWTUtil {
+public class JWTUtil implements TokenManager {
 
 	public static final String CLAIM_ID = "id";
 	public static final String CLAIM_EMAIL = "email";

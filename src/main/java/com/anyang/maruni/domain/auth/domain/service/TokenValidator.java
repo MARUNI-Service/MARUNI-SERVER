@@ -5,7 +5,6 @@ import java.util.Optional;
 import org.springframework.stereotype.Component;
 
 import com.anyang.maruni.domain.auth.infrastructure.BlacklistTokenStorage;
-import com.anyang.maruni.global.security.JWTUtil;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class TokenValidator {
 
-	private final JWTUtil jwtUtil;
+	private final TokenManager tokenManager;
 	private final RefreshTokenService refreshTokenService;
 	private final BlacklistTokenStorage blacklistTokenStorage;
 
@@ -29,13 +28,13 @@ public class TokenValidator {
 	 */
 	public TokenValidationResult validateRefreshToken(String refreshToken) {
 		// 1. JWT 형식 및 만료시간 검증
-		if (!jwtUtil.isRefreshToken(refreshToken)) {
+		if (!tokenManager.isRefreshToken(refreshToken)) {
 			log.warn("Invalid refresh token format or expired");
 			return TokenValidationResult.invalid("Invalid or expired refresh token");
 		}
 
 		// 2. 토큰에서 사용자 ID 추출
-		Optional<String> memberIdOpt = jwtUtil.getId(refreshToken);
+		Optional<String> memberIdOpt = tokenManager.getId(refreshToken);
 		if (memberIdOpt.isEmpty()) {
 			log.warn("Cannot extract member ID from refresh token");
 			return TokenValidationResult.invalid("Invalid token payload");
@@ -50,7 +49,7 @@ public class TokenValidator {
 		}
 
 		// 4. 토큰에서 추가 정보 추출
-		Optional<String> emailOpt = jwtUtil.getEmail(refreshToken);
+		Optional<String> emailOpt = tokenManager.getEmail(refreshToken);
 
 		if (emailOpt.isEmpty()) {
 			log.warn("Cannot extract email or role from refresh token");
@@ -66,7 +65,7 @@ public class TokenValidator {
 	 */
 	public boolean isValidAccessToken(String accessToken) {
 		// 1. JWT 형식 및 만료 시간 검증
-		if (!jwtUtil.isAccessToken(accessToken)) {
+		if (!tokenManager.isAccessToken(accessToken)) {
 			return false;
 		}
 		

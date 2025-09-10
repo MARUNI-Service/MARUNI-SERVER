@@ -5,7 +5,8 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
 
 import com.anyang.maruni.domain.auth.domain.service.RefreshTokenService;
-import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
+import com.anyang.maruni.domain.auth.domain.service.TokenService;
+import com.anyang.maruni.domain.auth.domain.vo.MemberTokenInfo;
 
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -14,22 +15,22 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class JwtTokenService {
+public class JwtTokenService implements TokenService {
 
 	private final JWTUtil jwtUtil;
 	private final RefreshTokenService refreshTokenService;
 
-	public void issueTokens(HttpServletResponse response, MemberEntity member) {
-		String memberId = member.getId().toString();
-		String accessToken = jwtUtil.createAccessToken(memberId, member.getMemberEmail());
-		String refreshToken = jwtUtil.createRefreshToken(memberId, member.getMemberEmail());
+	public void issueTokens(HttpServletResponse response, MemberTokenInfo memberInfo) {
+		String memberId = memberInfo.getMemberId();
+		String accessToken = jwtUtil.createAccessToken(memberId, memberInfo.getEmail());
+		String refreshToken = jwtUtil.createRefreshToken(memberId, memberInfo.getEmail());
 
 		refreshTokenService.saveOrUpdateToken(memberId, refreshToken);
 
 		setAccessToken(response, accessToken);
 		setRefreshCookie(response, refreshToken);
 
-		log.info("Access / Refresh 토큰 발급 완료 - Member: {}", member.getMemberEmail());
+		log.info("Access / Refresh 토큰 발급 완료 - Member: {}", memberInfo.getEmail());
 	}
 
 	public void reissueAccessToken(HttpServletResponse response, String memberId, String email) {

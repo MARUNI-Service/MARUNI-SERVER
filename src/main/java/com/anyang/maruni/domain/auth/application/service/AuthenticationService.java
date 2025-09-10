@@ -5,12 +5,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.anyang.maruni.domain.auth.application.dto.response.TokenResponse;
 import com.anyang.maruni.domain.auth.domain.service.RefreshTokenService;
+import com.anyang.maruni.domain.auth.domain.service.TokenManager;
+import com.anyang.maruni.domain.auth.domain.service.TokenService;
 import com.anyang.maruni.domain.auth.domain.service.TokenValidator;
+import com.anyang.maruni.domain.auth.domain.vo.MemberTokenInfo;
 import com.anyang.maruni.domain.auth.infrastructure.BlacklistTokenStorage;
-import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
 import com.anyang.maruni.global.exception.BaseException;
-import com.anyang.maruni.global.security.JWTUtil;
-import com.anyang.maruni.global.security.JwtTokenService;
 import com.anyang.maruni.global.response.error.ErrorCode;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,15 +24,15 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional
 public class AuthenticationService {
 
-	private final JWTUtil jwtUtil;
-	private final JwtTokenService jwtTokenService;
+	private final TokenManager tokenManager;
+	private final TokenService tokenService;
 	private final TokenValidator tokenValidator;
 	private final RefreshTokenService refreshTokenService;
 	private final BlacklistTokenStorage blacklistTokenStorage;
 
-	public void issueTokensOnLogin(HttpServletResponse response, MemberEntity member) {
-		log.info("Issuing tokens for member: {}", member.getMemberEmail());
-		jwtTokenService.issueTokens(response, member);
+	public void issueTokensOnLogin(HttpServletResponse response, MemberTokenInfo memberInfo) {
+		log.info("Issuing tokens for member: {}", memberInfo.getEmail());
+		tokenService.issueTokens(response, memberInfo);
 	}
 
 	public TokenResponse refreshAccessToken(HttpServletRequest request, HttpServletResponse response) {
@@ -43,7 +43,7 @@ public class AuthenticationService {
 			throw new BaseException(ErrorCode.INVALID_TOKEN);
 		}
 
-		jwtTokenService.reissueAccessToken(response, validation.getMemberId(), validation.getEmail());
+		tokenService.reissueAccessToken(response, validation.getMemberId(), validation.getEmail());
 
 		log.info("Access token refreshed for member: {}", validation.getMemberId());
 		return TokenResponse.accessOnly(
@@ -61,7 +61,7 @@ public class AuthenticationService {
 		}
 
 		refreshTokenService.revokeToken(validation.getMemberId());
-		jwtTokenService.reissueAllTokens(response, validation.getMemberId(), validation.getEmail());
+		tokenService.reissueAllTokens(response, validation.getMemberId(), validation.getEmail());
 
 		log.info("Full token refresh completed for member: {}", validation.getMemberId());
 		return TokenResponse.withRefresh(
@@ -71,20 +71,20 @@ public class AuthenticationService {
 	}
 
 	public void logout(HttpServletRequest request, HttpServletResponse response) {
-		jwtUtil.extractRefreshToken(request)
-			.filter(jwtUtil::isRefreshToken)
-			.flatMap(jwtUtil::getId)
+		tokenManager.extractRefreshToken(request)
+			.filter(tokenManager::isRefreshToken)
+			.flatMap(tokenManager::getId)
 			.ifPresent(memberId -> {
 				refreshTokenService.revokeToken(memberId);
 				log.info("Refresh token deleted for member: {}", memberId);
 			});
 
-		jwtTokenService.expireRefreshCookie(response);
+		tokenService.expireRefreshCookie(response);
 
-		jwtUtil.extractAccessToken(request)
-			.filter(jwtUtil::isAccessToken)
+		tokenManager.extractAccessToken(request)
+			.filter(tokenManager::isAccessToken)
 			.ifPresent(accessToken -> {
-				jwtUtil.getExpiration(accessToken).ifPresent(expiration ->
+				tokenManager.getExpiration(accessToken).ifPresent(expiration ->
 					blacklistTokenStorage.addToBlacklist(accessToken, expiration)
 				);
 			});
@@ -94,7 +94,7 @@ public class AuthenticationService {
 
 
 	private String extractRefreshTokenFromRequest(HttpServletRequest request) {
-		return jwtUtil.extractRefreshToken(request)
+		return tokenManager.extractRefreshToken(request)
 			.orElseThrow(() -> new BaseException(ErrorCode.REFRESH_TOKEN_NOT_FOUND));
 	}
 
@@ -107,6 +107,6 @@ public class AuthenticationService {
 	}
 
 	private Long getAccessTokenExpirySeconds() {
-		return jwtUtil.getAccessTokenExpiration() / 1000;
+		return tokenManager.getAccessTokenExpiration() / 1000;
 	}
 }
