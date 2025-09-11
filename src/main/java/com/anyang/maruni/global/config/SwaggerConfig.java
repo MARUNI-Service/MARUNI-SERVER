@@ -1,10 +1,6 @@
 package com.anyang.maruni.global.config;
 
-import static java.util.stream.Collectors.*;
-
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import org.springdoc.core.customizers.OperationCustomizer;
 import org.springframework.context.annotation.Bean;
@@ -12,15 +8,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.method.HandlerMethod;
 
-import com.anyang.maruni.global.advice.ParameterData;
 import com.anyang.maruni.global.config.properties.SwaggerProperties;
-import com.anyang.maruni.global.response.dto.CommonApiResponse;
-import com.anyang.maruni.global.response.error.ErrorCode;
-import com.anyang.maruni.global.response.success.SuccessCode;
 import com.anyang.maruni.global.swagger.CustomExceptionDescription;
-import com.anyang.maruni.global.swagger.ExampleHolder;
 import com.anyang.maruni.global.swagger.SuccessResponseDescription;
-import com.anyang.maruni.global.swagger.SwaggerResponseDescription;
+import com.anyang.maruni.global.swagger.SwaggerExampleCustomizer;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
@@ -30,11 +21,6 @@ import io.swagger.v3.oas.annotations.info.License;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
-import io.swagger.v3.oas.models.examples.Example;
-import io.swagger.v3.oas.models.media.Content;
-import io.swagger.v3.oas.models.media.MediaType;
-import io.swagger.v3.oas.models.responses.ApiResponse;
-import io.swagger.v3.oas.models.responses.ApiResponses;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.servers.Server;
 
@@ -66,9 +52,11 @@ import io.swagger.v3.oas.models.servers.Server;
 public class SwaggerConfig {
 
     private final SwaggerProperties swaggerProperties;
+    private final SwaggerExampleCustomizer exampleCustomizer;
     
-    public SwaggerConfig(SwaggerProperties swaggerProperties) {
+    public SwaggerConfig(SwaggerProperties swaggerProperties, SwaggerExampleCustomizer exampleCustomizer) {
         this.swaggerProperties = swaggerProperties;
+        this.exampleCustomizer = exampleCustomizer;
     }
 
     @Bean
@@ -91,12 +79,12 @@ public class SwaggerConfig {
 
             // CustomExceptionDescription 어노테이션을 단 메소드에만 적용
             if (customExceptionDescription != null) {
-                addErrorExamples(operation, customExceptionDescription.value());
+                exampleCustomizer.addErrorExamples(operation.getResponses(), customExceptionDescription.value());
             }
             
             // SuccessResponseDescription 어노테이션을 단 메소드에만 적용
             if (successResponseDescription != null) {
-                addSuccessExample(operation, successResponseDescription.value());
+                exampleCustomizer.addSuccessExample(operation.getResponses(), successResponseDescription.value());
             }
             
             if (preAuthorize != null) {
@@ -105,95 +93,5 @@ public class SwaggerConfig {
 
             return operation;
         };
-    }
-
-    private void addErrorExamples(Operation operation, SwaggerResponseDescription type) {
-        ApiResponses responses = operation.getResponses();
-
-        Set<ErrorCode> errorCodeList = type.getErrorCodeList();
-
-        Map<Integer, List<ExampleHolder>> statusWithExampleHolders =
-            errorCodeList.stream()
-                .map(
-                    errorCode ->
-                        ExampleHolder.builder()
-                            .holder(getSwaggerExample(errorCode))
-                            .code(errorCode.getHttpCode())
-                            .name(errorCode.toString())
-                            .build()
-                )
-                .collect(groupingBy(ExampleHolder::getCode));
-        addExamplesToResponses(responses, statusWithExampleHolders);
-    }
-
-    private Object getErrorDetails(ErrorCode errorCode) {
-        if (errorCode == ErrorCode.PARAMETER_VALIDATION_ERROR) {
-            return List.of(new ParameterData("field", "invalid-value", "검증 실패 예시"));
-        }
-        return null;
-    }
-
-    private <T> Example createExample(T type, String description, Object details) {
-        CommonApiResponse<?> response;
-        if (type instanceof ErrorCode) {
-            response = details != null 
-                ? CommonApiResponse.failWithDetails((ErrorCode) type, details)
-                : CommonApiResponse.fail((ErrorCode) type);
-        } else {
-            response = CommonApiResponse.success((SuccessCode) type);
-        }
-        
-        Example example = new Example();
-        example.description(description);
-        example.setValue(response);
-        return example;
-    }
-
-    private Example getSwaggerExample(ErrorCode errorCode) {
-        Object details = getErrorDetails(errorCode);
-        return createExample(errorCode, errorCode.getMessage(), details);
-    }
-
-    private void addExamplesToResponses(ApiResponses responses,
-        Map<Integer, List<ExampleHolder>> statusWithExampleHolders) {
-        statusWithExampleHolders.forEach(
-            (status, v) -> {
-                Content content = new Content();
-                MediaType mediaType = new MediaType();
-                ApiResponse apiResponse = new ApiResponse();
-                v.forEach(
-                    exampleHolder ->
-                        mediaType.addExamples(exampleHolder.getName(), exampleHolder.getHolder()));
-                content.addMediaType("application/json", mediaType);
-                apiResponse.setDescription("에러 응답");
-                apiResponse.setContent(content);
-                responses.addApiResponse(status.toString(), apiResponse);
-            });
-    }
-
-    private void addSuccessExample(Operation operation, SuccessCode successCode) {
-        ApiResponses responses = operation.getResponses();
-
-        Example successExample = getSuccessSwaggerExample(successCode);
-        ExampleHolder exampleHolder = ExampleHolder.builder()
-            .holder(successExample)
-            .code(200)  // 성공 응답은 200으로 통일
-            .name(successCode.toString())
-            .build();
-
-        Content content = new Content();
-        MediaType mediaType = new MediaType();
-        ApiResponse apiResponse = new ApiResponse();
-        
-        mediaType.addExamples(exampleHolder.getName(), exampleHolder.getHolder());
-        content.addMediaType("application/json", mediaType);
-        apiResponse.setDescription("성공 응답");
-        apiResponse.setContent(content);
-        
-        responses.addApiResponse("200", apiResponse);
-    }
-
-    private Example getSuccessSwaggerExample(SuccessCode successCode) {
-        return createExample(successCode, successCode.getMessage(), null);
     }
 }
