@@ -12,6 +12,7 @@ import com.anyang.maruni.domain.auth.domain.vo.MemberTokenInfo;
 import com.anyang.maruni.domain.auth.domain.repository.TokenBlacklistRepository;
 import com.anyang.maruni.global.exception.BaseException;
 import com.anyang.maruni.global.response.error.ErrorCode;
+import com.anyang.maruni.global.security.AuthenticationEventHandler;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -22,13 +23,18 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 @Transactional
-public class AuthenticationService {
+public class AuthenticationService implements AuthenticationEventHandler {
 
 	private final TokenManager tokenManager;
 	private final TokenService tokenService;
 	private final TokenValidator tokenValidator;
 	private final RefreshTokenService refreshTokenService;
 	private final TokenBlacklistRepository tokenBlacklistRepository;
+
+	@Override
+	public void handleLoginSuccess(HttpServletResponse response, MemberTokenInfo memberInfo) {
+		issueTokensOnLogin(response, memberInfo);
+	}
 
 	public void issueTokensOnLogin(HttpServletResponse response, MemberTokenInfo memberInfo) {
 		log.info("Issuing tokens for member: {}", memberInfo.email());

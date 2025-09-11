@@ -7,8 +7,8 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import com.anyang.maruni.domain.auth.application.service.AuthenticationService;
 import com.anyang.maruni.domain.auth.domain.service.TokenValidator;
+import com.anyang.maruni.global.security.AuthenticationEventHandler;
 import com.anyang.maruni.global.security.CustomUserDetailsService;
 import com.anyang.maruni.global.security.JWTUtil;
 import com.anyang.maruni.global.security.JwtAuthenticationFilter;
@@ -25,7 +25,7 @@ public class JwtSecurityConfig {
 	private final ObjectMapper objectMapper;
 	private final TokenValidator tokenValidator;
 	private final CustomUserDetailsService customUserDetailsService;
-	private final AuthenticationService authenticationService;
+	private final AuthenticationEventHandler authenticationEventHandler;
 
 	@Bean
 	public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
@@ -39,9 +39,8 @@ public class JwtSecurityConfig {
 
 	@Bean
 	public LoginFilter loginFilter(AuthenticationManager authManager) {
-		LoginFilter loginFilter = new LoginFilter(authManager, objectMapper, authenticationService);
+		LoginFilter loginFilter = new LoginFilter(authManager, objectMapper, authenticationEventHandler);
 		loginFilter.setFilterProcessesUrl("/api/auth/login");
-		loginFilter.setAuthenticationManager(authManager);
 		return loginFilter;
 	}
 

@@ -7,7 +7,6 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import com.anyang.maruni.domain.member.application.dto.request.MemberLoginRequest;
-import com.anyang.maruni.domain.auth.application.service.AuthenticationService;
 import com.anyang.maruni.domain.auth.domain.vo.MemberTokenInfo;
 import com.anyang.maruni.global.response.dto.CommonApiResponse;
 import com.anyang.maruni.global.response.error.ErrorCode;
@@ -25,7 +24,7 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
 
 	private final AuthenticationManager authenticationManager;
 	private final ObjectMapper objectMapper;
-	private final AuthenticationService authenticationService;
+	private final AuthenticationEventHandler authenticationEventHandler;
 
 
 	@Override
@@ -53,7 +52,7 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
 			customUserDetails.getMember().getId(),
 			customUserDetails.getMember().getMemberEmail()
 		);
-		authenticationService.issueTokensOnLogin(response, memberTokenInfo);
+		authenticationEventHandler.handleLoginSuccess(response, memberTokenInfo);
 
 		log.info("로그인 성공 - 사용자: {}", customUserDetails.getUsername());
 
