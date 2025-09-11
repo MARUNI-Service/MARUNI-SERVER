@@ -15,7 +15,6 @@ import lombok.Setter;
 public class SecurityProperties {
 
 	private List<String> publicUrls;
-	private long corsMaxAge = 3600L;
 
 	public String[] getPublicUrlsArray() {
 		return publicUrls != null ? publicUrls.toArray(new String[0]) : new String[0];

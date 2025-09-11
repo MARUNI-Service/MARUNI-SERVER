@@ -7,15 +7,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 
-import com.anyang.maruni.global.config.properties.SecurityProperties;
-
-import lombok.RequiredArgsConstructor;
-
+/**
+ * CORS 설정 - 개발 환경용 (모든 오리진/헤더 허용)
+ */
 @Configuration
-@RequiredArgsConstructor
 public class CorsConfig {
-
-	private final SecurityProperties securityProperties;
 
 	@Bean
 	public CorsConfigurationSource corsConfigurationSource() {
@@ -26,7 +22,7 @@ public class CorsConfig {
 			config.setAllowCredentials(true);
 			config.setAllowedHeaders(List.of("*"));
 			config.setExposedHeaders(List.of("Authorization"));
-			config.setMaxAge(securityProperties.getCorsMaxAge());
+			config.setMaxAge(3600L); // 1시간
 			return config;
 		};
 	}
