@@ -39,13 +39,6 @@ public class RefreshTokenService {
 	}
 
 	/**
-	 * 회원의 Refresh Token 존재 여부 확인
-	 */
-	public boolean existsTokenForMember(String memberId) {
-		return refreshTokenRepository.existsById(memberId);
-	}
-
-	/**
 	 * 회원의 Refresh Token 삭제
 	 */
 	public void revokeToken(String memberId) {

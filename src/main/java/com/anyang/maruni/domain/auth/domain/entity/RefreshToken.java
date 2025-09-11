@@ -23,16 +23,4 @@ public class RefreshToken {
 	
 	@TimeToLive
 	private Long ttl;
-
-	public RefreshToken withNewToken(String newToken) {
-		return RefreshToken.builder()
-			.memberId(this.memberId)
-			.token(newToken)
-			.ttl(this.ttl)
-			.build();
-	}
-
-	public boolean isValidFor(String memberId) {
-		return this.memberId != null && this.memberId.equals(memberId);
-	}
 }
