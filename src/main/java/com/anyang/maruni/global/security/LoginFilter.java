@@ -8,6 +8,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import com.anyang.maruni.domain.member.application.dto.request.MemberLoginRequest;
 import com.anyang.maruni.domain.auth.domain.vo.MemberTokenInfo;
+import com.anyang.maruni.domain.member.infrastructure.security.CustomUserDetails;
 import com.anyang.maruni.global.response.dto.CommonApiResponse;
 import com.anyang.maruni.global.response.error.ErrorCode;
 import com.fasterxml.jackson.databind.ObjectMapper;

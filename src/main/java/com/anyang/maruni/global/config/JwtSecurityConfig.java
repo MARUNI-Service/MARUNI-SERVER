@@ -9,7 +9,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.anyang.maruni.domain.auth.domain.service.TokenValidator;
 import com.anyang.maruni.global.security.AuthenticationEventHandler;
-import com.anyang.maruni.global.security.CustomUserDetailsService;
+import com.anyang.maruni.domain.member.infrastructure.security.CustomUserDetailsService;
 import com.anyang.maruni.global.security.JWTUtil;
 import com.anyang.maruni.global.security.JwtAuthenticationFilter;
 import com.anyang.maruni.global.security.LoginFilter;

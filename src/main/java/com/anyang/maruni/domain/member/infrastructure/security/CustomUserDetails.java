@@ -1,4 +1,4 @@
-package com.anyang.maruni.global.security;
+package com.anyang.maruni.domain.member.infrastructure.security;
 
 import java.util.Collection;
 import java.util.Collections;
