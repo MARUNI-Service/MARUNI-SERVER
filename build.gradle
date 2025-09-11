@@ -30,6 +30,15 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	testImplementation 'org.springframework.security:spring-security-test'
 
+	// JWT (JSON Web Token) 관련 라이브러리
+	implementation 'io.jsonwebtoken:jjwt-api:0.12.5'
+	implementation 'io.jsonwebtoken:jjwt-impl:0.12.5'
+	implementation 'io.jsonwebtoken:jjwt-jackson:0.12.5'
+
+	// OAuth2 클라이언트 (소셜 로그인 등 외부 인증 제공자와의 연동)
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+
+
 	// === Redis 관련 의존성 ===
 
 	// Spring Data Redis (Redis 연동 기능 제공)

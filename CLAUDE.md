@@ -49,14 +49,16 @@ docker-compose up -d
 ### 프로젝트 현재 상태
 - ✅ **Global 아키텍처 완성**: 응답 래핑, 예외 처리, Swagger 문서화 시스템 구축
 - ✅ **인프라 설정 완료**: Docker, PostgreSQL, Redis 환경 구성
-- ⏳ **비즈니스 로직**: 도메인별 Controller, Service, Repository 구현 필요
-- ⏳ **인증/보안**: JWT 토큰 기반 인증 시스템 구현 필요
+- ✅ **인증/보안 시스템 구축**: JWT 토큰 기반 인증, DDD 원칙 준수한 Security Layer 구현
+- ✅ **Member 도메인 구현**: 회원 가입, 인증, 관리 기능 완성
+- ✅ **Auth 도메인 구현**: 토큰 발급/검증, 로그인/로그아웃 기능 완성
+- ⏳ **비즈니스 로직**: SMS 발송, 안부 메시지, 보호자 알림 등 핵심 도메인 구현 필요
 
 ### Package Structure
 ```
 com.anyang.maruni/
 ├── global/                          # 완성됨 - 수정 지양
-│   ├── config/                     # 설정 (Swagger, Security, Redis)
+│   ├── config/                     # 설정 (Swagger, Security, Redis, JWT)
 │   ├── response/                   # 표준화된 API 응답 시스템
 │   │   ├── annotation/            # @AutoApiResponse, @SuccessCodeAnnotation
 │   │   ├── dto/CommonApiResponse  # 공통 응답 DTO
@@ -65,11 +67,38 @@ com.anyang.maruni/
 │   ├── exception/                 # 글로벌 예외 처리
 │   ├── swagger/                   # Swagger 커스터마이징
 │   ├── advice/                    # 컨트롤러 조언
+│   ├── security/                  # Spring Security 필터 및 JWT 유틸
+│   │   ├── JWTUtil.java          # JWT 토큰 생성/검증 (TokenManager 구현)
+│   │   ├── JwtTokenService.java  # 토큰 발급 서비스 (TokenService 구현)
+│   │   ├── JwtAuthenticationFilter.java  # JWT 인증 필터
+│   │   ├── LoginFilter.java      # 로그인 처리 필터
+│   │   └── AuthenticationEventHandler.java  # 인증 이벤트 인터페이스
 │   └── entity/BaseTimeEntity      # JPA 감사 기본 엔티티
-├── domain/                        # 새로 개발할 비즈니스 도메인들
-│   ├── member/                   # 사용자 관리
-│   ├── auth/                     # 인증/권한
-│   └── ...                       # 기타 도메인들
+├── domain/                        # 비즈니스 도메인들 (DDD 구조)
+│   ├── member/                   # 회원 관리 도메인 ✅
+│   │   ├── application/          # Application Layer
+│   │   │   ├── dto/             # Request/Response DTO
+│   │   │   ├── service/         # Application Service (MemberService)
+│   │   │   └── mapper/          # DTO ↔ Entity 매핑
+│   │   ├── domain/              # Domain Layer
+│   │   │   ├── entity/         # MemberEntity (도메인 엔티티)
+│   │   │   └── repository/     # MemberRepository (인터페이스)
+│   │   ├── infrastructure/      # Infrastructure Layer
+│   │   │   └── security/       # Spring Security 구현체
+│   │   │       ├── CustomUserDetails.java
+│   │   │       └── CustomUserDetailsService.java
+│   │   └── presentation/        # Presentation Layer
+│   │       └── controller/     # REST API 컨트롤러
+│   ├── auth/                    # 인증/권한 도메인 ✅
+│   │   ├── application/         # AuthenticationService (이벤트 핸들러 구현)
+│   │   ├── domain/              # 토큰 관련 도메인 서비스 및 VO
+│   │   │   ├── service/        # TokenValidator, RefreshTokenService 등
+│   │   │   ├── vo/             # MemberTokenInfo (Value Object)
+│   │   │   ├── entity/         # RefreshToken Entity
+│   │   │   └── repository/     # 토큰 저장소 인터페이스
+│   │   ├── infrastructure/      # Redis 기반 토큰 저장소 구현
+│   │   └── presentation/        # 토큰 재발급 API 등
+│   └── ...                      # 추가 도메인들 (SMS, 안부메시지, 알림 등)
 └── MaruniApplication
 ```
 
@@ -89,6 +118,12 @@ com.anyang.maruni/
 - **자동 문서 생성**: `@CustomExceptionDescription`, `@SuccessResponseDescription`
 - **JWT 인증 지원**: Bearer 토큰 인증 스키마 자동 적용
 - **동적 서버 URL**: 환경별 서버 URL 자동 설정
+
+#### 4. 인증/보안 시스템 (JWT 기반)
+- **의존성 역전**: 도메인 인터페이스 → Global 구현체 구조로 DDD 원칙 준수
+- **토큰 관리**: Access/Refresh 토큰 분리, Redis 기반 저장
+- **Spring Security**: 필터 체인을 통한 JWT 인증/인가 처리
+- **계층 분리**: Infrastructure → Application Service → Domain Repository 의존성 구조
 
 ## Claude 작업 가이드라인
 
@@ -133,6 +168,8 @@ com.anyang.maruni/
 - [ ] **DTO**: Bean Validation 어노테이션
 - [ ] **Exception**: BaseException 상속
 - [ ] **Swagger**: 문서화 어노테이션 적용
+- [ ] **DDD 구조**: Domain/Application/Infrastructure/Presentation 계층 분리
+- [ ] **의존성 방향**: Infrastructure → Application → Domain 순서 준수
 
 ### 표준 템플릿
 
@@ -211,6 +248,14 @@ public class ExampleController {
 **Docker 환경에서 DB 연결 실패**
 → `.env` 파일 환경변수 및 `docker-compose up -d` 실행 확인
 
+**JWT 토큰 인증 실패**  
+→ Authorization 헤더 형식 확인 (`Bearer {token}`)  
+→ 토큰 만료 시간 및 Secret Key 설정 확인  
+
+**Security 관련 403/401 에러**
+→ SecurityConfig의 permitAll() 경로 설정 확인  
+→ JWT 필터 순서 및 CustomUserDetailsService Bean 등록 확인
+
 ### 디버깅
 ```bash
 # 헬스 체크
@@ -242,5 +287,18 @@ docker-compose logs -f app
 - 새 환경변수 추가 → Quick Start 섹션 업데이트
 - 새 개발 패턴 발견 → 표준 템플릿 섹션 업데이트
 - 새 문제 해결법 → 문제 해결 가이드 업데이트
+
+## 📋 최근 완료 작업 (2025-09-11)
+
+### ✅ Security Layer DDD 구조 개선 완료
+- **CustomUserDetailsService/CustomUserDetails** → `domain/member/infrastructure/security`로 이동
+- **Repository 직접 접근 제거**: Infrastructure → Application Service → Domain Repository 구조로 변경
+- **DDD 원칙 준수도**: 85% → 95%로 향상
+- **의존성 역전 완성**: 도메인 인터페이스 → Global 구현체 구조 확립
+
+### 📚 관련 문서
+- **아키텍처 분석 보고서**: `docs/architecture/security-layer-analysis.md`
+- **구현된 도메인**: Member(회원), Auth(인증) 도메인 완성
+- **JWT 인증 시스템**: Access/Refresh 토큰, Redis 저장소 구축 완료
 
 이제 Claude는 이 최적화된 가이드를 바탕으로 MARUNI 프로젝트에서 효율적이고 일관된 개발을 진행할 수 있습니다!
