@@ -24,6 +24,19 @@ jwt:
     expiration: ${JWT_REFRESH_EXPIRATION:1209600000}  # 14일 (밀리초)
 
 # 공통 Swagger 설정
+swagger:
+  api:
+    title: "MARUNI API Documentation"
+    description: "REST API Documentation for MARUNI elderly care service"
+    version: "v1.0.0"
+  contact:
+    name: "MARUNI Development Team"
+    email: "dev@maruni.com"
+    url: "https://github.com/maruni-project"
+  server:
+    url: "http://localhost:8080"
+    description: "Development Server"
+
 springdoc:
   swagger-ui:
     path: /api-docs

@@ -7,13 +7,13 @@ import java.util.Map;
 import java.util.Set;
 
 import org.springdoc.core.customizers.OperationCustomizer;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.method.HandlerMethod;
 
 import com.anyang.maruni.global.advice.ParameterData;
+import com.anyang.maruni.global.config.properties.SwaggerProperties;
 import com.anyang.maruni.global.response.dto.CommonApiResponse;
 import com.anyang.maruni.global.response.error.ErrorCode;
 import com.anyang.maruni.global.response.success.SuccessCode;
@@ -40,13 +40,13 @@ import io.swagger.v3.oas.models.servers.Server;
 
 @OpenAPIDefinition(
     info = @Info(
-        title = "Spring Login API 문서",
-        description = "JWT 인증 기반 로그인 시스템의 REST API 문서입니다.",
-        version = "v1.0.0",
+        title = "${swagger.api.title:MARUNI API Documentation}",
+        description = "${swagger.api.description:REST API Documentation for MARUNI elderly care service}",
+        version = "${swagger.api.version:v1.0.0}",
         contact = @Contact(
-            name = "김규일",
-            email = "rlarbdlf222@gmail.com",
-            url = "https://github.com/Kimgyuilli"
+            name = "${swagger.contact.name:MARUNI Development Team}",
+            email = "${swagger.contact.email:dev@maruni.com}",
+            url = "${swagger.contact.url:https://github.com/maruni-project}"
         ),
         license = @License(
             name = "MIT License",
@@ -65,17 +65,17 @@ import io.swagger.v3.oas.models.servers.Server;
 @Configuration
 public class SwaggerConfig {
 
-    @Value("${swagger.server.url:http://localhost:8080}")
-    private String serverUrl;
-
-    @Value("${swagger.server.description:개발 서버}")
-    private String serverDescription;
+    private final SwaggerProperties swaggerProperties;
+    
+    public SwaggerConfig(SwaggerProperties swaggerProperties) {
+        this.swaggerProperties = swaggerProperties;
+    }
 
     @Bean
     public OpenAPI customOpenAPI() {
         Server server = new Server();
-        server.setUrl(serverUrl);
-        server.setDescription(serverDescription);
+        server.setUrl(swaggerProperties.getServer().getUrl());
+        server.setDescription(swaggerProperties.getServer().getDescription());
 
         return new OpenAPI().servers(List.of(server));
     }
