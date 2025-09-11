@@ -75,6 +75,9 @@ dependencies {
 
 	// Spring Boot 테스트 기능 (JUnit, MockMvc 등 포함)
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	
+	// H2 인메모리 데이터베이스 (테스트용)
+	testRuntimeOnly 'com.h2database:h2'
 }
 
 tasks.named('test') {

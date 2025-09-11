@@ -2,7 +2,6 @@ package com.anyang.maruni.domain.member.presentation.controller;
 
 import java.util.List;
 
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -43,7 +42,6 @@ public class UserApiController {
 	)
 	@ApiResponse(responseCode = "200", description = "조회 성공")
 	@GetMapping
-	@PreAuthorize("hasRole('ADMIN')")
 	@CustomExceptionDescription(SwaggerResponseDescription.MEMBER_ERROR)
 	@SuccessCodeAnnotation(SuccessCode.MEMBER_VIEW)
 	public List<MemberResponse> findAll() {
@@ -60,7 +58,6 @@ public class UserApiController {
 		@ApiResponse(responseCode = "404", description = "해당 사용자가 존재하지 않음", content = @Content)
 	})
 	@GetMapping("/{id}")
-	@PreAuthorize("hasRole('USER')")
 	@CustomExceptionDescription(SwaggerResponseDescription.MEMBER_ERROR)
 	@SuccessCodeAnnotation(SuccessCode.MEMBER_VIEW)
 	public MemberResponse findById(@PathVariable Long id) {
@@ -79,7 +76,6 @@ public class UserApiController {
 		@ApiResponse(responseCode = "404", description = "해당 사용자가 존재하지 않음", content = @Content)
 	})
 	@PutMapping("/{id}")
-	@PreAuthorize("hasRole('USER')")
 	@CustomExceptionDescription(SwaggerResponseDescription.MEMBER_ERROR)
 	@SuccessCodeAnnotation(SuccessCode.MEMBER_UPDATED)
 	public void update(@PathVariable Long id, @RequestBody MemberUpdateRequest req) {
@@ -97,7 +93,6 @@ public class UserApiController {
 		@ApiResponse(responseCode = "404", description = "해당 사용자가 존재하지 않음", content = @Content)
 	})
 	@DeleteMapping("/{id}")
-	@PreAuthorize("hasRole('ADMIN')")
 	@CustomExceptionDescription(SwaggerResponseDescription.MEMBER_ERROR)
 	@SuccessCodeAnnotation(SuccessCode.MEMBER_DELETED)
 	public void delete(@PathVariable Long id) {
