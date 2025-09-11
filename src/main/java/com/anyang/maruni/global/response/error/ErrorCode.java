@@ -11,7 +11,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ErrorCode implements ErrorType {
 	// 4xx Client Error
-	INVALID_ROLE("E400", "잘못된 역할(Role)입니다", HttpStatus.BAD_REQUEST.value()),
 	TOKEN_MALFORMED("E400", "잘못된 형식의 토큰입니다", HttpStatus.BAD_REQUEST.value()),
 	INVALID_INPUT_VALUE("E400", "잘못된 입력값입니다", HttpStatus.BAD_REQUEST.value()),
 	PARAMETER_VALIDATION_ERROR("E400", "파라미터 검증에 실패했습니다", HttpStatus.BAD_REQUEST.value()),

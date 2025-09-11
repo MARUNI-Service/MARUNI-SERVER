@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 import com.anyang.maruni.domain.auth.domain.service.RefreshTokenService;
 import com.anyang.maruni.domain.auth.domain.service.TokenService;
 import com.anyang.maruni.domain.auth.domain.vo.MemberTokenInfo;
-import com.anyang.maruni.global.config.JwtProperties;
+import com.anyang.maruni.global.config.properties.JwtProperties;
 
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;

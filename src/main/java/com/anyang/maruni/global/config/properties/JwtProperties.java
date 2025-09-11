@@ -1,4 +1,4 @@
-package com.anyang.maruni.global.config;
+package com.anyang.maruni.global.config.properties;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;

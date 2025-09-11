@@ -27,15 +27,9 @@ public class GlobalExceptionHandler {
 			.body(CommonApiResponse.fail(e.getErrorCode()));
 	}
 
-	// 2. Enum 변환 에러 (Role 등)
+	// 2. Enum 변환 에러 처리
 	@ExceptionHandler(InvalidFormatException.class)
 	public ResponseEntity<?> handleInvalidFormat(InvalidFormatException e) {
-		if (e.getTargetType().isEnum() && e.getTargetType().getSimpleName().equals("Role")) {
-			return ResponseEntity
-				.status(ErrorCode.INVALID_ROLE.getStatus())
-				.body(CommonApiResponse.fail(ErrorCode.INVALID_ROLE));
-		}
-
 		return ResponseEntity
 			.status(ErrorCode.INVALID_INPUT_VALUE.getStatus())
 			.body(CommonApiResponse.fail(ErrorCode.INVALID_INPUT_VALUE));
