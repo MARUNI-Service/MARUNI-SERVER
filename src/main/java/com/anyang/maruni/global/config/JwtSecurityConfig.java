@@ -41,6 +41,7 @@ public class JwtSecurityConfig {
 	public LoginFilter loginFilter(AuthenticationManager authManager) {
 		LoginFilter loginFilter = new LoginFilter(authManager, objectMapper, authenticationEventHandler);
 		loginFilter.setFilterProcessesUrl("/api/auth/login");
+		loginFilter.setAuthenticationManager(authManager);
 		return loginFilter;
 	}
 

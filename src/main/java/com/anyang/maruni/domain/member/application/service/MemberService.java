@@ -77,11 +77,6 @@ public class MemberService {
 	public boolean isEmailAvailable(String memberEmail) {
 		return !memberRepository.existsByMemberEmail(memberEmail);
 	}
-	
-	public MemberEntity findByEmail(String email) {
-		return memberRepository.findByMemberEmail(email)
-			.orElseThrow(() -> new BaseException(ErrorCode.MEMBER_NOT_FOUND));
-	}
 
 	private BaseException memberNotFound() {
 		return new BaseException(ErrorCode.MEMBER_NOT_FOUND);
