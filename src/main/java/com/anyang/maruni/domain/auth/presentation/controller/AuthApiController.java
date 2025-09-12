@@ -8,6 +8,7 @@ import com.anyang.maruni.domain.auth.application.dto.response.TokenResponse;
 import com.anyang.maruni.domain.auth.application.service.AuthenticationService;
 import com.anyang.maruni.global.response.annotation.AutoApiResponse;
 import com.anyang.maruni.global.response.annotation.SuccessCodeAnnotation;
+import com.anyang.maruni.global.response.dto.CommonApiResponse;
 import com.anyang.maruni.global.response.success.SuccessCode;
 import com.anyang.maruni.global.swagger.CustomExceptionDescription;
 import com.anyang.maruni.global.swagger.SwaggerResponseDescription;
@@ -66,10 +67,11 @@ public class AuthApiController {
 	@PostMapping("/logout")
 	@CustomExceptionDescription(SwaggerResponseDescription.AUTH_ERROR)
 	@SuccessCodeAnnotation(SuccessCode.MEMBER_LOGOUT_SUCCESS)
-	public void logout(
+	public CommonApiResponse<Void> logout(
 		HttpServletRequest request,
 		HttpServletResponse response) {
 
 		authenticationService.logout(request, response);
+		return CommonApiResponse.success(SuccessCode.MEMBER_LOGOUT_SUCCESS);
 	}
 }
