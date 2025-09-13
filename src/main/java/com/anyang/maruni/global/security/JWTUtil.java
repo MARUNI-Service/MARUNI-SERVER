@@ -34,8 +34,6 @@ public class JWTUtil implements TokenManager {
 	public static final String TOKEN_TYPE_REFRESH = "refresh";
 	public static final String COOKIE_NAME_REFRESH = "refresh";
 
-	@Value("${jwt.secret}")
-	private String secret;
 
 	@Value("${cookie.secure:false}")
 	private boolean secure;
@@ -49,7 +47,7 @@ public class JWTUtil implements TokenManager {
 
 	@PostConstruct
 	public void init() {
-		this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+		this.secretKey = Keys.hmacShaKeyFor(jwtProperties.getSecretKey().getBytes(StandardCharsets.UTF_8));
 	}
 
 	// Access Token 생성
