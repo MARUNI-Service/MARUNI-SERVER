@@ -54,38 +54,21 @@ public class SimpleAIResponseGenerator {
             log.info("AI 응답 생성 요청: {}", userMessage);
             
             // 입력 검증
-            if (!StringUtils.hasText(userMessage)) {
-                userMessage = DEFAULT_USER_MESSAGE;
-            }
+            String sanitizedMessage = sanitizeUserMessage(userMessage);
 
-            // OpenAI API 요청 생성
-            ChatCompletionRequest request = ChatCompletionRequest.builder()
-                    .model(model)
-                    .messages(List.of(
-                            new ChatMessage(ChatMessageRole.SYSTEM.value(), SYSTEM_PROMPT),
-                            new ChatMessage(ChatMessageRole.USER.value(), userMessage)
-                    ))
-                    .maxTokens(MAX_TOKENS)
-                    .build();
-
-            // API 호출
+            // OpenAI API 요청 생성 및 호출
+            ChatCompletionRequest request = buildChatRequest(sanitizedMessage);
             ChatCompletionResult result = openAiService.createChatCompletion(request);
             
-            // 응답 추출
-            String response = result.getChoices().get(0).getMessage().getContent().trim();
-            
-            // 응답 길이 제한 (SMS 특성상)
-            if (response.length() > MAX_RESPONSE_LENGTH) {
-                response = response.substring(0, MAX_RESPONSE_LENGTH - ELLIPSIS_LENGTH) + ELLIPSIS;
-            }
+            // 응답 추출 및 길이 제한
+            String response = extractResponseContent(result);
+            String finalResponse = truncateResponse(response);
 
-            log.info("AI 응답 생성 완료: {}", response);
-            return response;
+            log.info("AI 응답 생성 완료: {}", finalResponse);
+            return finalResponse;
             
         } catch (Exception e) {
-            log.error("AI 응답 생성 실패: {}", e.getMessage(), e);
-            // 기본 응답 반환 (방어적 코딩)
-            return DEFAULT_RESPONSE;
+            return handleApiError(e);
         }
     }
 
@@ -126,5 +109,54 @@ public class SimpleAIResponseGenerator {
         // 기본값: 중립
         log.debug("중립적 감정: NEUTRAL");
         return EmotionType.NEUTRAL;
+    }
+
+    /**
+     * 사용자 메시지 입력 검증 및 정제
+     */
+    private String sanitizeUserMessage(String userMessage) {
+        if (!StringUtils.hasText(userMessage)) {
+            return DEFAULT_USER_MESSAGE;
+        }
+        return userMessage;
+    }
+
+    /**
+     * OpenAI API 요청 객체 생성
+     */
+    private ChatCompletionRequest buildChatRequest(String userMessage) {
+        return ChatCompletionRequest.builder()
+                .model(model)
+                .messages(List.of(
+                        new ChatMessage(ChatMessageRole.SYSTEM.value(), SYSTEM_PROMPT),
+                        new ChatMessage(ChatMessageRole.USER.value(), userMessage)
+                ))
+                .maxTokens(MAX_TOKENS)
+                .build();
+    }
+
+    /**
+     * OpenAI API 응답에서 실제 응답 내용 추출
+     */
+    private String extractResponseContent(ChatCompletionResult result) {
+        return result.getChoices().get(0).getMessage().getContent().trim();
+    }
+
+    /**
+     * 응답 길이 제한 (SMS 특성상)
+     */
+    private String truncateResponse(String response) {
+        if (response.length() > MAX_RESPONSE_LENGTH) {
+            return response.substring(0, MAX_RESPONSE_LENGTH - ELLIPSIS_LENGTH) + ELLIPSIS;
+        }
+        return response;
+    }
+
+    /**
+     * API 에러 처리
+     */
+    private String handleApiError(Exception e) {
+        log.error("AI 응답 생성 실패: {}", e.getMessage(), e);
+        return DEFAULT_RESPONSE;
     }
 }
