@@ -63,4 +63,21 @@ class SimpleConversationServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.getConversationId()).isNotNull();
     }
+    
+    @Test
+    @DisplayName("다른 회원ID로 호출해도 ConversationResponseDto를 반환한다")
+    void processUserMessage_DifferentMemberId_ReturnsConversationResponseDto() {
+        // Given
+        Long memberId = 999L;  // 다른 회원 ID
+        String content = "테스트 메시지";
+        
+        // When
+        ConversationResponseDto result = simpleConversationService.processUserMessage(memberId, content);
+        
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getConversationId()).isNotNull();
+        // 현재는 하드코딩이므로 같은 값이 나올 것
+        assertThat(result.getConversationId()).isEqualTo(1L);
+    }
 }
