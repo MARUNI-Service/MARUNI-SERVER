@@ -31,6 +31,17 @@ public class SimpleAIResponseGenerator {
     
     @Value("${openai.model}")
     private String model;
+    
+    // 응답 관련 상수
+    private static final int MAX_TOKENS = 100;
+    private static final int MAX_RESPONSE_LENGTH = 100;
+    private static final int ELLIPSIS_LENGTH = 3;
+    private static final String ELLIPSIS = "...";
+    
+    // 메시지 관련 상수
+    private static final String DEFAULT_USER_MESSAGE = "안녕하세요";
+    private static final String DEFAULT_RESPONSE = "안녕하세요! 어떻게 지내세요?";
+    private static final String SYSTEM_PROMPT = "당신은 노인 돌봄 전문 AI 상담사입니다. 따뜻하고 공감적으로 30자 이내로 응답하세요.";
 
     /**
      * 사용자 메시지에 대한 AI 응답 생성
@@ -44,18 +55,17 @@ public class SimpleAIResponseGenerator {
             
             // 입력 검증
             if (!StringUtils.hasText(userMessage)) {
-                userMessage = "안녕하세요";
+                userMessage = DEFAULT_USER_MESSAGE;
             }
 
             // OpenAI API 요청 생성
             ChatCompletionRequest request = ChatCompletionRequest.builder()
                     .model(model)
                     .messages(List.of(
-                            new ChatMessage(ChatMessageRole.SYSTEM.value(),
-                                    "당신은 노인 돌봄 전문 AI 상담사입니다. 따뜻하고 공감적으로 30자 이내로 응답하세요."),
+                            new ChatMessage(ChatMessageRole.SYSTEM.value(), SYSTEM_PROMPT),
                             new ChatMessage(ChatMessageRole.USER.value(), userMessage)
                     ))
-                    .maxTokens(100)
+                    .maxTokens(MAX_TOKENS)
                     .build();
 
             // API 호출
@@ -65,8 +75,8 @@ public class SimpleAIResponseGenerator {
             String response = result.getChoices().get(0).getMessage().getContent().trim();
             
             // 응답 길이 제한 (SMS 특성상)
-            if (response.length() > 100) {
-                response = response.substring(0, 97) + "...";
+            if (response.length() > MAX_RESPONSE_LENGTH) {
+                response = response.substring(0, MAX_RESPONSE_LENGTH - ELLIPSIS_LENGTH) + ELLIPSIS;
             }
 
             log.info("AI 응답 생성 완료: {}", response);
@@ -75,7 +85,7 @@ public class SimpleAIResponseGenerator {
         } catch (Exception e) {
             log.error("AI 응답 생성 실패: {}", e.getMessage(), e);
             // 기본 응답 반환 (방어적 코딩)
-            return "안녕하세요! 어떻게 지내세요?";
+            return DEFAULT_RESPONSE;
         }
     }
 
