@@ -1,9 +1,7 @@
 package com.anyang.maruni.domain.conversation.application.service;
 
-import com.anyang.maruni.domain.conversation.application.dto.ConversationResponseDto;
-import com.anyang.maruni.domain.conversation.domain.repository.ConversationRepository;
-import com.anyang.maruni.domain.conversation.domain.repository.MessageRepository;
-import com.anyang.maruni.domain.conversation.infrastructure.SimpleAIResponseGenerator;
+import static org.assertj.core.api.Assertions.*;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,8 +9,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import com.anyang.maruni.domain.conversation.application.dto.ConversationResponseDto;
+import com.anyang.maruni.domain.conversation.domain.repository.ConversationRepository;
+import com.anyang.maruni.domain.conversation.domain.repository.MessageRepository;
+import com.anyang.maruni.domain.conversation.infrastructure.SimpleAIResponseGenerator;
 
 /**
  * SimpleConversationService 테스트 (TDD 재시작)
@@ -36,16 +36,17 @@ class SimpleConversationServiceTest {
     private SimpleConversationService simpleConversationService;
 
     @Test
-    @DisplayName("processUserMessage 메서드가 존재한다")
+    @DisplayName("processUserMessage 메서드가 존재하고 호출 가능하다")
     void processUserMessage_MethodExists() {
         // Given
         Long memberId = 1L;
         String content = "안녕하세요";
         
-        // When & Then - 메서드 호출시 UnsupportedOperationException 발생
-        assertThatThrownBy(() -> simpleConversationService.processUserMessage(memberId, content))
-                .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessage("아직 구현되지 않았습니다.");
+        // When
+        ConversationResponseDto result = simpleConversationService.processUserMessage(memberId, content);
+        
+        // Then
+        assertThat(result).isNotNull();
     }
     
     @Test
@@ -55,12 +56,11 @@ class SimpleConversationServiceTest {
         Long memberId = 1L;
         String content = "안녕하세요";
         
-        // When & Then - 아직 구현되지 않았으므로 UnsupportedOperationException 발생
-        assertThatThrownBy(() -> {
-            ConversationResponseDto result = simpleConversationService.processUserMessage(memberId, content);
-            // 구현 후에는 아래와 같이 검증할 예정
-            // assertThat(result).isNotNull();
-            // assertThat(result.getConversationId()).isNotNull();
-        }).isInstanceOf(UnsupportedOperationException.class);
+        // When
+        ConversationResponseDto result = simpleConversationService.processUserMessage(memberId, content);
+        
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getConversationId()).isNotNull();
     }
 }
