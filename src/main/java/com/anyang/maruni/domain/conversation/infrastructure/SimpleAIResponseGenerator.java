@@ -1,6 +1,7 @@
 package com.anyang.maruni.domain.conversation.infrastructure;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -42,6 +43,12 @@ public class SimpleAIResponseGenerator {
     private static final String DEFAULT_USER_MESSAGE = "안녕하세요";
     private static final String DEFAULT_RESPONSE = "안녕하세요! 어떻게 지내세요?";
     private static final String SYSTEM_PROMPT = "당신은 노인 돌봄 전문 AI 상담사입니다. 따뜻하고 공감적으로 30자 이내로 응답하세요.";
+    
+    // 감정분석 키워드 맵
+    private static final Map<EmotionType, List<String>> EMOTION_KEYWORDS = Map.of(
+        EmotionType.NEGATIVE, List.of("슬프", "우울", "아프", "힘들", "외로", "무서", "걱정", "답답"),
+        EmotionType.POSITIVE, List.of("좋", "행복", "기쁘", "감사", "즐거", "만족", "고마")
+    );
 
     /**
      * 사용자 메시지에 대한 AI 응답 생성
@@ -89,19 +96,13 @@ public class SimpleAIResponseGenerator {
         String lowerMessage = message.toLowerCase();
 
         // 부정적 키워드 체크 (우선 순위 높음)
-        if (lowerMessage.contains("슬프") || lowerMessage.contains("우울") || 
-            lowerMessage.contains("아프") || lowerMessage.contains("힘들") ||
-            lowerMessage.contains("외로") || lowerMessage.contains("무서") ||
-            lowerMessage.contains("걱정") || lowerMessage.contains("답답")) {
+        if (containsAnyKeyword(lowerMessage, EMOTION_KEYWORDS.get(EmotionType.NEGATIVE))) {
             log.debug("부정적 감정 감지: NEGATIVE");
             return EmotionType.NEGATIVE;
         }
 
         // 긍정적 키워드 체크
-        if (lowerMessage.contains("좋") || lowerMessage.contains("행복") ||
-            lowerMessage.contains("기쁘") || lowerMessage.contains("감사") ||
-            lowerMessage.contains("즐거") || lowerMessage.contains("만족") ||
-            lowerMessage.contains("고마")) {
+        if (containsAnyKeyword(lowerMessage, EMOTION_KEYWORDS.get(EmotionType.POSITIVE))) {
             log.debug("긍정적 감정 감지: POSITIVE");
             return EmotionType.POSITIVE;
         }
@@ -158,5 +159,13 @@ public class SimpleAIResponseGenerator {
     private String handleApiError(Exception e) {
         log.error("AI 응답 생성 실패: {}", e.getMessage(), e);
         return DEFAULT_RESPONSE;
+    }
+
+    /**
+     * 메시지에 키워드 목록 중 하나라도 포함되는지 확인
+     */
+    private boolean containsAnyKeyword(String message, List<String> keywords) {
+        return keywords.stream()
+                .anyMatch(message::contains);
     }
 }
