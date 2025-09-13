@@ -17,16 +17,19 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.context.annotation.Import;
 
 import com.anyang.maruni.domain.auth.application.dto.response.TokenResponse;
 import com.anyang.maruni.domain.auth.application.service.AuthenticationService;
 import com.anyang.maruni.global.exception.BaseException;
 import com.anyang.maruni.global.response.error.ErrorCode;
+import com.anyang.maruni.global.config.TestRedisConfig;
 
 @SpringBootTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@Import(TestRedisConfig.class)
 @DisplayName("AuthApiController 통합 테스트")
 class AuthApiControllerTest {
 
