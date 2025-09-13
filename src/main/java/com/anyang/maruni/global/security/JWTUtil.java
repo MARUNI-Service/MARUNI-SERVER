@@ -12,6 +12,7 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
 
 import com.anyang.maruni.domain.auth.domain.service.TokenManager;
+import com.anyang.maruni.global.config.properties.JwtProperties;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -36,16 +37,15 @@ public class JWTUtil implements TokenManager {
 	@Value("${jwt.secret}")
 	private String secret;
 
-	@Value("${jwt.access-token-expiration:3600000}")
-	private long accessTokenExpiration;
-
-	@Value("${jwt.refresh-token-expiration:86400000}")
-	private long refreshTokenExpiration;
-
-	@Value("${cookie.secure}")
+	@Value("${cookie.secure:false}")
 	private boolean secure;
 
+	private final JwtProperties jwtProperties;
 	private SecretKey secretKey;
+
+	public JWTUtil(JwtProperties jwtProperties) {
+		this.jwtProperties = jwtProperties;
+	}
 
 	@PostConstruct
 	public void init() {
@@ -54,12 +54,12 @@ public class JWTUtil implements TokenManager {
 
 	// Access Token 생성
 	public String createAccessToken(String id, String email) {
-		return createJWT(id, email, TOKEN_TYPE_ACCESS, accessTokenExpiration);
+		return createJWT(id, email, TOKEN_TYPE_ACCESS, jwtProperties.getAccessToken().getExpiration());
 	}
 
 	// Refresh Token 생성
 	public String createRefreshToken(String id, String email) {
-		return createJWT(id, email, TOKEN_TYPE_REFRESH, refreshTokenExpiration);
+		return createJWT(id, email, TOKEN_TYPE_REFRESH, jwtProperties.getRefreshToken().getExpiration());
 	}
 
 	// Refresh Token 무효화
@@ -69,7 +69,7 @@ public class JWTUtil implements TokenManager {
 
 	// Refresh Token을 쿠키로 발급
 	public ResponseCookie createRefreshTokenCookie(String refreshToken) {
-		return buildRefreshCookie(refreshToken, refreshTokenExpiration);
+		return buildRefreshCookie(refreshToken, jwtProperties.getRefreshToken().getExpiration());
 	}
 
 	// JWT 생성 내부 메서드
@@ -169,10 +169,10 @@ public class JWTUtil implements TokenManager {
 	}
 
 	public long getAccessTokenExpiration() {
-		return accessTokenExpiration;
+		return jwtProperties.getAccessToken().getExpiration();
 	}
 
 	public long getRefreshTokenExpiration() {
-		return refreshTokenExpiration;
+		return jwtProperties.getRefreshToken().getExpiration();
 	}
 }
