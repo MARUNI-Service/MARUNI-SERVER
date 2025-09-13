@@ -31,4 +31,14 @@ public interface ConversationRepository extends JpaRepository<ConversationEntity
      * @return 대화 목록 (최신순)
      */
     List<ConversationEntity> findByMemberIdOrderByCreatedAtDesc(Long memberId);
+
+    /**
+     * 회원의 활성 대화 조회 (가장 최근 대화를 활성 대화로 간주)
+     * 
+     * @param memberId 회원 ID
+     * @return 활성 대화 (있는 경우)
+     */
+    default Optional<ConversationEntity> findActiveByMemberId(Long memberId) {
+        return findTopByMemberIdOrderByCreatedAtDesc(memberId);
+    }
 }

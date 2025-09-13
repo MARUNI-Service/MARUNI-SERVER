@@ -1,5 +1,13 @@
 package com.anyang.maruni.domain.conversation.application.service;
 
+import com.anyang.maruni.domain.conversation.application.dto.ConversationResponseDto;
+import com.anyang.maruni.domain.conversation.application.dto.MessageDto;
+import com.anyang.maruni.domain.conversation.domain.entity.ConversationEntity;
+import com.anyang.maruni.domain.conversation.domain.entity.MessageEntity;
+import com.anyang.maruni.domain.conversation.domain.entity.MessageType;
+import com.anyang.maruni.domain.conversation.domain.repository.ConversationRepository;
+import com.anyang.maruni.domain.conversation.domain.repository.MessageRepository;
+import com.anyang.maruni.domain.conversation.infrastructure.SimpleAIResponseGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,6 +25,10 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class SimpleConversationService {
 
+    private final ConversationRepository conversationRepository;
+    private final MessageRepository messageRepository;
+    private final SimpleAIResponseGenerator aiResponseGenerator;
+
     /**
      * 사용자 메시지 처리 및 AI 응답 생성
      * 
@@ -25,13 +37,8 @@ public class SimpleConversationService {
      * @return 대화 응답 DTO
      */
     @Transactional
-    public Object processUserMessage(Long memberId, String content) {
+    public ConversationResponseDto processUserMessage(Long memberId, String content) {
         // TODO: TDD로 구현 예정
-        // 1. 대화 조회/생성
-        // 2. 사용자 메시지 저장
-        // 3. AI 응답 생성
-        // 4. AI 응답 저장
-        // 5. 응답 DTO 반환
         throw new UnsupportedOperationException("아직 구현되지 않았습니다.");
     }
 }
