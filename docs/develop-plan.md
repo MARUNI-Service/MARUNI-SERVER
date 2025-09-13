@@ -24,12 +24,8 @@
 | **Member Domain** | 95% | 회원가입, 인증, CRUD 기능 + 테스트 완료 |
 | **Auth Domain** | 90% | JWT 토큰 발급/검증, 로그인/로그아웃 + 테스트 완료 |
 
-### ⚠️ 부분 구현된 모듈
-| 모듈 | 완성도 | 현재 상태 | 필요 작업 |
-|------|--------|-----------|----------|
-| **SMS Domain** | 30% | Entity/VO/기본 테스트만 존재 | TDD로 Service, Repository, Controller 구현 |
-
 ### ❌ 미구현 모듈 (Business Logic Layer)
+- **SMS Domain**
 - **AI Conversation Domain**: AI 대화 처리 시스템
 - **Health Monitoring Domain**: 건강 상태 분석 및 추적
 - **Guardian Alert Domain**: 보호자 알림 시스템
@@ -68,70 +64,10 @@
 
 ## 🗺️ TDD 기반 개발 로드맵
 
-### Phase 1: SMS 시스템 완성 (TDD)
-**목표**: Twilio 연동 SMS 시스템을 TDD로 완전히 구현
+### Phase 1: AI 대화 시스템 구축 (TDD) ⭐ 우선 진행
+**목표**: OpenAI GPT-4o 연동 AI 대화 시스템을 TDD로 완전히 구현
 
-#### 1.1 SMS 발송 시스템 (TDD)
-```
-1. 테스트 작성
-   - SmsService 단위 테스트 (발송 성공/실패 시나리오)
-   - TwilioSmsProvider 테스트 (Mock API 응답)
-   - SmsController API 테스트
-
-2. 구현
-   - TwilioConfig 설정
-   - SmsService 비즈니스 로직
-   - TwilioSmsProvider (Infrastructure Layer)
-   - SmsApiController (Presentation Layer)
-
-3. 리팩토링
-   - 코드 품질 개선
-   - 예외 처리 강화
-   - 성능 최적화
-```
-
-#### 1.2 SMS 수신 웹훅 처리 (TDD)
-```
-1. 테스트 작성
-   - 웹훅 Controller 테스트 (Twilio 서명 검증)
-   - SMS 수신 메시지 파싱 테스트
-   - 수신 메시지 저장 테스트
-
-2. 구현
-   - Twilio Webhook Controller
-   - 서명 검증 로직
-   - 수신 메시지 처리 Service
-
-3. 리팩토리
-   - 보안 검증 강화
-   - 에러 핸들링 개선
-```
-
-#### 1.3 SMS 이력 관리 시스템 (TDD)
-```
-1. 테스트 작성
-   - SmsHistoryService 테스트
-   - 발송 상태 업데이트 테스트
-   - 재시도 로직 테스트
-
-2. 구현
-   - 발송 실패 재시도 메커니즘
-   - 발송 상태 추적
-   - 이력 조회 API
-
-3. 리팩토링
-   - 성능 최적화
-   - 대용량 데이터 처리
-```
-
-**Phase 1 완료 기준**:
-- 모든 테스트 통과 (커버리지 90% 이상)
-- SMS 발송/수신 전체 플로우 완전 동작
-- Twilio 연동 안정성 확보
-
-### Phase 2: AI 대화 시스템 구축 (TDD)
-
-#### 2.1 AI 대화 기본 시스템 (TDD)
+#### 1.1 AI 대화 기본 시스템 (TDD)
 ```
 1. 테스트 작성
    - OpenAI GPT-4o API 연동 테스트
@@ -150,7 +86,7 @@
    - 응답 품질 필터링
 ```
 
-#### 2.2 대화 맥락 관리 (TDD)
+#### 1.2 대화 맥락 관리 (TDD)
 ```
 1. 테스트 작성
    - 대화 히스토리 관리 테스트
@@ -167,7 +103,92 @@
    - 맥락 품질 개선
 ```
 
-#### 2.3 SMS ↔ AI 통합 플로우 (TDD)
+#### 1.3 감정 분석 및 이상징후 감지 (TDD)
+```
+1. 테스트 작성
+   - 감정 분석 알고리즘 테스트
+   - 위험도 점수 계산 테스트
+   - 이상징후 감지 테스트
+
+2. 구현
+   - GPT-4o 기반 감정 분석
+   - 위험도 점수 시스템
+   - HealthMonitoring 도메인
+
+3. 리팩토링
+   - 분석 정확도 개선
+   - 성능 최적화
+```
+
+**Phase 1 완료 기준**:
+- AI 응답 생성 시간 5초 이내
+- 대화 맥락 유지율 95% 이상
+- AI 도메인 테스트 커버리지 90% 이상
+
+### Phase 2: SMS 시스템 완성 (TDD)
+**목표**: Twilio 연동 SMS 시스템을 TDD로 완전히 구현
+
+#### 2.1 SMS 발송 시스템 (TDD)
+```
+1. 테스트 작성
+   - SmsService 단위 테스트 (발송 성공/실패 시나리오)
+   - TwilioSmsProvider 테스트 (Mock API 응답)
+   - SmsController API 테스트
+
+2. 구현
+   - TwilioConfig 설정
+   - SmsService 비즈니스 로직
+   - TwilioSmsProvider (Infrastructure Layer)
+   - SmsApiController (Presentation Layer)
+
+3. 리팩토링
+   - 코드 품질 개선
+   - 예외 처리 강화
+   - 성능 최적화
+```
+
+#### 2.2 SMS 수신 웹훅 처리 (TDD)
+```
+1. 테스트 작성
+   - 웹훅 Controller 테스트 (Twilio 서명 검증)
+   - SMS 수신 메시지 파싱 테스트
+   - 수신 메시지 저장 테스트
+
+2. 구현
+   - Twilio Webhook Controller
+   - 서명 검증 로직
+   - 수신 메시지 처리 Service
+
+3. 리팩토링
+   - 보안 검증 강화
+   - 에러 핸들링 개선
+```
+
+#### 2.3 SMS 이력 관리 시스템 (TDD)
+```
+1. 테스트 작성
+   - SmsHistoryService 테스트
+   - 발송 상태 업데이트 테스트
+   - 재시도 로직 테스트
+
+2. 구현
+   - 발송 실패 재시도 메커니즘
+   - 발송 상태 추적
+   - 이력 조회 API
+
+3. 리팩토링
+   - 성능 최적화
+   - 대용량 데이터 처리
+```
+
+**Phase 2 완료 기준**:
+- SMS 발송 성공률 99% 이상
+- 웹훅 처리 응답시간 500ms 이내
+- SMS 도메인 테스트 커버리지 90% 이상
+
+### Phase 3: AI ↔ SMS 통합 + 핵심 비즈니스 로직 (TDD)
+
+#### 3.1 AI ↔ SMS 통합 플로우 (TDD)
 ```
 1. 테스트 작성
    - SMS 수신 → AI 응답 → SMS 발송 통합 테스트
@@ -184,14 +205,7 @@
    - 확장성 개선
 ```
 
-**Phase 2 완료 기준**:
-- SMS 수신 → AI 분석 → SMS 응답 전체 플로우 완전 동작
-- 대화 맥락 유지되는 연속 대화 가능
-- 모든 테스트 통과 (커버리지 90% 이상)
-
-### Phase 3: 핵심 비즈니스 로직 구현 (TDD)
-
-#### 3.1 정기 안부 메시지 시스템 (TDD)
+#### 3.2 정기 안부 메시지 시스템 (TDD)
 ```
 1. 테스트 작성
    - Spring Scheduler 테스트
@@ -206,23 +220,6 @@
 3. 리팩토링
    - 성능 최적화
    - 장애 복구 강화
-```
-
-#### 3.2 감정 분석 및 이상징후 감지 (TDD)
-```
-1. 테스트 작성
-   - 감정 분석 알고리즘 테스트
-   - 위험도 점수 계산 테스트
-   - 이상징후 감지 테스트
-
-2. 구현
-   - GPT-4o 기반 감정 분석
-   - 위험도 점수 시스템
-   - HealthMonitoring 도메인
-
-3. 리팩토링
-   - 분석 정확도 개선
-   - 성능 최적화
 ```
 
 #### 3.3 보호자 알림 시스템 (TDD)
@@ -327,17 +324,18 @@
 
 ## 🎯 각 Phase별 성공 지표
 
-### Phase 1 (SMS 시스템)
-- [ ] SMS 발송 성공률 99% 이상
-- [ ] 웹훅 처리 응답시간 500ms 이내
-- [ ] SMS 도메인 테스트 커버리지 90% 이상
-
-### Phase 2 (AI 대화 시스템)
+### Phase 1 (AI 대화 시스템) ⭐ 우선
 - [ ] AI 응답 생성 시간 5초 이내
 - [ ] 대화 맥락 유지율 95% 이상
 - [ ] AI 도메인 테스트 커버리지 90% 이상
 
-### Phase 3 (핵심 비즈니스)
+### Phase 2 (SMS 시스템)
+- [ ] SMS 발송 성공률 99% 이상
+- [ ] 웹훅 처리 응답시간 500ms 이내
+- [ ] SMS 도메인 테스트 커버리지 90% 이상
+
+### Phase 3 (AI ↔ SMS 통합 + 핵심 비즈니스)
+- [ ] SMS 수신 → AI 분석 → SMS 응답 전체 플로우 완전 동작
 - [ ] 정기 메시지 발송 성공률 98% 이상
 - [ ] 이상징후 감지 정확도 85% 이상
 - [ ] 보호자 알림 전달률 99% 이상
@@ -365,11 +363,11 @@
 
 ## 📝 다음 단계 액션 아이템
 
-### 즉시 진행
-1. **Twilio API 키 발급 및 환경 설정**
-2. **OpenAI GPT-4o API 키 발급**
-3. **SMS Domain 테스트 코드 작성 시작 (TDD Red 단계)**
-4. **Twilio Java SDK 의존성 추가**
+### 즉시 진행 ⭐ AI 우선
+1. **OpenAI GPT-4o API 키 발급 및 환경 설정**
+2. **AI Conversation Domain 테스트 코드 작성 시작 (TDD Red 단계)**
+3. **OpenAI Java SDK 의존성 추가**
+4. **Twilio API 키 발급 (Phase 2에서 진행)**
 
 ### 준비 작업
 1. **TDD 개발 환경 설정 완료**
