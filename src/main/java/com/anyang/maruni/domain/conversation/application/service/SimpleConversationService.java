@@ -38,9 +38,9 @@ public class SimpleConversationService {
      */
     @Transactional
     public ConversationResponseDto processUserMessage(Long memberId, String content) {
-        // 가장 간단한 구현: 하드코딩된 값 반환
+        // 리팩토링: memberId를 conversationId로 사용 (임시)
         return ConversationResponseDto.builder()
-                .conversationId(1L)
+                .conversationId(memberId)
                 .build();
     }
 }
