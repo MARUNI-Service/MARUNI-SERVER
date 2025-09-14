@@ -30,6 +30,7 @@ public enum ErrorCode implements ErrorType {
 	DUPLICATE_EMAIL("E409", "이미 가입된 이메일입니다", HttpStatus.CONFLICT.value()),
 
 	// 5xx Server Error
+	ENCRYPTION_ERROR("E500", "암호화 처리 중 오류가 발생했습니다", HttpStatus.INTERNAL_SERVER_ERROR.value()),
 	INTERNAL_SERVER_ERROR("E500", "내부 서버 오류가 발생했습니다", HttpStatus.INTERNAL_SERVER_ERROR.value());
 
 	private final String code;
