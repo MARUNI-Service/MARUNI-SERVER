@@ -30,6 +30,12 @@ import java.util.List;
 @Slf4j
 public class DailyCheckService {
 
+    // 상수 정의
+    private static final String DAILY_CHECK_TITLE = "안부 메시지";
+    private static final String DAILY_CHECK_MESSAGE = "안녕하세요! 오늘 하루는 어떻게 지내고 계신가요?";
+    private static final int ALLOWED_START_HOUR = 7;
+    private static final int ALLOWED_END_HOUR = 21;
+
     private final MemberRepository memberRepository;
     private final SimpleConversationService conversationService;
     private final NotificationService notificationService;
@@ -56,8 +62,8 @@ public class DailyCheckService {
                 }
 
                 // 안부 메시지 발송
-                String title = "안부 메시지";
-                String message = "안녕하세요! 오늘 하루는 어떻게 지내고 계신가요?";
+                String title = DAILY_CHECK_TITLE;
+                String message = DAILY_CHECK_MESSAGE;
 
                 boolean success = notificationService.sendPushNotification(memberId, title, message);
 
@@ -82,7 +88,7 @@ public class DailyCheckService {
 
             } catch (Exception e) {
                 log.error("Error sending daily check message to member {}: {}", memberId, e.getMessage());
-                scheduleRetry(memberId, "안녕하세요! 오늘 하루는 어떻게 지내고 계신가요?");
+                scheduleRetry(memberId, DAILY_CHECK_MESSAGE);
             }
         }
 
@@ -101,7 +107,7 @@ public class DailyCheckService {
      */
     public boolean isAllowedSendingTime(LocalTime currentTime) {
         int hour = currentTime.getHour();
-        return hour >= 7 && hour <= 21;
+        return hour >= ALLOWED_START_HOUR && hour <= ALLOWED_END_HOUR;
     }
 
     /**
@@ -135,7 +141,7 @@ public class DailyCheckService {
             try {
                 boolean success = notificationService.sendPushNotification(
                         retryRecord.getMemberId(),
-                        "안부 메시지",
+                        DAILY_CHECK_TITLE,
                         retryRecord.getMessage()
                 );
 
