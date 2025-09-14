@@ -54,45 +54,39 @@ public class DailyCheckService {
         log.info("Found {} active members", activeMemberIds.size());
 
         for (Long memberId : activeMemberIds) {
-            try {
-                // 중복 발송 체크
-                if (isAlreadySentToday(memberId)) {
-                    log.debug("Already sent to member {} today, skipping", memberId);
-                    continue;
-                }
-
-                // 안부 메시지 발송
-                String title = DAILY_CHECK_TITLE;
-                String message = DAILY_CHECK_MESSAGE;
-
-                boolean success = notificationService.sendPushNotification(memberId, title, message);
-
-                if (success) {
-                    // 대화 시스템에 시스템 메시지로 기록
-                    conversationService.processSystemMessage(memberId, message);
-
-                    // 성공적인 발송 기록 저장
-                    DailyCheckRecord successRecord = DailyCheckRecord.createSuccessRecord(memberId, message);
-                    dailyCheckRecordRepository.save(successRecord);
-
-                    log.debug("Daily check message sent successfully to member {}", memberId);
-                } else {
-                    // 실패 기록 저장
-                    DailyCheckRecord failureRecord = DailyCheckRecord.createFailureRecord(memberId, message);
-                    dailyCheckRecordRepository.save(failureRecord);
-
-                    // 실패 시 재시도 스케줄에 등록
-                    scheduleRetry(memberId, message);
-                    log.warn("Failed to send daily check message to member {}, scheduled for retry", memberId);
-                }
-
-            } catch (Exception e) {
-                log.error("Error sending daily check message to member {}: {}", memberId, e.getMessage());
-                scheduleRetry(memberId, DAILY_CHECK_MESSAGE);
-            }
+            processMemberDailyCheck(memberId);
         }
 
         log.info("Daily check message sending completed");
+    }
+
+    /**
+     * 개별 회원 안부 확인 처리
+     */
+    private void processMemberDailyCheck(Long memberId) {
+        try {
+            // 중복 발송 체크
+            if (isAlreadySentToday(memberId)) {
+                log.debug("Already sent to member {} today, skipping", memberId);
+                return;
+            }
+
+            // 안부 메시지 발송
+            String title = DAILY_CHECK_TITLE;
+            String message = DAILY_CHECK_MESSAGE;
+
+            boolean success = notificationService.sendPushNotification(memberId, title, message);
+
+            if (success) {
+                handleSuccessfulSending(memberId, message);
+            } else {
+                handleFailedSending(memberId, message);
+            }
+
+        } catch (Exception e) {
+            log.error("Error sending daily check message to member {}: {}", memberId, e.getMessage());
+            scheduleRetry(memberId, DAILY_CHECK_MESSAGE);
+        }
     }
 
     /**
@@ -100,6 +94,41 @@ public class DailyCheckService {
      */
     public boolean isAlreadySentToday(Long memberId) {
         return dailyCheckRecordRepository.existsSuccessfulRecordByMemberIdAndDate(memberId, LocalDate.now());
+    }
+
+    /**
+     * 성공적인 발송 처리
+     */
+    private void handleSuccessfulSending(Long memberId, String message) {
+        // 대화 시스템에 시스템 메시지로 기록
+        conversationService.processSystemMessage(memberId, message);
+
+        // 성공적인 발송 기록 저장
+        saveDailyCheckRecord(memberId, message, true);
+
+        log.debug("Daily check message sent successfully to member {}", memberId);
+    }
+
+    /**
+     * 실패한 발송 처리
+     */
+    private void handleFailedSending(Long memberId, String message) {
+        // 실패 기록 저장
+        saveDailyCheckRecord(memberId, message, false);
+
+        // 실패 시 재시도 스케줄에 등록
+        scheduleRetry(memberId, message);
+        log.warn("Failed to send daily check message to member {}, scheduled for retry", memberId);
+    }
+
+    /**
+     * 발송 기록 저장 (성공/실패 공통)
+     */
+    private void saveDailyCheckRecord(Long memberId, String message, boolean success) {
+        DailyCheckRecord record = success
+            ? DailyCheckRecord.createSuccessRecord(memberId, message)
+            : DailyCheckRecord.createFailureRecord(memberId, message);
+        dailyCheckRecordRepository.save(record);
     }
 
     /**
@@ -138,45 +167,62 @@ public class DailyCheckService {
         log.info("Found {} pending retries", pendingRetries.size());
 
         for (RetryRecord retryRecord : pendingRetries) {
-            try {
-                boolean success = notificationService.sendPushNotification(
-                        retryRecord.getMemberId(),
-                        DAILY_CHECK_TITLE,
-                        retryRecord.getMessage()
-                );
-
-                if (success) {
-                    // 재시도 성공
-                    retryRecord.markCompleted();
-
-                    // 대화 시스템에 기록
-                    conversationService.processSystemMessage(retryRecord.getMemberId(), retryRecord.getMessage());
-
-                    // 성공적인 발송 기록 저장
-                    DailyCheckRecord successRecord = DailyCheckRecord.createSuccessRecord(
-                            retryRecord.getMemberId(),
-                            retryRecord.getMessage()
-                    );
-                    dailyCheckRecordRepository.save(successRecord);
-
-                    log.info("Retry successful for member {}", retryRecord.getMemberId());
-                } else {
-                    // 재시도 실패 - 횟수 증가
-                    retryRecord.incrementRetryCount();
-                    log.warn("Retry failed for member {}, attempt {} of 3",
-                            retryRecord.getMemberId(), retryRecord.getRetryCount());
-                }
-
-                retryRecordRepository.save(retryRecord);
-
-            } catch (Exception e) {
-                log.error("Error during retry for member {}: {}",
-                        retryRecord.getMemberId(), e.getMessage());
-                retryRecord.incrementRetryCount();
-                retryRecordRepository.save(retryRecord);
-            }
+            processRetryRecord(retryRecord);
         }
 
         log.info("Retry processing completed");
+    }
+
+    /**
+     * 개별 재시도 기록 처리
+     */
+    private void processRetryRecord(RetryRecord retryRecord) {
+        try {
+            boolean success = notificationService.sendPushNotification(
+                    retryRecord.getMemberId(),
+                    DAILY_CHECK_TITLE,
+                    retryRecord.getMessage()
+            );
+
+            if (success) {
+                handleSuccessfulRetry(retryRecord);
+            } else {
+                handleFailedRetry(retryRecord);
+            }
+
+            retryRecordRepository.save(retryRecord);
+
+        } catch (Exception e) {
+            log.error("Error during retry for member {}: {}",
+                    retryRecord.getMemberId(), e.getMessage());
+            retryRecord.incrementRetryCount();
+            retryRecordRepository.save(retryRecord);
+        }
+    }
+
+    /**
+     * 성공한 재시도 처리
+     */
+    private void handleSuccessfulRetry(RetryRecord retryRecord) {
+        // 재시도 성공
+        retryRecord.markCompleted();
+
+        // 대화 시스템에 기록 (중복 코드 재사용)
+        conversationService.processSystemMessage(retryRecord.getMemberId(), retryRecord.getMessage());
+
+        // 성공적인 발송 기록 저장 (중복 코드 재사용)
+        saveDailyCheckRecord(retryRecord.getMemberId(), retryRecord.getMessage(), true);
+
+        log.info("Retry successful for member {}", retryRecord.getMemberId());
+    }
+
+    /**
+     * 실패한 재시도 처리
+     */
+    private void handleFailedRetry(RetryRecord retryRecord) {
+        // 재시도 실패 - 횟수 증가
+        retryRecord.incrementRetryCount();
+        log.warn("Retry failed for member {}, attempt {} of 3",
+                retryRecord.getMemberId(), retryRecord.getRetryCount());
     }
 }
