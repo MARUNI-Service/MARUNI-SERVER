@@ -1,16 +1,21 @@
-# Phase 2: 스케줄링 & 알림 시스템 상세 개발 계획
+# Phase 2: 스케줄링 & 알림 시스템 MVP 개발 계획 (개정판)
 
-## 📋 Phase 2 개요
+## 📋 Phase 2 MVP 개요
 
-**Phase 2**는 MARUNI의 핵심 비즈니스 로직인 **정기 안부 메시지 스케줄링**과 **보호자 알림 시스템**을 구축하는 단계입니다.
+**Phase 2 MVP**는 MARUNI의 핵심 비즈니스 로직인 **정기 안부 메시지 스케줄링**과 **모바일 앱 기반 보호자 알림 시스템**을 구축하는 단계입니다.
 Phase 1의 AI 대화 시스템을 기반으로 실제 노인 돌봄 서비스의 자동화된 워크플로우를 완성합니다.
 
-### 🎯 Phase 2 목표
+### 🎯 Phase 2 MVP 목표
 - **매일 정시 안부 메시지**: 개인별 맞춤 시간에 자동 안부 메시지 발송
 - **보호자 연결 시스템**: 가족 구성원 등록 및 관리
 - **이상징후 자동 감지**: AI 분석 기반 위험 상황 판단
-- **다채널 알림 발송**: 이메일, SMS, 푸시 등 다양한 알림 채널
+- **모바일 앱 기반 푸시 알림**: Firebase FCM을 통한 실시간 알림 (우선순위 1위)
 - **완전한 TDD 적용**: 90% 이상 테스트 커버리지 달성
+
+### 🏆 MVP 알림 채널 우선순위
+1. **푸시 알림 (Firebase FCM)** - 주요 채널
+2. **이메일** - 백업 채널 (상세 리포트용)
+3. **SMS** - 긴급 상황 전용 (Phase 3에서 구현)
 
 ### 📊 Phase 2 완료 후 달성 상태
 ```yaml
@@ -726,10 +731,7 @@ public enum SeverityLevel {
 }
 
 public enum NotificationChannel {
-    EMAIL("이메일"),
-    SMS("문자메시지"),
-    PUSH("푸시알림"),
-    WEBHOOK("웹훅");
+    PUSH("푸시알림");     // MVP에서는 푸시 알림만 구현
 
     private final String description;
 
@@ -1656,9 +1658,9 @@ INSERT INTO schedule_configs (config_name, cron_expression, config_values) VALUE
 
 ## ⚙️ 환경 설정 및 Configuration
 
-### application.yml 추가 설정
+### application.yml 추가 설정 (MVP - 푸시 알림 전용)
 ```yaml
-# Phase 2 스케줄링 & 알림 설정
+# Phase 2 MVP 스케줄링 & 푸시 알림 설정
 maruni:
   scheduling:
     daily-check:
@@ -1671,54 +1673,41 @@ maruni:
       delay-minutes: 5
 
   notification:
-    email:
-      enabled: true
-      from-address: "noreply@maruni.co.kr"
-      from-name: "마루니"
-      smtp:
-        host: "smtp.gmail.com"
-        port: 587
-        username: "${SMTP_USERNAME}"
-        password: "${SMTP_PASSWORD}"
-        starttls: true
-    sms:
-      enabled: false # Phase 2에서는 비활성화
-      provider: "coolsms"
     push:
-      enabled: false # Phase 2에서는 비활성화
+      enabled: true # MVP에서는 푸시 알림만 활성화
       provider: "firebase"
+      project-id: "${FIREBASE_PROJECT_ID}"
 
   encryption:
     algorithm: "AES/GCM/NoPadding"
-    key: "${ENCRYPTION_KEY}" # 32 바이트 키
+    key: "${ENCRYPTION_KEY}" # 32 바이트 키 (보호자 연락처 암호화용)
 ```
 
-### 환경 변수 (.env 추가)
+### 환경 변수 (.env 추가) - MVP 버전
 ```bash
-# Phase 2 스케줄링 & 알림 시스템
-SMTP_USERNAME=your_smtp_username
-SMTP_PASSWORD=your_smtp_password
+# Phase 2 MVP 스케줄링 & 푸시 알림 시스템
+FIREBASE_PROJECT_ID=maruni-project
+FIREBASE_PRIVATE_KEY_PATH=config/firebase-service-account.json
 ENCRYPTION_KEY=your_32_byte_encryption_key_here
-
-# 알림 설정
-EMAIL_FROM_ADDRESS=noreply@maruni.co.kr
-EMAIL_FROM_NAME=마루니
 
 # 스케줄링 설정
 DAILY_CHECK_BATCH_SIZE=50
 NOTIFICATION_RETRY_MAX=3
+
+# 푸시 알림 설정
+PUSH_NOTIFICATION_ENABLED=true
 ```
 
 ---
 
 ## 📈 Phase 2 완료 후 달성 지표
 
-### 기능적 완성도
+### 기능적 완성도 (MVP)
 - [ ] 정기 안부 메시지 자동 발송 (매일 오전 9시)
 - [ ] 개인화된 메시지 생성 (회원별 맞춤)
 - [ ] 보호자 등록 및 관리 시스템
 - [ ] 이상징후 자동 감지 및 알림
-- [ ] 다채널 알림 발송 (이메일 위주)
+- [ ] Firebase FCM 푸시 알림 발송
 - [ ] 발송 실패 자동 재시도
 - [ ] 알림 이력 완전 추적
 
