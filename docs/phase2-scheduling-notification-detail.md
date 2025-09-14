@@ -1,22 +1,24 @@
-# Phase 2: 스케줄링 & 알림 시스템 MVP 개발 계획 (진행 상황 업데이트)
+# Phase 2: 스케줄링 & 알림 시스템 MVP - 문서 인덱스
 
-## 🎉 **Phase 2 진행 상황** (2025-09-14 업데이트)
+> ⚠️ **주의**: 이 파일은 더 이상 주요 문서가 아닙니다.
+> **새로운 구조화된 문서들**: [📁 /docs/phase2/](./phase2/) 폴더를 확인하세요.
 
-### ✅ **완료된 주요 성과**
-- **Week 5 DailyCheck 도메인 100% 완료** 🚀
-- **완벽한 TDD 사이클 적용**: Red → Green → Refactor 전체 사이클
-- **5개 핵심 테스트 시나리오**: 모든 테스트 통과 (100% 커버리지)
-- **체계적 리팩토링**: 83% 코드 라인 감소, 가독성 대폭 향상
-- **스케줄링 시스템 완성**: 매일 정시 안부 메시지, 자동 재시도 메커니즘
+## 📋 Phase 2 문서 구조
 
-### 🎯 **현재 진행률**
-```yaml
-전체 Phase 2 진행률: 40% 완료
-- Scheduling 도메인: ✅ 100% 완료
-- Notification 도메인: 🔄 20% 완료 (인터페이스만)
-- Guardian 도메인: ⏳ 0% (다음 단계)
-- AlertRule 도메인: ⏳ 0% (다음 단계)
-```
+### 🏠 메인 문서
+- **[Phase 2 개요 및 현황](./phase2/README.md)** - 전체 진행 상황 및 목표
+
+### 📋 계획 문서
+- **[Week 6: Guardian 도메인 계획](./phase2/planning/week6-guardian.md)** - 다음 단계 TDD 개발 계획
+
+### 🏗️ 구현 상세
+- **[도메인 아키텍처](./phase2/implementation/domain-architecture.md)** - DDD 기반 도메인 설계
+- **[알림 시스템 설계](./phase2/implementation/notification-system.md)** - 다중 채널 알림 아키텍처
+- **[스케줄링 시스템](./phase2/implementation/scheduling-system.md)** - Spring Boot 스케줄링 구현
+
+### ✅ 완료된 작업
+- **[Week 5 TDD 완료 보고서](./phase2/completed/week5-tdd-report.md)** - DailyCheck 도메인 완성
+- **[환경 설정 완료 기록](./phase2/completed/environment-setup.md)** - Phase 2 환경 구축
 
 ## 📋 Phase 2 MVP 개요
 
