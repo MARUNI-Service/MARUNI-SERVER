@@ -1,5 +1,6 @@
 package com.anyang.maruni.domain.member.domain.entity;
 
+import com.anyang.maruni.domain.guardian.domain.entity.GuardianEntity;
 import com.anyang.maruni.global.entity.BaseTimeEntity;
 import com.anyang.maruni.global.oauth2.domain.entity.SocialType;
 
@@ -7,10 +8,13 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -47,6 +51,11 @@ public class MemberEntity extends BaseTimeEntity {
 	@Column(nullable = true)
 	private String socialId;
 
+	// Guardian 관계 추가 (다대일)
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "guardian_id")
+	private GuardianEntity guardian;
+
 	public static MemberEntity createRegularMember(String email, String name, String password) {
 		return MemberEntity.builder()
 			.memberEmail(email)
@@ -75,5 +84,12 @@ public class MemberEntity extends BaseTimeEntity {
 		this.socialId = socialId;
 	}
 
+	// Guardian 관계 비즈니스 메서드
+	public void assignGuardian(GuardianEntity guardian) {
+		this.guardian = guardian;
+	}
 
+	public void removeGuardian() {
+		this.guardian = null;
+	}
 }
