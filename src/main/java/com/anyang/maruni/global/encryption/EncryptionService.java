@@ -71,7 +71,7 @@ public class EncryptionService {
 
         } catch (Exception e) {
             log.error("암호화 실패", e);
-            throw new EncryptionException("암호화에 실패했습니다", e);
+            throw new EncryptionException();
         }
     }
 
@@ -103,7 +103,7 @@ public class EncryptionService {
 
         } catch (Exception e) {
             log.error("복호화 실패", e);
-            throw new EncryptionException("복호화에 실패했습니다", e);
+            throw new EncryptionException();
         }
     }
 
