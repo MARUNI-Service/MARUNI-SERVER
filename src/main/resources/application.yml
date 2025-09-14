@@ -23,6 +23,12 @@ jwt:
   refresh-token:
     expiration: ${JWT_REFRESH_EXPIRATION:1209600000}  # 14일 (밀리초)
 
+# OpenAI API 설정
+openai:
+  api:
+    key: ${OPENAI_API_KEY:your_openai_api_key_here}
+  model: ${OPENAI_MODEL:gpt-4o}
+
 # 공통 Swagger 설정
 swagger:
   api:
