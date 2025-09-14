@@ -103,4 +103,27 @@ public class SimpleConversationService {
         MessageEntity aiMessage = MessageEntity.createAIResponse(conversationId, content);
         return messageRepository.save(aiMessage);
     }
+
+    /**
+     * 시스템 메시지 처리 (Phase 2 스케줄링 시스템에서 사용)
+     *
+     * 정기 안부 메시지 등 시스템에서 보내는 메시지를 대화 시스템에 기록합니다.
+     * 사용자가 이 메시지에 응답할 수 있도록 AI 메시지 형태로 저장됩니다.
+     *
+     * @param memberId 회원 ID
+     * @param systemMessage 시스템 메시지 내용
+     */
+    @Transactional
+    public void processSystemMessage(Long memberId, String systemMessage) {
+        log.info("Processing system message for member {}: {}", memberId, systemMessage);
+
+        // 1. 활성 대화 조회 또는 새 대화 생성
+        ConversationEntity conversation = findOrCreateActiveConversation(memberId);
+
+        // 2. 시스템 메시지를 AI 메시지로 저장 (사용자가 응답할 수 있도록)
+        MessageEntity systemMessageEntity = MessageEntity.createAIResponse(conversation.getId(), systemMessage);
+        messageRepository.save(systemMessageEntity);
+
+        log.debug("System message saved as AI message for conversation {}", conversation.getId());
+    }
 }
