@@ -10,6 +10,8 @@ import com.anyang.maruni.domain.alertrule.domain.repository.AlertRuleRepository;
 import com.anyang.maruni.domain.conversation.domain.entity.EmotionType;
 import com.anyang.maruni.domain.conversation.domain.entity.MessageEntity;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
+import com.anyang.maruni.domain.member.domain.repository.MemberRepository;
+import com.anyang.maruni.domain.notification.domain.service.NotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -43,6 +45,12 @@ class AlertRuleServiceTest {
 
     @Mock
     private AlertHistoryRepository alertHistoryRepository;
+
+    @Mock
+    private MemberRepository memberRepository;
+
+    @Mock
+    private NotificationService notificationService;
 
     @Mock
     private EmotionPatternAnalyzer emotionAnalyzer;
@@ -79,69 +87,134 @@ class AlertRuleServiceTest {
     }
 
     @Test
-    @DisplayName("이상징후 종합 감지 테스트 - TDD Red")
+    @DisplayName("이상징후 종합 감지 테스트")
     void detectAnomalies_shouldDetectEmotionPattern() {
-        // Given - TDD Red 단계이므로 UnsupportedOperationException 발생 예상
+        // Given
+        List<AlertRule> activeRules = Arrays.asList(testRule);
+        AlertResult emotionAlert = AlertResult.createAlert(
+                AlertLevel.HIGH, "3일 연속 부정감정 감지", null);
 
-        // When & Then
-        assertThatThrownBy(() -> alertRuleService.detectAnomalies(testMember.getId()))
-                .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessage("TDD Red 단계: 구현 예정");
+        given(memberRepository.findById(testMember.getId()))
+                .willReturn(Optional.of(testMember));
+        given(alertRuleRepository.findActiveRulesByMemberId(testMember.getId()))
+                .willReturn(activeRules);
+        given(emotionAnalyzer.analyzeEmotionPattern(testMember, 7))
+                .willReturn(emotionAlert);
+
+        // When
+        List<AlertResult> results = alertRuleService.detectAnomalies(testMember.getId());
+
+        // Then
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).isAlert()).isTrue();
+        assertThat(results.get(0).getAlertLevel()).isEqualTo(AlertLevel.HIGH);
+        verify(memberRepository).findById(testMember.getId());
+        verify(alertRuleRepository).findActiveRulesByMemberId(testMember.getId());
+        verify(emotionAnalyzer).analyzeEmotionPattern(testMember, 7);
     }
 
     @Test
-    @DisplayName("실시간 키워드 감지 테스트 - TDD Red")
+    @DisplayName("실시간 키워드 감지 테스트")
     void detectKeywordAlert_shouldDetectEmergencyKeywords() {
-        // Given - TDD Red 단계이므로 UnsupportedOperationException 발생 예상
+        // Given
+        AlertResult expectedResult = AlertResult.createAlert(
+                AlertLevel.EMERGENCY, "긴급 키워드 감지: '도와주세요'", null);
 
-        // When & Then
-        assertThatThrownBy(() ->
-                alertRuleService.detectKeywordAlert(testMessage, testMember.getId()))
-                .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessage("TDD Red 단계: 구현 예정");
+        given(keywordAnalyzer.analyzeKeywordRisk(testMessage))
+                .willReturn(expectedResult);
+
+        // When
+        AlertResult actualResult = alertRuleService.detectKeywordAlert(testMessage, testMember.getId());
+
+        // Then
+        assertThat(actualResult).isNotNull();
+        assertThat(actualResult.isAlert()).isTrue();
+        assertThat(actualResult.getAlertLevel()).isEqualTo(AlertLevel.EMERGENCY);
+        verify(keywordAnalyzer).analyzeKeywordRisk(testMessage);
     }
 
     @Test
-    @DisplayName("알림 발생 처리 테스트 - TDD Red")
+    @DisplayName("알림 발생 처리 테스트")
     void triggerAlert_shouldCreateAlertHistory() {
         // Given
         AlertResult alertResult = AlertResult.createAlert(
                 AlertLevel.HIGH, "3일 연속 부정감정 감지", null);
 
-        // When & Then - TDD Red 단계
-        assertThatThrownBy(() ->
-                alertRuleService.triggerAlert(testMember.getId(), alertResult))
-                .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessage("TDD Red 단계: 구현 예정");
+        AlertHistory savedHistory = AlertHistory.builder()
+                .id(1L)
+                .alertRule(null) // MVP
+                .member(testMember)
+                .alertLevel(AlertLevel.HIGH)
+                .alertMessage("3일 연속 부정감정 감지")
+                .isNotificationSent(false)
+                .build();
+
+        given(memberRepository.findById(testMember.getId()))
+                .willReturn(Optional.of(testMember));
+        given(alertHistoryRepository.save(any(AlertHistory.class)))
+                .willReturn(savedHistory);
+        given(notificationService.sendPushNotification(any(), any(), any()))
+                .willReturn(true);
+
+        // When
+        Long historyId = alertRuleService.triggerAlert(testMember.getId(), alertResult);
+
+        // Then
+        assertThat(historyId).isEqualTo(1L);
+        verify(memberRepository).findById(testMember.getId());
+        verify(alertHistoryRepository).save(any(AlertHistory.class));
     }
 
     @Test
-    @DisplayName("보호자 알림 발송 테스트 - TDD Red")
+    @DisplayName("보호자 알림 발송 테스트")
     void sendGuardianNotification_shouldNotifyAllGuardians() {
         // Given
         Long memberId = testMember.getId();
         AlertLevel alertLevel = AlertLevel.EMERGENCY;
         String alertMessage = "긴급 상황이 감지되었습니다";
 
-        // When & Then - TDD Red 단계
-        assertThatThrownBy(() ->
-                alertRuleService.sendGuardianNotification(memberId, alertLevel, alertMessage))
-                .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessage("TDD Red 단계: 구현 예정");
+        given(memberRepository.findById(memberId))
+                .willReturn(Optional.of(testMember));
+        given(notificationService.sendPushNotification(any(), any(), any()))
+                .willReturn(true);
+
+        // When
+        alertRuleService.sendGuardianNotification(memberId, alertLevel, alertMessage);
+
+        // Then
+        verify(memberRepository).findById(memberId);
+        // testMember.getGuardian()이 null이면 알림 발송하지 않음
+        // Guardian이 있을 경우에만 notificationService 호출됨
     }
 
     @Test
-    @DisplayName("알림 이력 기록 테스트 - TDD Red")
+    @DisplayName("알림 이력 기록 테스트")
     void recordAlertHistory_shouldSaveCompleteHistory() {
         // Given
         AlertResult alertResult = AlertResult.createAlert(
                 AlertLevel.HIGH, "감정 패턴 이상", null);
 
-        // When & Then - TDD Red 단계
-        assertThatThrownBy(() ->
-                alertRuleService.recordAlertHistory(testRule, testMember, alertResult))
-                .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessage("TDD Red 단계: 구현 예정");
+        AlertHistory savedHistory = AlertHistory.builder()
+                .id(1L)
+                .alertRule(testRule)
+                .member(testMember)
+                .alertLevel(AlertLevel.HIGH)
+                .alertMessage("감정 패턴 이상")
+                .detectionDetails("{\"alertLevel\":\"HIGH\",\"analysisDetails\":\"null\"}")
+                .isNotificationSent(false)
+                .build();
+
+        given(alertHistoryRepository.save(any(AlertHistory.class)))
+                .willReturn(savedHistory);
+
+        // When
+        AlertHistory actualHistory = alertRuleService.recordAlertHistory(testRule, testMember, alertResult);
+
+        // Then
+        assertThat(actualHistory).isNotNull();
+        assertThat(actualHistory.getId()).isEqualTo(1L);
+        assertThat(actualHistory.getAlertMessage()).isEqualTo("감정 패턴 이상");
+        verify(alertHistoryRepository).save(any(AlertHistory.class));
     }
 
     @Test
@@ -186,31 +259,53 @@ class AlertRuleServiceTest {
     }
 
     @Test
-    @DisplayName("알림 규칙 생성 테스트 - TDD Red")
+    @DisplayName("알림 규칙 생성 테스트")
     void createAlertRule_shouldCreateNewRule() {
         // Given
         AlertType alertType = AlertType.EMOTION_PATTERN;
         AlertLevel alertLevel = AlertLevel.HIGH;
         AlertCondition condition = AlertCondition.createEmotionCondition(3);
 
-        // When & Then - TDD Red 단계
-        assertThatThrownBy(() ->
-                alertRuleService.createAlertRule(testMember, alertType, alertLevel, condition))
-                .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessage("TDD Red 단계: 구현 예정");
+        AlertRule savedRule = AlertRule.builder()
+                .id(1L)
+                .member(testMember)
+                .alertType(alertType)
+                .ruleName("연속 부정감정 감지")
+                .ruleDescription("3일 연속 부정적 감정 감지 시 알림")
+                .condition(condition)
+                .alertLevel(alertLevel)
+                .isActive(true)
+                .build();
+
+        given(alertRuleRepository.save(any(AlertRule.class)))
+                .willReturn(savedRule);
+
+        // When
+        AlertRule actualRule = alertRuleService.createAlertRule(testMember, alertType, alertLevel, condition);
+
+        // Then
+        assertThat(actualRule).isNotNull();
+        assertThat(actualRule.getId()).isEqualTo(1L);
+        assertThat(actualRule.getAlertType()).isEqualTo(alertType);
+        assertThat(actualRule.getAlertLevel()).isEqualTo(alertLevel);
+        verify(alertRuleRepository).save(any(AlertRule.class));
     }
 
     @Test
-    @DisplayName("알림 규칙 활성화/비활성화 테스트 - TDD Red")
+    @DisplayName("알림 규칙 활성화/비활성화 테스트")
     void toggleAlertRule_shouldToggleRuleStatus() {
         // Given
         Long alertRuleId = 1L;
         boolean active = false;
 
-        // When & Then - TDD Red 단계
-        assertThatThrownBy(() ->
-                alertRuleService.toggleAlertRule(alertRuleId, active))
-                .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessage("TDD Red 단계: 구현 예정");
+        given(alertRuleRepository.findById(alertRuleId))
+                .willReturn(Optional.of(testRule));
+
+        // When
+        alertRuleService.toggleAlertRule(alertRuleId, active);
+
+        // Then
+        verify(alertRuleRepository).findById(alertRuleId);
+        // JPA 더티 체킹으로 자동 업데이트되므로 save 호출 검증하지 않음
     }
 }
