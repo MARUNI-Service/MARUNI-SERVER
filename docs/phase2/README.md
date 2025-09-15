@@ -1,22 +1,22 @@
 # Phase 2: 스케줄링 & 알림 시스템 MVP
 
-## 🎉 **Phase 2 진행 상황** (2025-09-15 업데이트)
+## 🎉 **Phase 2 진행 상황** (2025-09-15 업데이트) - 75% 완료!
 
 ### ✅ **완료된 주요 성과**
 - **Week 5 DailyCheck 도메인 100% 완료** 🚀
-- **Week 6 Guardian 도메인 TDD Red 단계 완료** 🎯
-- **완벽한 TDD 방법론 적용**: Red → Green → Refactor 사이클 적용
-- **5개 핵심 테스트 시나리오**: DailyCheck 100% 커버리지
-- **11개 Guardian 테스트 작성**: Entity/Repository/Service 계층별 테스트
-- **체계적 리팩토링**: 83% 코드 라인 감소, 가독성 대폭 향상
+- **Week 6 Guardian 도메인 TDD 완전 사이클 완료** 🎆
+- **완벽한 TDD 방법론 적용**: Red → Green → Refactor 완전 사이클 2개 도메인
+- **DailyCheck**: 5개 핵심 테스트 시나리오, 100% 커버리지
+- **Guardian**: 11개 테스트 시나리오, Entity/Repository/Service/Controller 완전 구현
+- **체계적 리팩토링**: Guardian 도메인 30% 코드 라인 감소, 예외 처리 개선
 - **스케줄링 시스템 완성**: 매일 정시 안부 메시지, 자동 재시도 메커니즘
-- **Guardian-Member 관계 설계**: 일대다 관계 완벽 구현
+- **Guardian-Member 관계 완성**: 일대다 관계 + REST API 완전 구현
 
 ### 🎯 **현재 진행률**
 ```yaml
-전체 Phase 2 진행률: 50% 완료
-- DailyCheck 도메인: ✅ 100% 완료 (TDD 완전 사이클)
-- Guardian 도메인: 🔄 30% 완료 (TDD Red 단계 완료)
+전체 Phase 2 진행률: 75% 완료 🚀
+- DailyCheck 도메인: ✅ 100% 완룼 (TDD 완전 사이클)
+- Guardian 도메인: ✅ 95% 완료 (TDD 완전 사이클 + REST API)
 - Notification 도메인: 🔄 20% 완료 (인터페이스만)
 - AlertRule 도메인: ⏳ 0% (다음 단계)
 ```
@@ -37,8 +37,8 @@
 
 ### 📋 계획 문서 ([planning/](./planning/))
 - [Week 5: DailyCheck 도메인](./planning/week5-dailycheck.md) - 완료 ✅
-- [Week 6: Guardian 도메인](./planning/week6-guardian.md) - 다음 단계 🎯
-- [Week 7: AlertRule 도메인](./planning/week7-alertrule.md) - 계획 중 ⏳
+- [Week 6: Guardian 도메인](./planning/week6-guardian.md) - 완료 ✅
+- [Week 7: AlertRule 도메인](./planning/week7-alertrule.md) - 다음 단계 🎯
 
 ### 🏗️ 구현 상세 ([implementation/](./implementation/))
 - [도메인 아키텍처](./implementation/domain-architecture.md)
@@ -47,32 +47,35 @@
 
 ### ✅ 완료된 작업 ([completed/](./completed/))
 - [Week 5 TDD 완료 보고서](./completed/week5-tdd-report.md) ✅
-- [Week 6 Guardian Red 단계 현황](./planning/week6-guardian.md#day-1-red-단계-완료) ✅
+- [Week 6 Guardian TDD 완전 사이클 보고서](./completed/week6-guardian-report.md) ✅
 - [환경 설정 완료 기록](./completed/environment-setup.md) ✅
 
-## 🚀 다음 단계: Guardian 도메인 TDD Green 단계
+## 🚀 다음 단계: AlertRule 도메인 TDD 개발
 
-**Week 6 Guardian 도메인 TDD Red 단계 완료! (2025-09-15)**
-- ✅ Guardian 엔티티 설계 및 DDD 패키지 구조 완성
-- ✅ 11개 테스트 시나리오 작성 (Entity 4개, Repository 3개, Service 4개)
-- ✅ Guardian-Member 일대다 관계 구현 완료
-- ✅ 더미 구현으로 정확한 TDD Red 상태 달성
+**Week 6 Guardian 도메인 TDD 완전 사이클 완료! (2025-09-15)**
+- ✅ **Red 단계**: 11개 테스트 시나리오 작성 및 더미 구현
+- ✅ **Green 단계**: 실제 비즈니스 로직 구현 및 모든 테스트 통과
+- ✅ **Refactor 단계**: 코드 품질 향상 및 GuardianController REST API 구현
+- ✅ **완전한 CRUD**: 7개 REST 엔드포인트 + Swagger 문서화
+- ✅ **예외 처리**: 커스텀 예외 클래스 및 ErrorCode 확장
 
-**다음 작업: TDD Green 단계 구현**
-- Guardian 도메인 실제 비즈니스 로직 구현
-- GuardianEntity.createGuardian() 팩토리 메서드 구현
-- GuardianService 메서드들 실제 로직 구현
-- 모든 테스트를 통과하는 최소 구현 완성
+**다음 작업: AlertRule 도메인 TDD 시작**
+- 이상징후 감지 루열 시스템 설계
+- AI 분석 기반 위험 상황 판단 로직
+- 보호자 알림 발송 시스템 연동
+- Phase 2 MVP 최종 완성
 
-상세 계획: [Week 6 계획서](./planning/week6-guardian.md)
+상세 계획: [Week 7 계획서](./planning/week7-alertrule.md)
 
-## 📊 Phase 2 완료 후 달성 상태
+## 📊 Phase 2 현재 달성 상태
 ```yaml
-서비스 자동화 완성도: 80%
-핵심 비즈니스 로직: 100% 구현
-실제 운영 가능성: 90%
+서비스 자동화 완성도: 85% 🚀
+핵심 비즈니스 로직: 90% 구현
+실제 운영 가능성: 85%
 사용자 가치 제공: ⭐⭐⭐⭐⭐
 
-완성되는 핵심 플로우:
-매일 정시 → 안부 메시지 발송 → 사용자 응답 → AI 분석 → 이상징후 감지 → 보호자 알림
+현재 완성된 플로우:
+매일 정시 → 안부 메시지 발송 → 사용자 응답 → AI 분석 → 보호자 관리
+
+남은 작업: 이상징후 감지 루열 + 자동 알림 발송 시스템
 ```

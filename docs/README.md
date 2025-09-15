@@ -7,10 +7,11 @@ MARUNI 프로젝트의 모든 문서가 체계적으로 정리되어 있습니�
 ### 📂 폴더별 문서 구조
 
 #### 🚀 [Phase 2: 스케줄링 & 알림 시스템](./phase2/)
-**현재 진행 중** - 매일 안부 메시지 스케줄링 및 보호자 알림 시스템
-- 📋 **계획**: Week 6 Guardian 도메인 TDD 개발 계획
+**85% 완료** - 매일 안부 메시지 스케줄링 및 보호자 알림 시스템
+- ✅ **완료**: Week 5 DailyCheck 도메인 TDD 완료
+- ✅ **완료**: Week 6 Guardian 도메인 TDD 완전 사이클 완료 + REST API
+- ⏳ **계획**: Week 7 AlertRule 도메인 (이상징후 감지)
 - 🏗️ **구현**: 도메인 아키텍처, 알림/스케줄링 시스템 설계
-- ✅ **완료**: Week 5 DailyCheck 도메인 TDD 완료, 환경 설정
 
 #### 🤖 [Phase 1: AI 대화 시스템](./phase1/)
 **100% 완료** - OpenAI 기반 AI 대화 및 감정 분석 시스템
@@ -32,7 +33,7 @@ MARUNI 프로젝트의 모든 문서가 체계적으로 정리되어 있습니�
 
 #### 🎯 현재 작업 중
 - **[Phase 2 현황](./phase2/README.md)** - 전체 진행 상황 및 다음 단계
-- **[Week 6 Guardian 계획](./phase2/planning/week6-guardian.md)** - 다음 TDD 개발 단계
+- **[Week 7 AlertRule 계획](./phase2/planning/week7-alertrule.md)** - 다음 TDD 개발 단계
 
 #### 📖 설계 문서
 - **[도메인 아키텍처](./phase2/implementation/domain-architecture.md)** - DDD 기반 도메인 설계
@@ -40,26 +41,27 @@ MARUNI 프로젝트의 모든 문서가 체계적으로 정리되어 있습니�
 - **[스케줄링 시스템](./phase2/implementation/scheduling-system.md)** - Spring Boot 스케줄링
 
 #### ✅ 완료 기록
-- **[Week 5 TDD 보고서](./phase2/completed/week5-tdd-report.md)** - 완벽한 TDD 사이클 적용
+- **[Week 5 TDD 보고서](./phase2/completed/week5-tdd-report.md)** - DailyCheck 도메인 완벽한 TDD 사이클
+- **[Week 6 TDD 보고서](./phase2/completed/week6-guardian-report.md)** - Guardian 도메인 TDD 완전 사이클 + REST API 구현
 - **[환경 설정 완료](./phase2/completed/environment-setup.md)** - Phase 2 인프라 구축
 
 ### 📊 프로젝트 현황 요약
 
 ```yaml
-전체 진행률: 70% 완료
+전체 진행률: 85% 완료 🚀
 
 Phase 1 (AI 대화): ✅ 100% 완료
 - OpenAI GPT-4o 연동
 - 감정 분석 시스템
 - DDD 아키텍처 완성
 
-Phase 2 (스케줄링 & 알림): 🔄 50% 완료
-- DailyCheck 도메인: ✅ 100% 완료 (TDD 적용)
-- Guardian 도메인: 🔄 30% 완료 (TDD Red 단계 완료)
+Phase 2 (스케줄링 & 알림): ✅ 85% 완료
+- DailyCheck 도메인: ✅ 100% 완료 (완벽한 TDD 사이클)
+- Guardian 도메인: ✅ 100% 완료 (TDD 완전 사이클 + REST API)
 - Notification 시스템: 🔄 20% 완료 (인터페이스)
 - AlertRule 도메인: ⏳ 계획 중 (Week 7)
 
-다음 목표: Guardian 도메인 TDD Green 단계 구현
+다음 목표: AlertRule 도메인 구현으로 Phase 2 MVP 완성
 ```
 
 ### 🔧 문서 이용 가이드
