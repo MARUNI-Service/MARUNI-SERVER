@@ -27,7 +27,14 @@ public interface AlertRuleRepository extends JpaRepository<AlertRule, Long> {
     @Query("SELECT ar FROM AlertRule ar " +
            "WHERE ar.member.id = :memberId " +
            "AND ar.isActive = true " +
-           "ORDER BY ar.alertLevel DESC, ar.createdAt DESC")
+           "ORDER BY " +
+           "CASE ar.alertLevel " +
+           "  WHEN 'EMERGENCY' THEN 4 " +
+           "  WHEN 'HIGH' THEN 3 " +
+           "  WHEN 'MEDIUM' THEN 2 " +
+           "  WHEN 'LOW' THEN 1 " +
+           "  ELSE 0 " +
+           "END DESC, ar.createdAt DESC")
     List<AlertRule> findActiveRulesByMemberId(@Param("memberId") Long memberId);
 
     /**
@@ -102,6 +109,13 @@ public interface AlertRuleRepository extends JpaRepository<AlertRule, Long> {
     @Query("SELECT ar FROM AlertRule ar " +
            "WHERE ar.member.id = :memberId " +
            "AND ar.isActive = true " +
-           "ORDER BY ar.alertLevel DESC, ar.alertType, ar.createdAt DESC")
+           "ORDER BY " +
+           "CASE ar.alertLevel " +
+           "  WHEN 'EMERGENCY' THEN 4 " +
+           "  WHEN 'HIGH' THEN 3 " +
+           "  WHEN 'MEDIUM' THEN 2 " +
+           "  WHEN 'LOW' THEN 1 " +
+           "  ELSE 0 " +
+           "END DESC, ar.alertType, ar.createdAt DESC")
     List<AlertRule> findActiveRulesByMemberIdOrderedByLevel(@Param("memberId") Long memberId);
 }
