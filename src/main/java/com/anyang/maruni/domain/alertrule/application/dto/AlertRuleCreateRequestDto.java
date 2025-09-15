@@ -54,5 +54,6 @@ public class AlertRuleCreateRequestDto {
     /**
      * 활성화 여부 (기본값: true)
      */
+    @Builder.Default
     private Boolean active = true;
 }

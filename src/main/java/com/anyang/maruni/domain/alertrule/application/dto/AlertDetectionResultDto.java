@@ -112,7 +112,8 @@ public class AlertDetectionResultDto {
             return DetectedAlertDto.builder()
                     .alertLevel(alertResult.getAlertLevel())
                     .message(alertResult.getMessage())
-                    .analysisDetails(alertResult.getAnalysisDetails())
+                    .analysisDetails(alertResult.getAnalysisDetails() != null ?
+                        alertResult.getAnalysisDetails().toString() : "상세 분석 정보 없음")
                     .build();
         }
     }

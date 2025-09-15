@@ -76,10 +76,10 @@ public class AlertRuleResponseDto {
      */
     public static AlertRuleResponseDto from(AlertRule alertRule) {
         AlertConditionDto conditionDto = AlertConditionDto.builder()
-                .consecutiveDays(alertRule.getAlertCondition().getConsecutiveDays())
-                .thresholdCount(alertRule.getAlertCondition().getThresholdCount())
-                .keywords(alertRule.getAlertCondition().getKeywords())
-                .description(alertRule.getAlertCondition().getDescription())
+                .consecutiveDays(alertRule.getCondition().getConsecutiveDays())
+                .thresholdCount(alertRule.getCondition().getThresholdCount())
+                .keywords(alertRule.getCondition().getKeywords())
+                .description(null) // AlertCondition에는 description 필드 없음
                 .build();
 
         return AlertRuleResponseDto.builder()
@@ -89,8 +89,8 @@ public class AlertRuleResponseDto {
                 .alertLevel(alertRule.getAlertLevel())
                 .ruleName(alertRule.getRuleName())
                 .condition(conditionDto)
-                .description(alertRule.getDescription())
-                .active(alertRule.getActive())
+                .description(alertRule.getRuleDescription())
+                .active(alertRule.getIsActive())
                 .createdAt(alertRule.getCreatedAt())
                 .updatedAt(alertRule.getUpdatedAt())
                 .build();
