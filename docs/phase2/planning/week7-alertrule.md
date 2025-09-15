@@ -5,6 +5,12 @@
 **AlertRule(이상징후 감지) 도메인 완전 구현**을 통해 MARUNI의 **Phase 2 MVP를 100% 완성**합니다.
 AI 분석 기반 실시간 이상징후 감지 및 보호자 자동 알림 시스템으로 **실제 운영 가능한 노인 돌봄 서비스**를 완성합니다.
 
+### 📝 **설계 리뷰 반영사항** (2025-09-15 업데이트)
+- ✅ **Guardian 연동 로직 명확화**: NotificationPreference 기반 알림 발송
+- ✅ **실용적 설계 유지**: MVP 단계에 적합한 명확하고 안전한 구조
+- 🔄 **중복 방지 강화**: DB 제약 조건으로 알림 중복 발송 방지
+- 📊 **점진적 개선**: 운영 후 모니터링 데이터 기반 최적화
+
 ### 📋 주요 구현 사항
 - **실시간 이상징후 감지**: AI 감정 분석 + 패턴 분석 기반 위험 상황 판단
 - **자동 보호자 알림**: Guardian 시스템 연동을 통한 즉시 알림 발송
@@ -253,7 +259,9 @@ public class AlertCondition {
 #### AlertHistory Entity
 ```java
 @Entity
-@Table(name = "alert_history")
+@Table(name = "alert_history", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"member_id", "alert_rule_id", "created_date"})
+})
 @Getter @NoArgsConstructor @AllArgsConstructor @Builder
 public class AlertHistory extends BaseTimeEntity {
 
@@ -540,19 +548,25 @@ public class GuardianNotificationService {
     private final NotificationService notificationService;
 
     public void notifyGuardians(Long memberId, AlertLevel alertLevel, String alertMessage) {
-        // 회원의 모든 보호자 조회
+        // 회원의 모든 활성 보호자 조회
         List<GuardianEntity> guardians = guardianService.getGuardiansByMemberId(memberId);
 
-        // 알림 레벨에 따른 보호자 필터링
-        List<GuardianEntity> targetGuardians = guardians.stream()
-            .filter(guardian -> shouldNotifyGuardian(guardian, alertLevel))
+        // 활성 보호자만 필터링 (isActive = true)
+        List<GuardianEntity> activeGuardians = guardians.stream()
+            .filter(GuardianEntity::getIsActive)
             .toList();
 
         // 보호자별 맞춤 알림 발송
-        for (GuardianEntity guardian : targetGuardians) {
+        for (GuardianEntity guardian : activeGuardians) {
             sendPersonalizedAlert(guardian, alertLevel, alertMessage);
         }
     }
+
+    /**
+     * 보호자의 NotificationPreference에 따른 알림 발송
+     * 현재는 모든 활성 보호자에게 발송 (MVP 단계)
+     * 향후 AlertLevel별 필터링 기능 확장 가능
+     */
 
     private void sendPersonalizedAlert(GuardianEntity guardian, AlertLevel alertLevel, String message) {
         String personalizedMessage = String.format(
@@ -567,9 +581,11 @@ public class GuardianNotificationService {
         switch (guardian.getNotificationPreference()) {
             case PUSH -> notificationService.sendPushNotification(guardian.getId(), personalizedMessage);
             case EMAIL -> notificationService.sendEmail(guardian.getGuardianEmail(), personalizedMessage);
+            case SMS -> notificationService.sendSms(guardian.getGuardianPhone(), personalizedMessage);
             case ALL -> {
                 notificationService.sendPushNotification(guardian.getId(), personalizedMessage);
                 notificationService.sendEmail(guardian.getGuardianEmail(), personalizedMessage);
+                // SMS는 Phase 3에서 구현 예정
             }
         }
     }
