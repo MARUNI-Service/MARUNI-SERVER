@@ -58,6 +58,23 @@ dependencies {
 	// Hibernate Validator (Bean Validation을 위한 의존성)
 	implementation 'org.hibernate.validator:hibernate-validator'
 
+	// === OpenAI API 관련 의존성 ===
+
+	// OpenAI Java SDK (GPT API 연동용)
+	implementation 'com.theokanning.openai-gpt3-java:service:0.18.2'
+
+	// HTTP 클라이언트 (OpenAI SDK 내부 사용)
+	implementation 'com.squareup.retrofit2:retrofit:2.9.0'
+	implementation 'com.squareup.retrofit2:converter-jackson:2.9.0'
+
+	// === Firebase FCM (푸시 알림) 관련 의존성 ===
+
+	// Firebase Admin SDK (서버에서 푸시 알림 발송용)
+	implementation 'com.google.firebase:firebase-admin:9.2.0'
+
+	// Google Cloud 인증 (Firebase 서비스 계정 인증용)
+	implementation 'com.google.auth:google-auth-library-oauth2-http:1.19.0'
+
 
 	// === DB 드라이버 ===
 
@@ -78,6 +95,9 @@ dependencies {
 	
 	// H2 인메모리 데이터베이스 (테스트용)
 	testRuntimeOnly 'com.h2database:h2'
+
+	// OpenAI API 테스트용 Mock 서버
+	testImplementation 'com.squareup.okhttp3:mockwebserver:4.12.0'
 }
 
 tasks.named('test') {

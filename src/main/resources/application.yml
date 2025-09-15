@@ -23,6 +23,12 @@ jwt:
   refresh-token:
     expiration: ${JWT_REFRESH_EXPIRATION:1209600000}  # 14일 (밀리초)
 
+# OpenAI API 설정
+openai:
+  api:
+    key: ${OPENAI_API_KEY:your_openai_api_key_here}
+  model: ${OPENAI_MODEL:gpt-4o}
+
 # 공통 Swagger 설정
 swagger:
   api:
@@ -40,3 +46,25 @@ swagger:
 springdoc:
   swagger-ui:
     path: /api-docs
+
+# Phase 2 MVP 스케줄링 & 푸시 알림 설정
+maruni:
+  scheduling:
+    daily-check:
+      cron: "0 0 9 * * *" # 매일 오전 9시
+      batch-size: 50
+      timeout-seconds: 30
+    retry:
+      cron: "0 */5 * * * *" # 5분마다
+      max-retries: 3
+      delay-minutes: 5
+
+  notification:
+    push:
+      enabled: true # MVP에서는 푸시 알림만 활성화
+      provider: "firebase"
+      project-id: ${FIREBASE_PROJECT_ID:maruni-project}
+
+  encryption:
+    algorithm: "AES/GCM/NoPadding"
+    key: ${ENCRYPTION_KEY:default_encryption_key_32_bytes}
