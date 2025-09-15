@@ -101,8 +101,20 @@ public class AlertRuleService {
      */
     @Transactional
     public AlertHistory recordAlertHistory(AlertRule alertRule, MemberEntity member, AlertResult alertResult) {
-        // TODO: TDD Red 단계 - 더미 구현
-        throw new UnsupportedOperationException("TDD Red 단계: 구현 예정");
+        // 알림 결과를 JSON 형태로 저장할 상세 정보 구성
+        String detectionDetails = String.format("{\"alertLevel\":\"%s\",\"analysisDetails\":\"%s\"}",
+                alertResult.getAlertLevel(), alertResult.getAnalysisDetails());
+
+        // AlertHistory 엔티티 생성
+        AlertHistory alertHistory = AlertHistory.createAlert(
+                alertRule,
+                member,
+                alertResult.getMessage(),
+                detectionDetails
+        );
+
+        // 데이터베이스에 저장
+        return alertHistoryRepository.save(alertHistory);
     }
 
     /**
@@ -136,8 +148,25 @@ public class AlertRuleService {
      */
     @Transactional
     public AlertRule createAlertRule(MemberEntity member, AlertType alertType, AlertLevel alertLevel, AlertCondition condition) {
-        // TODO: TDD Red 단계 - 더미 구현
-        throw new UnsupportedOperationException("TDD Red 단계: 구현 예정");
+        AlertRule alertRule;
+
+        // AlertType에 따라 적절한 정적 팩토리 메서드 호출
+        switch (alertType) {
+            case EMOTION_PATTERN:
+                alertRule = AlertRule.createEmotionPatternRule(member, condition.getConsecutiveDays(), alertLevel);
+                break;
+            case NO_RESPONSE:
+                alertRule = AlertRule.createNoResponseRule(member, condition.getConsecutiveDays(), alertLevel);
+                break;
+            case KEYWORD_DETECTION:
+                alertRule = AlertRule.createKeywordRule(member, condition.getKeywords(), alertLevel);
+                break;
+            default:
+                throw new IllegalArgumentException("지원하지 않는 알림 유형: " + alertType);
+        }
+
+        // 데이터베이스에 저장
+        return alertRuleRepository.save(alertRule);
     }
 
     /**
