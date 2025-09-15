@@ -1,0 +1,120 @@
+# MARUNI 프로젝트 Claude Code 무시 파일
+# Claude Code가 읽지 않아야 할 파일/디렉토리 목록
+
+# ========== 빌드 결과물 ==========
+build/
+out/
+target/
+*.class
+*.jar
+*.war
+
+# ========== IDE 설정 파일 ==========
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# ========== 의존성 ==========
+node_modules/
+.gradle/
+gradle/wrapper/
+
+# ========== 로그 파일 ==========
+*.log
+logs/
+
+# ========== 환경 변수 (보안) ==========
+.env.local
+.env.production
+
+# ========== 임시 파일 ==========
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# ========== OS 생성 파일 ==========
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ========== Git 관련 ==========
+.git/
+.gitignore
+
+# ========== 테스트 커버리지 ==========
+coverage/
+.nyc_output/
+jacoco/
+
+# ========== 문서 생성 ==========
+javadoc/
+apidoc/
+
+# ========== Docker 관련 ==========
+.dockerignore
+
+# ========== 백업 파일 ==========
+*.bak
+*.backup
+
+# ========== 대용량 미디어 파일 ==========
+*.mp4
+*.avi
+*.mkv
+*.mov
+*.wmv
+*.flv
+*.webm
+*.mp3
+*.wav
+*.flac
+*.aac
+*.ogg
+*.wma
+
+# ========== 이미지 파일 (필요시 주석 해제) ==========
+# *.jpg
+# *.jpeg
+# *.png
+# *.gif
+# *.bmp
+# *.svg
+# *.ico
+# *.webp
+
+# ========== 압축 파일 ==========
+*.zip
+*.rar
+*.7z
+*.tar
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+
+# ========== 데이터베이스 파일 ==========
+*.db
+*.sqlite
+*.sqlite3
+
+# ========== 캐시 파일 ==========
+.cache/
+*.cache
+
+# ========== 프로젝트별 제외 ==========
+# Spring Boot 관련
+HELP.md
+.gradle
+gradlew
+gradlew.bat
+
+# 테스트 데이터
+test-data/
+mock-data/
+
+# 설정 템플릿 (실제 설정이 아닌)
+*.template
+*.example
