@@ -91,24 +91,39 @@ public class AlertRuleService {
      */
     @Transactional
     public List<AlertResult> detectAnomalies(Long memberId) {
-        // 1. 회원 조회
         MemberEntity member = validateAndGetMember(memberId);
-
-        // 2. 회원의 모든 활성 알림 규칙 조회
         List<AlertRule> activeRules = alertRuleRepository.findActiveRulesByMemberId(memberId);
 
-        // 3. 각 규칙별 이상징후 감지 실행
+        return processAlertRules(member, activeRules);
+    }
+
+    /**
+     * 활성 알림 규칙들 처리
+     * @param member 회원
+     * @param activeRules 활성 알림 규칙 목록
+     * @return 감지된 이상징후 목록
+     */
+    private List<AlertResult> processAlertRules(MemberEntity member, List<AlertRule> activeRules) {
         List<AlertResult> detectedAnomalies = new ArrayList<>();
 
         for (AlertRule rule : activeRules) {
             AlertResult analysisResult = analyzeByRuleType(member, rule);
 
-            if (analysisResult != null && analysisResult.isAlert()) {
+            if (isAlertTriggered(analysisResult)) {
                 detectedAnomalies.add(analysisResult);
             }
         }
 
         return detectedAnomalies;
+    }
+
+    /**
+     * 알림 발생 여부 판단
+     * @param analysisResult 분석 결과
+     * @return 알림 발생 여부
+     */
+    private boolean isAlertTriggered(AlertResult analysisResult) {
+        return analysisResult != null && analysisResult.isAlert();
     }
 
     /**
@@ -202,19 +217,34 @@ public class AlertRuleService {
      */
     @Transactional
     public void sendGuardianNotification(Long memberId, AlertLevel alertLevel, String alertMessage) {
-        // 1. 회원 조회
         MemberEntity member = validateAndGetMember(memberId);
 
-        // 2. 회원의 보호자 확인
-        if (member.getGuardian() == null) {
-            // 보호자가 없는 경우 로깅 후 종료
+        if (!hasGuardian(member)) {
             return;
         }
 
-        // 3. 알림 제목 구성
+        performNotificationSending(member, alertLevel, alertMessage, memberId);
+    }
+
+    /**
+     * 보호자 존재 여부 확인
+     * @param member 회원 엔티티
+     * @return 보호자 존재 여부
+     */
+    private boolean hasGuardian(MemberEntity member) {
+        return member.getGuardian() != null;
+    }
+
+    /**
+     * 실제 알림 발송 수행
+     * @param member 회원 엔티티
+     * @param alertLevel 알림 레벨
+     * @param alertMessage 알림 메시지
+     * @param memberId 회원 ID (로깅용)
+     */
+    private void performNotificationSending(MemberEntity member, AlertLevel alertLevel, String alertMessage, Long memberId) {
         String alertTitle = String.format(GUARDIAN_ALERT_TITLE_TEMPLATE, alertLevel.name());
 
-        // 4. 보호자에게 알림 발송 시도
         try {
             boolean notificationSent = notificationService.sendPushNotification(
                     member.getGuardian().getId(),
@@ -224,7 +254,6 @@ public class AlertRuleService {
 
             handleNotificationResult(memberId, notificationSent, null);
         } catch (Exception e) {
-            // 알림 발송 실패 처리 (서비스 계속 진행)
             handleNotificationResult(memberId, false, e.getMessage());
         }
     }
@@ -284,25 +313,50 @@ public class AlertRuleService {
      */
     @Transactional
     public AlertRule createAlertRule(MemberEntity member, AlertType alertType, AlertLevel alertLevel, AlertCondition condition) {
-        AlertRule alertRule;
+        AlertRule alertRule = createAlertRuleByType(member, alertType, alertLevel, condition);
+        return alertRuleRepository.save(alertRule);
+    }
 
-        // AlertType에 따라 적절한 정적 팩토리 메서드 호출
+    /**
+     * 알림 유형에 따른 알림 규칙 생성
+     * @param member 회원
+     * @param alertType 알림 유형
+     * @param alertLevel 알림 레벨
+     * @param condition 알림 조건
+     * @return 생성된 알림 규칙
+     */
+    private AlertRule createAlertRuleByType(MemberEntity member, AlertType alertType, AlertLevel alertLevel, AlertCondition condition) {
         switch (alertType) {
             case EMOTION_PATTERN:
-                alertRule = AlertRule.createEmotionPatternRule(member, condition.getConsecutiveDays(), alertLevel);
-                break;
+                return createEmotionPatternAlertRule(member, alertLevel, condition);
             case NO_RESPONSE:
-                alertRule = AlertRule.createNoResponseRule(member, condition.getConsecutiveDays(), alertLevel);
-                break;
+                return createNoResponseAlertRule(member, alertLevel, condition);
             case KEYWORD_DETECTION:
-                alertRule = AlertRule.createKeywordRule(member, condition.getKeywords(), alertLevel);
-                break;
+                return createKeywordAlertRule(member, alertLevel, condition);
             default:
                 throw new IllegalArgumentException("지원하지 않는 알림 유형: " + alertType);
         }
+    }
 
-        // 데이터베이스에 저장
-        return alertRuleRepository.save(alertRule);
+    /**
+     * 감정 패턴 알림 규칙 생성
+     */
+    private AlertRule createEmotionPatternAlertRule(MemberEntity member, AlertLevel alertLevel, AlertCondition condition) {
+        return AlertRule.createEmotionPatternRule(member, condition.getConsecutiveDays(), alertLevel);
+    }
+
+    /**
+     * 무응답 패턴 알림 규칙 생성
+     */
+    private AlertRule createNoResponseAlertRule(MemberEntity member, AlertLevel alertLevel, AlertCondition condition) {
+        return AlertRule.createNoResponseRule(member, condition.getConsecutiveDays(), alertLevel);
+    }
+
+    /**
+     * 키워드 감지 알림 규칙 생성
+     */
+    private AlertRule createKeywordAlertRule(MemberEntity member, AlertLevel alertLevel, AlertCondition condition) {
+        return AlertRule.createKeywordRule(member, condition.getKeywords(), alertLevel);
     }
 
     /**
