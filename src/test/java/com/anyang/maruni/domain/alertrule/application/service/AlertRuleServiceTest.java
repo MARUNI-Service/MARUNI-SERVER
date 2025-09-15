@@ -30,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.times;
 
 /**
  * AlertRuleService 테스트
@@ -153,15 +154,14 @@ class AlertRuleServiceTest {
                 .willReturn(Optional.of(testMember));
         given(alertHistoryRepository.save(any(AlertHistory.class)))
                 .willReturn(savedHistory);
-        given(notificationService.sendPushNotification(any(), any(), any()))
-                .willReturn(true);
+        // testMember.getGuardian()이 null이므로 notificationService stub 제거
 
         // When
         Long historyId = alertRuleService.triggerAlert(testMember.getId(), alertResult);
 
         // Then
         assertThat(historyId).isEqualTo(1L);
-        verify(memberRepository).findById(testMember.getId());
+        verify(memberRepository, times(2)).findById(testMember.getId()); // triggerAlert + sendGuardianNotification
         verify(alertHistoryRepository).save(any(AlertHistory.class));
     }
 
@@ -175,8 +175,7 @@ class AlertRuleServiceTest {
 
         given(memberRepository.findById(memberId))
                 .willReturn(Optional.of(testMember));
-        given(notificationService.sendPushNotification(any(), any(), any()))
-                .willReturn(true);
+        // testMember.getGuardian()이 null이므로 notificationService stub 제거
 
         // When
         alertRuleService.sendGuardianNotification(memberId, alertLevel, alertMessage);
@@ -184,7 +183,7 @@ class AlertRuleServiceTest {
         // Then
         verify(memberRepository).findById(memberId);
         // testMember.getGuardian()이 null이면 알림 발송하지 않음
-        // Guardian이 있을 경우에만 notificationService 호출됨
+        // 따라서 notificationService는 호출되지 않음
     }
 
     @Test
