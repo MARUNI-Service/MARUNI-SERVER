@@ -9,11 +9,13 @@ import com.anyang.maruni.domain.alertrule.domain.repository.AlertHistoryReposito
 import com.anyang.maruni.domain.alertrule.domain.repository.AlertRuleRepository;
 import com.anyang.maruni.domain.conversation.domain.entity.MessageEntity;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
+import com.anyang.maruni.domain.member.domain.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -29,6 +31,7 @@ public class AlertRuleService {
 
     private final AlertRuleRepository alertRuleRepository;
     private final AlertHistoryRepository alertHistoryRepository;
+    private final MemberRepository memberRepository;
     private final EmotionPatternAnalyzer emotionAnalyzer;
     private final NoResponseAnalyzer noResponseAnalyzer;
     private final KeywordAnalyzer keywordAnalyzer;
@@ -40,13 +43,45 @@ public class AlertRuleService {
      */
     @Transactional
     public List<AlertResult> detectAnomalies(Long memberId) {
-        // TODO: TDD Red 단계 - 더미 구현
-        // 실제 구현에서는:
-        // 1. 회원의 모든 활성 알림 규칙 조회
-        // 2. 각 규칙별 이상징후 감지 실행
-        // 3. 감지된 이상징후를 AlertResult로 반환
+        // 1. 회원 조회
+        MemberEntity member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원: " + memberId));
 
-        throw new UnsupportedOperationException("TDD Red 단계: 구현 예정");
+        // 2. 회원의 모든 활성 알림 규칙 조회
+        List<AlertRule> activeRules = alertRuleRepository.findActiveRulesByMemberId(memberId);
+
+        // 3. 각 규칙별 이상징후 감지 실행
+        List<AlertResult> detectedAnomalies = new ArrayList<>();
+
+        for (AlertRule rule : activeRules) {
+            AlertResult analysisResult = analyzeByRuleType(member, rule);
+
+            if (analysisResult != null && analysisResult.isAlert()) {
+                detectedAnomalies.add(analysisResult);
+            }
+        }
+
+        return detectedAnomalies;
+    }
+
+    /**
+     * 알림 규칙 타입별 이상징후 분석
+     * @param member 회원
+     * @param rule 알림 규칙
+     * @return 분석 결과 (알림 없을 시 null)
+     */
+    private AlertResult analyzeByRuleType(MemberEntity member, AlertRule rule) {
+        switch (rule.getAlertType()) {
+            case EMOTION_PATTERN:
+                return emotionAnalyzer.analyzeEmotionPattern(member, 7); // 7일간 분석
+            case NO_RESPONSE:
+                return noResponseAnalyzer.analyzeNoResponsePattern(member, 7); // 7일간 분석
+            case KEYWORD_DETECTION:
+                // 키워드 감지는 실시간 처리이므로 여기서는 제외
+                return null;
+            default:
+                return null;
+        }
     }
 
     /**
@@ -57,8 +92,16 @@ public class AlertRuleService {
      */
     @Transactional
     public AlertResult detectKeywordAlert(MessageEntity message, Long memberId) {
-        // TODO: TDD Red 단계 - 더미 구현
-        throw new UnsupportedOperationException("TDD Red 단계: 구현 예정");
+        // KeywordAnalyzer를 사용하여 메시지 분석
+        AlertResult keywordResult = keywordAnalyzer.analyzeKeywordRisk(message);
+
+        // 키워드가 감지된 경우, 즉시 알림 처리 고려할 수 있음
+        if (keywordResult.isAlert() && keywordResult.getAlertLevel() == AlertLevel.EMERGENCY) {
+            // 긴급 키워드의 경우 즉시 처리 로직 추가 가능
+            // 현재는 단순히 결과만 반환
+        }
+
+        return keywordResult;
     }
 
     /**
@@ -176,7 +219,17 @@ public class AlertRuleService {
      */
     @Transactional
     public void toggleAlertRule(Long alertRuleId, boolean active) {
-        // TODO: TDD Red 단계 - 더미 구현
-        throw new UnsupportedOperationException("TDD Red 단계: 구현 예정");
+        // 알림 규칙 조회
+        AlertRule alertRule = alertRuleRepository.findById(alertRuleId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 알림 규칙: " + alertRuleId));
+
+        // 활성화/비활성화 처리
+        if (active) {
+            alertRule.activate();
+        } else {
+            alertRule.deactivate();
+        }
+
+        // JPA 더티 체킹으로 자동 업데이트
     }
 }
