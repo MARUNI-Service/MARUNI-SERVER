@@ -1,14 +1,15 @@
 package com.anyang.maruni.domain.alertrule.application.analyzer;
 
+import org.springframework.stereotype.Component;
+
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertLevel;
 import com.anyang.maruni.domain.conversation.domain.entity.MessageEntity;
-import org.springframework.stereotype.Component;
 
 /**
  * 키워드 위험도 분석기
  *
  * 메시지 내용에서 위험 키워드를 감지합니다.
- * TDD Red 단계: 더미 구현
+ * TDD Red 단계: 더미 구현ter
  */
 @Component
 public class KeywordAnalyzer {
