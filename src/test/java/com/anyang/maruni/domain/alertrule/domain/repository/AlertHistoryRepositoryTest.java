@@ -58,10 +58,11 @@ class AlertHistoryRepositoryTest {
     @Test
     @DisplayName("회원별 알림 이력 페이징 조회 테스트")
     void findByMemberIdOrderByCreatedAtDesc_shouldReturnPagedHistory() {
-        // Given
-        AlertHistory history1 = AlertHistory.createAlert(testRule, testMember, "알림1", "{}");
-        AlertHistory history2 = AlertHistory.createAlert(testRule, testMember, "알림2", "{}");
-        AlertHistory history3 = AlertHistory.createAlert(testRule, testMember, "알림3", "{}");
+        // Given - 서로 다른 날짜로 생성
+        LocalDateTime baseDate = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0);
+        AlertHistory history1 = AlertHistory.createAlertWithDate(testRule, testMember, "알림1", "{}", baseDate.minusDays(2));
+        AlertHistory history2 = AlertHistory.createAlertWithDate(testRule, testMember, "알림2", "{}", baseDate.minusDays(1));
+        AlertHistory history3 = AlertHistory.createAlertWithDate(testRule, testMember, "알림3", "{}", baseDate);
 
         alertHistoryRepository.save(history1);
         alertHistoryRepository.save(history2);
@@ -122,10 +123,11 @@ class AlertHistoryRepositoryTest {
     @Test
     @DisplayName("미발송 알림 조회 테스트")
     void findPendingNotifications_shouldReturnUnsentHistory() {
-        // Given
-        AlertHistory pendingHistory1 = AlertHistory.createAlert(testRule, testMember, "미발송1", "{}");
-        AlertHistory pendingHistory2 = AlertHistory.createAlert(testRule, testMember, "미발송2", "{}");
-        AlertHistory sentHistory = AlertHistory.createAlert(testRule, testMember, "발송완료", "{}");
+        // Given - 서로 다른 날짜로 생성
+        LocalDateTime baseDate = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0);
+        AlertHistory pendingHistory1 = AlertHistory.createAlertWithDate(testRule, testMember, "미발송1", "{}", baseDate.minusDays(2));
+        AlertHistory pendingHistory2 = AlertHistory.createAlertWithDate(testRule, testMember, "미발송2", "{}", baseDate.minusDays(1));
+        AlertHistory sentHistory = AlertHistory.createAlertWithDate(testRule, testMember, "발송완료", "{}", baseDate);
         sentHistory.markNotificationSent("SUCCESS");
 
         alertHistoryRepository.save(pendingHistory1);
@@ -143,11 +145,12 @@ class AlertHistoryRepositoryTest {
     @Test
     @DisplayName("시간 초과 미발송 알림 조회 테스트")
     void findTimeoutPendingNotifications_shouldReturnTimedOutHistory() {
-        // Given
+        // Given - 서로 다른 날짜로 생성
         LocalDateTime cutoffTime = LocalDateTime.now().minusHours(1);
+        LocalDateTime baseDate = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0);
 
-        AlertHistory oldPendingHistory = AlertHistory.createAlert(testRule, testMember, "오래된 미발송", "{}");
-        AlertHistory recentPendingHistory = AlertHistory.createAlert(testRule, testMember, "최근 미발송", "{}");
+        AlertHistory oldPendingHistory = AlertHistory.createAlertWithDate(testRule, testMember, "오래된 미발송", "{}", baseDate.minusDays(2));
+        AlertHistory recentPendingHistory = AlertHistory.createAlertWithDate(testRule, testMember, "최근 미발송", "{}", baseDate.minusDays(1));
 
         alertHistoryRepository.save(oldPendingHistory);
         alertHistoryRepository.save(recentPendingHistory);
@@ -179,11 +182,12 @@ class AlertHistoryRepositoryTest {
     @Test
     @DisplayName("최근 알림 횟수 조회 테스트")
     void countRecentAlertsByMemberId_shouldReturnCorrectCount() {
-        // Given
+        // Given - 서로 다른 날짜로 생성
         LocalDateTime daysAgo = LocalDateTime.now().minusDays(7);
+        LocalDateTime baseDate = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0);
 
-        AlertHistory history1 = AlertHistory.createAlert(testRule, testMember, "알림1", "{}");
-        AlertHistory history2 = AlertHistory.createAlert(testRule, testMember, "알림2", "{}");
+        AlertHistory history1 = AlertHistory.createAlertWithDate(testRule, testMember, "알림1", "{}", baseDate.minusDays(1));
+        AlertHistory history2 = AlertHistory.createAlertWithDate(testRule, testMember, "알림2", "{}", baseDate);
 
         alertHistoryRepository.save(history1);
         alertHistoryRepository.save(history2);
@@ -220,12 +224,13 @@ class AlertHistoryRepositoryTest {
     @Test
     @DisplayName("알림 발송 성공률 계산 테스트")
     void calculateNotificationSuccessRate_shouldReturnCorrectRate() {
-        // Given
+        // Given - 서로 다른 날짜로 생성
         LocalDateTime daysAgo = LocalDateTime.now().minusDays(7);
+        LocalDateTime baseDate = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0);
 
-        AlertHistory successHistory1 = AlertHistory.createAlert(testRule, testMember, "성공1", "{}");
-        AlertHistory successHistory2 = AlertHistory.createAlert(testRule, testMember, "성공2", "{}");
-        AlertHistory failedHistory = AlertHistory.createAlert(testRule, testMember, "실패", "{}");
+        AlertHistory successHistory1 = AlertHistory.createAlertWithDate(testRule, testMember, "성공1", "{}", baseDate.minusDays(3));
+        AlertHistory successHistory2 = AlertHistory.createAlertWithDate(testRule, testMember, "성공2", "{}", baseDate.minusDays(2));
+        AlertHistory failedHistory = AlertHistory.createAlertWithDate(testRule, testMember, "실패", "{}", baseDate.minusDays(1));
 
         successHistory1.markNotificationSent("SUCCESS");
         successHistory2.markNotificationSent("SUCCESS");

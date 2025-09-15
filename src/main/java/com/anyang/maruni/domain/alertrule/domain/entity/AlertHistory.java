@@ -134,6 +134,30 @@ public class AlertHistory extends BaseTimeEntity {
                 .build();
     }
 
+    /**
+     * 테스트용 알림 이력 생성 (특정 시간으로 생성)
+     * @param alertRule 알림 규칙
+     * @param member 대상 회원
+     * @param alertMessage 알림 메시지
+     * @param detectionDetails 감지 상세 정보
+     * @param alertDate 특정 알림 날짜
+     * @return AlertHistory
+     */
+    public static AlertHistory createAlertWithDate(
+            AlertRule alertRule, MemberEntity member,
+            String alertMessage, String detectionDetails,
+            LocalDateTime alertDate) {
+        return AlertHistory.builder()
+                .alertRule(alertRule)
+                .member(member)
+                .alertLevel(alertRule.getAlertLevel())
+                .alertMessage(alertMessage)
+                .detectionDetails(detectionDetails)
+                .alertDate(alertDate)
+                .isNotificationSent(false)
+                .build();
+    }
+
     // ========== 비즈니스 로직 ==========
 
     /**
