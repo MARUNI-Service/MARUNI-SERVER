@@ -44,23 +44,30 @@ public class GuardianEntity extends BaseTimeEntity {
     @Builder.Default
     private List<MemberEntity> members = new ArrayList<>();
 
-    // TDD Red: 더미 구현 (컴파일은 성공, 테스트는 실패)
+    // TDD Green: 실제 구현
     public static GuardianEntity createGuardian(
         String name, String email, String phone,
         GuardianRelation relation, NotificationPreference preference) {
-        // 더미 구현 - null 반환으로 테스트 실패 유도
-        return null;
+        return GuardianEntity.builder()
+            .guardianName(name)
+            .guardianEmail(email)
+            .guardianPhone(phone)
+            .relation(relation)
+            .notificationPreference(preference)
+            .isActive(true)
+            .build();
     }
 
     public void updateNotificationPreference(NotificationPreference preference) {
-        // 더미 구현 - 아무것도 하지 않음
+        this.notificationPreference = preference;
     }
 
     public void deactivate() {
-        // 더미 구현 - 아무것도 하지 않음
+        this.isActive = false;
     }
 
     public void updateGuardianInfo(String name, String phone) {
-        // 더미 구현 - 아무것도 하지 않음
+        this.guardianName = name;
+        this.guardianPhone = phone;
     }
 }

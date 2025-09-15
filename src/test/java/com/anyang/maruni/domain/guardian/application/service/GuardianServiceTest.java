@@ -60,8 +60,15 @@ class GuardianServiceTest {
         // Mock GuardianEntity 사용 (더미 구현으로 인한 null 문제 해결)
         GuardianEntity savedGuardian = mock(GuardianEntity.class);
 
-        given(guardianRepository.findByGuardianEmailAndIsActiveTrue(request.getGuardianEmail()))
-            .willReturn(Optional.empty());
+        // Mock 객체에 대한 getter 반환값 설정
+        given(savedGuardian.getId()).willReturn(1L);
+        given(savedGuardian.getGuardianName()).willReturn("김보호자");
+        given(savedGuardian.getGuardianEmail()).willReturn("guardian@example.com");
+        given(savedGuardian.getGuardianPhone()).willReturn("010-1234-5678");
+        given(savedGuardian.getRelation()).willReturn(GuardianRelation.FAMILY);
+        given(savedGuardian.getNotificationPreference()).willReturn(NotificationPreference.ALL);
+        given(savedGuardian.getIsActive()).willReturn(true);
+
         given(guardianRepository.save(any(GuardianEntity.class)))
             .willReturn(savedGuardian);
 
