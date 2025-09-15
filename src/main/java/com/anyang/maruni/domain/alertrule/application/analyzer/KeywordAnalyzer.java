@@ -1,5 +1,6 @@
 package com.anyang.maruni.domain.alertrule.application.analyzer;
 
+import com.anyang.maruni.domain.alertrule.domain.entity.AlertLevel;
 import com.anyang.maruni.domain.conversation.domain.entity.MessageEntity;
 import org.springframework.stereotype.Component;
 
@@ -32,13 +33,28 @@ public class KeywordAnalyzer {
      * @return 키워드 분석 결과
      */
     public AlertResult analyzeKeywordRisk(MessageEntity message) {
-        // TODO: TDD Red 단계 - 더미 구현
-        // 실제 구현에서는:
-        // 1. 긴급 키워드 감지
-        // 2. 경고 키워드 감지
-        // 3. 적절한 AlertLevel로 결과 반환
+        String content = message.getContent().toLowerCase();
 
-        throw new UnsupportedOperationException("TDD Red 단계: 구현 예정");
+        // 1. 긴급 키워드 감지 (최우선)
+        for (String emergencyKeyword : EMERGENCY_KEYWORDS) {
+            if (content.contains(emergencyKeyword.toLowerCase())) {
+                String alertMessage = String.format("긴급 키워드 감지: '%s'", emergencyKeyword);
+                KeywordMatch keywordMatch = KeywordMatch.emergency(emergencyKeyword, message.getContent());
+                return AlertResult.createAlert(AlertLevel.EMERGENCY, alertMessage, keywordMatch);
+            }
+        }
+
+        // 2. 경고 키워드 감지
+        for (String warningKeyword : WARNING_KEYWORDS) {
+            if (content.contains(warningKeyword.toLowerCase())) {
+                String alertMessage = String.format("위험 키워드 감지: '%s'", warningKeyword);
+                KeywordMatch keywordMatch = KeywordMatch.warning(warningKeyword, message.getContent());
+                return AlertResult.createAlert(AlertLevel.HIGH, alertMessage, keywordMatch);
+            }
+        }
+
+        // 3. 위험 키워드 없음
+        return AlertResult.noAlert();
     }
 
     /**

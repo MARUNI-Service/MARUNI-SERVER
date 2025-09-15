@@ -1,20 +1,29 @@
 package com.anyang.maruni.domain.alertrule.application.analyzer;
 
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertLevel;
+import com.anyang.maruni.domain.conversation.domain.entity.EmotionType;
 import com.anyang.maruni.domain.conversation.domain.entity.MessageEntity;
+import com.anyang.maruni.domain.conversation.domain.entity.MessageType;
+import com.anyang.maruni.domain.conversation.domain.repository.MessageRepository;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 감정 패턴 분석기
  *
  * 연속적인 부정적 감정을 감지하여 위험도를 평가합니다.
- * TDD Red 단계: 더미 구현
  */
 @Component
+@RequiredArgsConstructor
 public class EmotionPatternAnalyzer {
+
+    private final MessageRepository messageRepository;
 
     /**
      * 회원의 감정 패턴 분석
@@ -23,13 +32,20 @@ public class EmotionPatternAnalyzer {
      * @return 감정 패턴 분석 결과
      */
     public AlertResult analyzeEmotionPattern(MemberEntity member, int analysisDays) {
-        // TODO: TDD Red 단계 - 더미 구현
-        // 실제 구현에서는:
-        // 1. 최근 N일간 메시지 조회
-        // 2. 감정 패턴 분석
-        // 3. 위험도 판정
+        // 1. 최근 N일간 사용자 메시지 조회
+        LocalDateTime startDate = LocalDateTime.now().minusDays(analysisDays);
+        List<MessageEntity> recentMessages = messageRepository.findRecentUserMessagesByMemberId(
+                member.getId(), MessageType.USER_MESSAGE, startDate);
 
-        throw new UnsupportedOperationException("TDD Red 단계: 구현 예정");
+        if (recentMessages.isEmpty()) {
+            return AlertResult.noAlert();
+        }
+
+        // 2. 감정 패턴 분석
+        EmotionTrend emotionTrend = calculateEmotionTrend(recentMessages);
+
+        // 3. 위험도 판정
+        return evaluateRiskLevel(emotionTrend);
     }
 
     /**
@@ -38,8 +54,77 @@ public class EmotionPatternAnalyzer {
      * @return 감정 추세 정보
      */
     private EmotionTrend calculateEmotionTrend(List<MessageEntity> messages) {
-        // TODO: TDD Red 단계 - 더미 구현
-        throw new UnsupportedOperationException("TDD Red 단계: 구현 예정");
+        int totalMessages = messages.size();
+
+        // 감정별 개수 계산
+        Map<EmotionType, Long> emotionCounts = messages.stream()
+                .collect(Collectors.groupingBy(MessageEntity::getEmotion, Collectors.counting()));
+
+        int positiveCount = emotionCounts.getOrDefault(EmotionType.POSITIVE, 0L).intValue();
+        int negativeCount = emotionCounts.getOrDefault(EmotionType.NEGATIVE, 0L).intValue();
+        int neutralCount = emotionCounts.getOrDefault(EmotionType.NEUTRAL, 0L).intValue();
+
+        // 부정 감정 비율 계산
+        double negativeRatio = totalMessages > 0 ? (double) negativeCount / totalMessages : 0.0;
+
+        // 연속적인 부정 감정 일수 계산 (최신 메시지부터)
+        int consecutiveNegativeDays = calculateConsecutiveNegativeDays(messages);
+
+        return new EmotionTrend(totalMessages, positiveCount, negativeCount, neutralCount,
+                               consecutiveNegativeDays, negativeRatio);
+    }
+
+    /**
+     * 연속적인 부정 감정 일수 계산
+     * @param messages 메시지 목록 (최신순 정렬)
+     * @return 연속적인 부정 감정 일수
+     */
+    private int calculateConsecutiveNegativeDays(List<MessageEntity> messages) {
+        int consecutiveDays = 0;
+        LocalDateTime currentDay = null;
+
+        for (MessageEntity message : messages) {
+            LocalDateTime messageDay = message.getCreatedAt().toLocalDate().atStartOfDay();
+
+            if (message.getEmotion() == EmotionType.NEGATIVE) {
+                if (currentDay == null || !messageDay.equals(currentDay)) {
+                    consecutiveDays++;
+                    currentDay = messageDay;
+                }
+            } else {
+                // 부정 감정이 아닌 메시지가 나오면 연속성이 끊어짐
+                break;
+            }
+        }
+
+        return consecutiveDays;
+    }
+
+    /**
+     * 위험도 평가
+     * @param emotionTrend 감정 추세
+     * @return 알림 결과
+     */
+    private AlertResult evaluateRiskLevel(EmotionTrend emotionTrend) {
+        int consecutiveNegativeDays = emotionTrend.getConsecutiveNegativeDays();
+        double negativeRatio = emotionTrend.getNegativeRatio();
+
+        // 고위험: 연속 3일 이상 부정감정 + 부정비율 70% 이상
+        if (consecutiveNegativeDays >= 3 && negativeRatio >= 0.7) {
+            String message = String.format("%d일 연속 부정감정 감지 (부정비율: %.1f%%)",
+                    consecutiveNegativeDays, negativeRatio * 100);
+            return AlertResult.createAlert(AlertLevel.HIGH, message, emotionTrend);
+        }
+
+        // 중위험: 연속 2일 부정감정 + 부정비율 50% 이상
+        if (consecutiveNegativeDays >= 2 && negativeRatio >= 0.5) {
+            String message = String.format("%d일 연속 부정감정 감지 (부정비율: %.1f%%)",
+                    consecutiveNegativeDays, negativeRatio * 100);
+            return AlertResult.createAlert(AlertLevel.MEDIUM, message, emotionTrend);
+        }
+
+        // 저위험 또는 알림 없음
+        return AlertResult.noAlert();
     }
 
     /**
