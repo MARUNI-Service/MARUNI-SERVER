@@ -30,6 +30,17 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class AlertRuleService {
 
+    // 분석 기간 설정
+    private static final int DEFAULT_ANALYSIS_DAYS = 7;
+
+    // 알림 메시지 템플릿
+    private static final String GUARDIAN_ALERT_TITLE_TEMPLATE = "[MARUNI 알림] %s 단계 이상징후 감지";
+    private static final String DETECTION_DETAILS_JSON_TEMPLATE = "{\"alertLevel\":\"%s\",\"analysisDetails\":\"%s\"}";
+
+    // 로깅 메시지
+    private static final String NOTIFICATION_FAILURE_LOG = "Guardian notification failed for member: %d";
+    private static final String NOTIFICATION_ERROR_LOG = "Error sending guardian notification: %s";
+
     private final AlertRuleRepository alertRuleRepository;
     private final AlertHistoryRepository alertHistoryRepository;
     private final MemberRepository memberRepository;
@@ -75,9 +86,9 @@ public class AlertRuleService {
     private AlertResult analyzeByRuleType(MemberEntity member, AlertRule rule) {
         switch (rule.getAlertType()) {
             case EMOTION_PATTERN:
-                return emotionAnalyzer.analyzeEmotionPattern(member, 7); // 7일간 분석
+                return emotionAnalyzer.analyzeEmotionPattern(member, DEFAULT_ANALYSIS_DAYS);
             case NO_RESPONSE:
-                return noResponseAnalyzer.analyzeNoResponsePattern(member, 7); // 7일간 분석
+                return noResponseAnalyzer.analyzeNoResponsePattern(member, DEFAULT_ANALYSIS_DAYS);
             case KEYWORD_DETECTION:
                 // 키워드 감지는 실시간 처리이므로 여기서는 제외
                 return null;
@@ -136,7 +147,7 @@ public class AlertRuleService {
      */
     private AlertHistory createAlertHistoryForMVP(MemberEntity member, AlertResult alertResult) {
         // 알림 결과를 JSON 형태로 저장할 상세 정보 구성
-        String detectionDetails = String.format("{\"alertLevel\":\"%s\",\"analysisDetails\":\"%s\"}",
+        String detectionDetails = String.format(DETECTION_DETAILS_JSON_TEMPLATE,
                 alertResult.getAlertLevel(), alertResult.getAnalysisDetails());
 
         // AlertHistory 빌더를 사용하여 직접 생성 (MVP용)
@@ -170,7 +181,7 @@ public class AlertRuleService {
         }
 
         // 3. 알림 제목 구성
-        String alertTitle = String.format("[MARUNI 알림] %s 단계 이상징후 감지", alertLevel.name());
+        String alertTitle = String.format(GUARDIAN_ALERT_TITLE_TEMPLATE, alertLevel.name());
 
         // 4. 보호자에게 알림 발송 시도
         try {
@@ -182,11 +193,11 @@ public class AlertRuleService {
 
             if (!notificationSent) {
                 // 발송 실패 로깅 (실제로는 로거 사용)
-                System.err.println("Guardian notification failed for member: " + memberId);
+                System.err.printf(NOTIFICATION_FAILURE_LOG + "%n", memberId);
             }
         } catch (Exception e) {
             // 알림 발송 실패 처리 (서비스 계속 진행)
-            System.err.println("Error sending guardian notification: " + e.getMessage());
+            System.err.printf(NOTIFICATION_ERROR_LOG + "%n", e.getMessage());
         }
     }
 
@@ -200,7 +211,7 @@ public class AlertRuleService {
     @Transactional
     public AlertHistory recordAlertHistory(AlertRule alertRule, MemberEntity member, AlertResult alertResult) {
         // 알림 결과를 JSON 형태로 저장할 상세 정보 구성
-        String detectionDetails = String.format("{\"alertLevel\":\"%s\",\"analysisDetails\":\"%s\"}",
+        String detectionDetails = String.format(DETECTION_DETAILS_JSON_TEMPLATE,
                 alertResult.getAlertLevel(), alertResult.getAnalysisDetails());
 
         // AlertHistory 엔티티 생성

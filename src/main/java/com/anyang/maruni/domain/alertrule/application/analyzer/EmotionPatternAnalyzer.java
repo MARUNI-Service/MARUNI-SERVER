@@ -23,6 +23,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class EmotionPatternAnalyzer {
 
+    // 위험도 평가 임계값
+    private static final int HIGH_RISK_CONSECUTIVE_DAYS = 3;
+    private static final double HIGH_RISK_NEGATIVE_RATIO = 0.7;
+    private static final int MEDIUM_RISK_CONSECUTIVE_DAYS = 2;
+    private static final double MEDIUM_RISK_NEGATIVE_RATIO = 0.5;
+
     private final MessageRepository messageRepository;
 
     /**
@@ -109,15 +115,15 @@ public class EmotionPatternAnalyzer {
         int consecutiveNegativeDays = emotionTrend.getConsecutiveNegativeDays();
         double negativeRatio = emotionTrend.getNegativeRatio();
 
-        // 고위험: 연속 3일 이상 부정감정 + 부정비율 70% 이상
-        if (consecutiveNegativeDays >= 3 && negativeRatio >= 0.7) {
+        // 고위험: 연속 부정감정 + 부정비율 기준 초과
+        if (consecutiveNegativeDays >= HIGH_RISK_CONSECUTIVE_DAYS && negativeRatio >= HIGH_RISK_NEGATIVE_RATIO) {
             String message = String.format("%d일 연속 부정감정 감지 (부정비율: %.1f%%)",
                     consecutiveNegativeDays, negativeRatio * 100);
             return AlertResult.createAlert(AlertLevel.HIGH, message, emotionTrend);
         }
 
-        // 중위험: 연속 2일 부정감정 + 부정비율 50% 이상
-        if (consecutiveNegativeDays >= 2 && negativeRatio >= 0.5) {
+        // 중위험: 연속 부정감정 + 부정비율 기준 초과
+        if (consecutiveNegativeDays >= MEDIUM_RISK_CONSECUTIVE_DAYS && negativeRatio >= MEDIUM_RISK_NEGATIVE_RATIO) {
             String message = String.format("%d일 연속 부정감정 감지 (부정비율: %.1f%%)",
                     consecutiveNegativeDays, negativeRatio * 100);
             return AlertResult.createAlert(AlertLevel.MEDIUM, message, emotionTrend);

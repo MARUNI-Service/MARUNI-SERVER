@@ -19,6 +19,12 @@ import java.util.List;
 @RequiredArgsConstructor
 public class NoResponseAnalyzer {
 
+    // 위험도 평가 임계값
+    private static final int HIGH_RISK_CONSECUTIVE_NO_RESPONSE_DAYS = 5;
+    private static final double HIGH_RISK_MIN_RESPONSE_RATE = 0.3;
+    private static final int MEDIUM_RISK_CONSECUTIVE_NO_RESPONSE_DAYS = 3;
+    private static final double MEDIUM_RISK_MIN_RESPONSE_RATE = 0.5;
+
     private final DailyCheckRecordRepository dailyCheckRecordRepository;
 
     /**
@@ -104,15 +110,15 @@ public class NoResponseAnalyzer {
         int consecutiveNoResponseDays = responsePattern.getConsecutiveNoResponseDays();
         double responseRate = responsePattern.getResponseRate();
 
-        // 고위험: 연속 5일 이상 무응답 또는 응답률 30% 미만
-        if (consecutiveNoResponseDays >= 5 || responseRate < 0.3) {
+        // 고위험: 연속 무응답 또는 낮은 응답률
+        if (consecutiveNoResponseDays >= HIGH_RISK_CONSECUTIVE_NO_RESPONSE_DAYS || responseRate < HIGH_RISK_MIN_RESPONSE_RATE) {
             String message = String.format("%d일 연속 무응답 (응답률: %.1f%%)",
                     consecutiveNoResponseDays, responseRate * 100);
             return AlertResult.createAlert(AlertLevel.HIGH, message, responsePattern);
         }
 
-        // 중위험: 연속 3일 이상 무응답 또는 응답률 50% 미만
-        if (consecutiveNoResponseDays >= 3 || responseRate < 0.5) {
+        // 중위험: 연속 무응답 또는 낮은 응답률
+        if (consecutiveNoResponseDays >= MEDIUM_RISK_CONSECUTIVE_NO_RESPONSE_DAYS || responseRate < MEDIUM_RISK_MIN_RESPONSE_RATE) {
             String message = String.format("%d일 연속 무응답 (응답률: %.1f%%)",
                     consecutiveNoResponseDays, responseRate * 100);
             return AlertResult.createAlert(AlertLevel.MEDIUM, message, responsePattern);
