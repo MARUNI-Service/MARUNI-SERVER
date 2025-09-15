@@ -15,9 +15,14 @@ java {
 
 repositories {
 	mavenCentral()
+	// Spring AI Milestone Repository
+	maven { url 'https://repo.spring.io/milestone' }
 }
 
 dependencies {
+	// === Spring AI BOM (Bill of Materials) ===
+	implementation platform('org.springframework.ai:spring-ai-bom:1.0.0-M3')
+
 	// === Spring Boot 스타터 의존성 ===
 
 	// Spring Web (Controller, RestController 등 웹 어플리케이션 기본 구성)
@@ -58,14 +63,10 @@ dependencies {
 	// Hibernate Validator (Bean Validation을 위한 의존성)
 	implementation 'org.hibernate.validator:hibernate-validator'
 
-	// === OpenAI API 관련 의존성 ===
+	// === Spring AI OpenAI 관련 의존성 ===
 
-	// OpenAI Java SDK (GPT API 연동용)
-	implementation 'com.theokanning.openai-gpt3-java:service:0.18.2'
-
-	// HTTP 클라이언트 (OpenAI SDK 내부 사용)
-	implementation 'com.squareup.retrofit2:retrofit:3.0.0'
-	implementation 'com.squareup.retrofit2:converter-jackson:3.0.0'
+	// Spring AI OpenAI Starter (공식 Spring AI OpenAI 연동)
+	implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
 
 	// === Firebase FCM (푸시 알림) 관련 의존성 ===
 

@@ -302,18 +302,20 @@ public class ConversationResponseDto {
 ### 2.1 필수 의존성만 추가 (build.gradle)
 
 ```gradle
+repositories {
+    mavenCentral()
+    // Spring AI Milestone Repository
+    maven { url 'https://repo.spring.io/milestone' }
+}
+
 dependencies {
     // 기존 의존성들...
-    
-    // OpenAI Java SDK (핵심)
-    implementation 'com.theokanning.openai-gpt3-java:service:0.18.2'
-    
-    // HTTP 클라이언트 (OpenAI SDK 의존)
-    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
-    implementation 'com.squareup.retrofit2:converter-jackson:2.9.0'
-    
-    // 테스트용 Mock 서버
-    testImplementation 'com.squareup.okhttp3:mockwebserver:4.12.0'
+
+    // Spring AI BOM (Bill of Materials)
+    implementation platform('org.springframework.ai:spring-ai-bom:1.0.0-M3')
+
+    // Spring AI OpenAI Starter (공식 Spring AI OpenAI 연동)
+    implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
 }
 ```
 
@@ -322,35 +324,33 @@ dependencies {
 ```bash
 # 기존 환경변수들...
 
-# OpenAI API 설정 (필수)
+# Spring AI OpenAI 설정 (필수)
 OPENAI_API_KEY=your_openai_api_key_here
 OPENAI_MODEL=gpt-4o
 OPENAI_MAX_TOKENS=100
 OPENAI_TEMPERATURE=0.7
 ```
 
-### 2.3 OpenAI 설정 클래스
+### 2.3 Spring AI 설정 (application.yml)
 
-```java
-@Configuration
-@EnableConfigurationProperties(OpenAIProperties.class)
-public class OpenAIConfig {
-    
-    @Bean
-    public OpenAiService openAiService(@Value("${openai.api.key}") String apiKey) {
-        return new OpenAiService(apiKey, Duration.ofSeconds(30));
-    }
-}
-
-@ConfigurationProperties(prefix = "openai")
-@Data
-public class OpenAIProperties {
-    private String apiKey;
-    private String model = "gpt-4o";
-    private Integer maxTokens = 100;
-    private Double temperature = 0.7;
-}
+```yaml
+# Spring AI OpenAI 설정
+spring:
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY:your_openai_api_key_here}
+      chat:
+        options:
+          model: ${OPENAI_MODEL:gpt-4o}
+          temperature: ${OPENAI_TEMPERATURE:0.7}
+          max-tokens: ${OPENAI_MAX_TOKENS:100}
 ```
+
+**주요 장점:**
+- Spring Boot Auto-configuration 활용으로 별도 설정 클래스 불필요
+- Spring AI가 ChatModel Bean을 자동으로 생성
+- 공식 지원으로 장기 유지보수 보장
+- GPT-4o 완벽 지원
 
 ---
 
@@ -360,23 +360,32 @@ public class OpenAIProperties {
 
 #### 🔴 Day 1-2: Red Phase - 기본 테스트 작성
 ```java
+@ExtendWith(MockitoExtension.class)
 @DisplayName("AI 응답 생성 기본 테스트")
 class SimpleAIResponseGeneratorTest {
-    
+
+    @Mock
+    private ChatModel chatModel;
+
+    @InjectMocks
+    private SimpleAIResponseGenerator aiResponseGenerator;
+
     @Test
     @DisplayName("사용자 메시지에 대한 AI 응답을 생성한다")
     void generateResponse_WithUserMessage_ReturnsResponse() {
         // Given
         String userMessage = "안녕하세요";
-        
+        ChatResponse mockResponse = createMockChatResponse("안녕하세요! 어떻게 지내세요?");
+        when(chatModel.call(any(Prompt.class))).thenReturn(mockResponse);
+
         // When
         String response = aiResponseGenerator.generateResponse(userMessage);
-        
+
         // Then
         assertThat(response).isNotBlank();
         assertThat(response.length()).isLessThanOrEqualTo(100);
     }
-    
+
     @Test
     @DisplayName("기본 감정 분석을 수행한다")
     void analyzeBasicEmotion_WithMessage_ReturnsEmotion() {
@@ -387,6 +396,11 @@ class SimpleAIResponseGeneratorTest {
             .isEqualTo(EmotionType.NEGATIVE);
         assertThat(aiResponseGenerator.analyzeBasicEmotion("그냥 그래요"))
             .isEqualTo(EmotionType.NEUTRAL);
+    }
+
+    private ChatResponse createMockChatResponse(String content) {
+        Generation generation = new Generation(content);
+        return new ChatResponse(List.of(generation));
     }
 }
 
@@ -441,9 +455,39 @@ class SimpleConversationServiceTest {
 ```
 
 #### 🟢 Day 3-4: Green Phase - 기본 구현
-- `SimpleAIResponseGenerator` 구현
+
+**Spring AI 기반 SimpleAIResponseGenerator:**
+```java
+@Component
+@RequiredArgsConstructor
+public class SimpleAIResponseGenerator {
+    private final ChatModel chatModel; // Spring AI Auto-configuration
+
+    public String generateResponse(String userMessage) {
+        try {
+            String combinedPrompt = SYSTEM_PROMPT + "\n\n사용자: " + userMessage + "\n\nAI:";
+
+            OpenAiChatOptions options = OpenAiChatOptions.builder()
+                    .withModel(model)
+                    .withTemperature(temperature)
+                    .withMaxTokens(maxTokens)
+                    .build();
+
+            Prompt prompt = new Prompt(combinedPrompt, options);
+            ChatResponse response = chatModel.call(prompt);
+
+            return truncateResponse(response.getResult().getOutput().getContent().trim());
+        } catch (Exception e) {
+            return handleApiError(e);
+        }
+    }
+}
+```
+
+**핵심 구현 요소:**
 - `ConversationEntity`, `MessageEntity` 구현
 - Repository 인터페이스 및 기본 구현
+- Spring AI ChatModel 의존성 주입
 
 #### 🔵 Day 5: Refactor Phase - 기본 리팩토링
 - 코드 정리 및 예외 처리 추가
@@ -876,8 +920,39 @@ MVP 완성으로 다음 단계 도메인 개발을 위한 모든 인프라가 �
 
 ---
 
+---
+
+## 📈 **최신 업데이트: Spring AI 전환 완료** (2025-09-16)
+
+### 🚀 **OpenAI SDK → Spring AI 마이그레이션 성공**
+
+**전환 이유:**
+- 기존 `theokanning/openai-gpt3-java` 라이브러리 보관(archived) 및 GPT-4o 미지원
+- Spring 생태계 완전 통합 및 공식 지원 확보
+- 보안 취약점 해결 및 장기 유지보수 보장
+
+**전환 결과:**
+- ✅ **의존성 간소화**: 단일 starter로 통합 (`spring-ai-openai-spring-boot-starter`)
+- ✅ **자동 설정**: Spring Boot Auto-configuration 활용
+- ✅ **GPT-4o 완벽 지원**: 최신 모델 공식 지원
+- ✅ **테스트 통과**: 기존 기능 무손실 마이그레이션
+- ✅ **코드 품질 향상**: DI와 Spring 패턴 완전 활용
+
+**기술적 개선점:**
+```java
+// Before: 직접 SDK 관리
+@Bean
+public OpenAiService openAiService() { ... }
+
+// After: Spring AI Auto-configuration
+private final ChatModel chatModel; // 자동 주입
+```
+
+---
+
 **문서 작성일**: 2025-09-13
 **MVP 완료일**: 2025-09-14
-**최종 수정일**: 2025-09-14
+**Spring AI 전환 완료일**: 2025-09-16
+**최종 수정일**: 2025-09-16
 **작성자**: Claude Code
-**버전**: MVP v1.1 (진행 상황 업데이트)
+**버전**: MVP v1.2 (Spring AI 전환 반영)
