@@ -112,15 +112,15 @@ public class NoResponseAnalyzer {
 
         // 고위험: 연속 무응답 또는 낮은 응답률
         if (consecutiveNoResponseDays >= HIGH_RISK_CONSECUTIVE_NO_RESPONSE_DAYS || responseRate < HIGH_RISK_MIN_RESPONSE_RATE) {
-            String message = String.format("%d일 연속 무응답 (응답률: %.1f%%)",
-                    consecutiveNoResponseDays, responseRate * 100);
+            String message = AnalyzerUtils.createConsecutiveDaysMessage(
+                    consecutiveNoResponseDays, responseRate, "무응답");
             return AlertResult.createAlert(AlertLevel.HIGH, message, responsePattern);
         }
 
         // 중위험: 연속 무응답 또는 낮은 응답률
         if (consecutiveNoResponseDays >= MEDIUM_RISK_CONSECUTIVE_NO_RESPONSE_DAYS || responseRate < MEDIUM_RISK_MIN_RESPONSE_RATE) {
-            String message = String.format("%d일 연속 무응답 (응답률: %.1f%%)",
-                    consecutiveNoResponseDays, responseRate * 100);
+            String message = AnalyzerUtils.createConsecutiveDaysMessage(
+                    consecutiveNoResponseDays, responseRate, "무응답");
             return AlertResult.createAlert(AlertLevel.MEDIUM, message, responsePattern);
         }
 

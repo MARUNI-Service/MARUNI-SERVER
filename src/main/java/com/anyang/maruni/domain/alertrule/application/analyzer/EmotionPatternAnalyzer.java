@@ -117,15 +117,15 @@ public class EmotionPatternAnalyzer {
 
         // 고위험: 연속 부정감정 + 부정비율 기준 초과
         if (consecutiveNegativeDays >= HIGH_RISK_CONSECUTIVE_DAYS && negativeRatio >= HIGH_RISK_NEGATIVE_RATIO) {
-            String message = String.format("%d일 연속 부정감정 감지 (부정비율: %.1f%%)",
-                    consecutiveNegativeDays, negativeRatio * 100);
+            String message = AnalyzerUtils.createConsecutiveDaysMessage(
+                    consecutiveNegativeDays, negativeRatio, "부정감정");
             return AlertResult.createAlert(AlertLevel.HIGH, message, emotionTrend);
         }
 
         // 중위험: 연속 부정감정 + 부정비율 기준 초과
         if (consecutiveNegativeDays >= MEDIUM_RISK_CONSECUTIVE_DAYS && negativeRatio >= MEDIUM_RISK_NEGATIVE_RATIO) {
-            String message = String.format("%d일 연속 부정감정 감지 (부정비율: %.1f%%)",
-                    consecutiveNegativeDays, negativeRatio * 100);
+            String message = AnalyzerUtils.createConsecutiveDaysMessage(
+                    consecutiveNegativeDays, negativeRatio, "부정감정");
             return AlertResult.createAlert(AlertLevel.MEDIUM, message, emotionTrend);
         }
 

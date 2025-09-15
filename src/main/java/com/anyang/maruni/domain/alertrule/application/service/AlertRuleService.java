@@ -50,6 +50,41 @@ public class AlertRuleService {
     private final KeywordAnalyzer keywordAnalyzer;
 
     /**
+     * 회원 검증 및 조회 공통 메서드
+     * @param memberId 회원 ID
+     * @return 검증된 회원 엔티티
+     */
+    private MemberEntity validateAndGetMember(Long memberId) {
+        return memberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원: " + memberId));
+    }
+
+    /**
+     * 감지 상세 정보 JSON 생성 공통 메서드
+     * @param alertResult 알림 결과
+     * @return JSON 형태의 상세 정보
+     */
+    private String createDetectionDetailsJson(AlertResult alertResult) {
+        return String.format(DETECTION_DETAILS_JSON_TEMPLATE,
+                alertResult.getAlertLevel(), alertResult.getAnalysisDetails());
+    }
+
+    /**
+     * 알림 발송 결과 처리 공통 메서드
+     * @param memberId 회원 ID
+     * @param success 발송 성공 여부
+     * @param errorMessage 오류 메시지 (실패시)
+     */
+    private void handleNotificationResult(Long memberId, boolean success, String errorMessage) {
+        if (!success) {
+            System.err.printf(NOTIFICATION_FAILURE_LOG + "%n", memberId);
+            if (errorMessage != null) {
+                System.err.printf(NOTIFICATION_ERROR_LOG + "%n", errorMessage);
+            }
+        }
+    }
+
+    /**
      * 회원의 이상징후 종합 감지
      * @param memberId 회원 ID
      * @return 감지된 이상징후 목록
@@ -57,8 +92,7 @@ public class AlertRuleService {
     @Transactional
     public List<AlertResult> detectAnomalies(Long memberId) {
         // 1. 회원 조회
-        MemberEntity member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원: " + memberId));
+        MemberEntity member = validateAndGetMember(memberId);
 
         // 2. 회원의 모든 활성 알림 규칙 조회
         List<AlertRule> activeRules = alertRuleRepository.findActiveRulesByMemberId(memberId);
@@ -126,8 +160,7 @@ public class AlertRuleService {
     @Transactional
     public Long triggerAlert(Long memberId, AlertResult alertResult) {
         // 1. 회원 조회
-        MemberEntity member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원: " + memberId));
+        MemberEntity member = validateAndGetMember(memberId);
 
         // 2. AlertHistory 생성 및 저장 (MVP: AlertRule 없이 생성)
         AlertHistory alertHistory = createAlertHistoryForMVP(member, alertResult);
@@ -147,8 +180,7 @@ public class AlertRuleService {
      */
     private AlertHistory createAlertHistoryForMVP(MemberEntity member, AlertResult alertResult) {
         // 알림 결과를 JSON 형태로 저장할 상세 정보 구성
-        String detectionDetails = String.format(DETECTION_DETAILS_JSON_TEMPLATE,
-                alertResult.getAlertLevel(), alertResult.getAnalysisDetails());
+        String detectionDetails = createDetectionDetailsJson(alertResult);
 
         // AlertHistory 빌더를 사용하여 직접 생성 (MVP용)
         return AlertHistory.builder()
@@ -171,8 +203,7 @@ public class AlertRuleService {
     @Transactional
     public void sendGuardianNotification(Long memberId, AlertLevel alertLevel, String alertMessage) {
         // 1. 회원 조회
-        MemberEntity member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원: " + memberId));
+        MemberEntity member = validateAndGetMember(memberId);
 
         // 2. 회원의 보호자 확인
         if (member.getGuardian() == null) {
@@ -191,13 +222,10 @@ public class AlertRuleService {
                     alertMessage
             );
 
-            if (!notificationSent) {
-                // 발송 실패 로깅 (실제로는 로거 사용)
-                System.err.printf(NOTIFICATION_FAILURE_LOG + "%n", memberId);
-            }
+            handleNotificationResult(memberId, notificationSent, null);
         } catch (Exception e) {
             // 알림 발송 실패 처리 (서비스 계속 진행)
-            System.err.printf(NOTIFICATION_ERROR_LOG + "%n", e.getMessage());
+            handleNotificationResult(memberId, false, e.getMessage());
         }
     }
 
@@ -211,8 +239,7 @@ public class AlertRuleService {
     @Transactional
     public AlertHistory recordAlertHistory(AlertRule alertRule, MemberEntity member, AlertResult alertResult) {
         // 알림 결과를 JSON 형태로 저장할 상세 정보 구성
-        String detectionDetails = String.format(DETECTION_DETAILS_JSON_TEMPLATE,
-                alertResult.getAlertLevel(), alertResult.getAnalysisDetails());
+        String detectionDetails = createDetectionDetailsJson(alertResult);
 
         // AlertHistory 엔티티 생성
         AlertHistory alertHistory = AlertHistory.createAlert(

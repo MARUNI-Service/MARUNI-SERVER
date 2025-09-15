@@ -38,7 +38,7 @@ public class KeywordAnalyzer {
         // 1. 긴급 키워드 감지 (최우선)
         for (String emergencyKeyword : EMERGENCY_KEYWORDS) {
             if (content.contains(emergencyKeyword.toLowerCase())) {
-                String alertMessage = String.format("긴급 키워드 감지: '%s'", emergencyKeyword);
+                String alertMessage = AnalyzerUtils.createKeywordDetectionMessage(AlertLevel.EMERGENCY, emergencyKeyword);
                 KeywordMatch keywordMatch = KeywordMatch.emergency(emergencyKeyword, message.getContent());
                 return AlertResult.createAlert(AlertLevel.EMERGENCY, alertMessage, keywordMatch);
             }
@@ -47,7 +47,7 @@ public class KeywordAnalyzer {
         // 2. 경고 키워드 감지
         for (String warningKeyword : WARNING_KEYWORDS) {
             if (content.contains(warningKeyword.toLowerCase())) {
-                String alertMessage = String.format("위험 키워드 감지: '%s'", warningKeyword);
+                String alertMessage = AnalyzerUtils.createKeywordDetectionMessage(AlertLevel.HIGH, warningKeyword);
                 KeywordMatch keywordMatch = KeywordMatch.warning(warningKeyword, message.getContent());
                 return AlertResult.createAlert(AlertLevel.HIGH, alertMessage, keywordMatch);
             }
