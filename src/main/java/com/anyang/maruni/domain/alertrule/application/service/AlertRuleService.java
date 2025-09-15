@@ -112,13 +112,41 @@ public class AlertRuleService {
      */
     @Transactional
     public Long triggerAlert(Long memberId, AlertResult alertResult) {
-        // TODO: TDD Red 단계 - 더미 구현
-        // 실제 구현에서는:
-        // 1. AlertHistory 생성
-        // 2. 보호자 알림 발송 트리거
-        // 3. 알림 이력 저장
+        // 1. 회원 조회
+        MemberEntity member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원: " + memberId));
 
-        throw new UnsupportedOperationException("TDD Red 단계: 구현 예정");
+        // 2. AlertHistory 생성 및 저장 (MVP: AlertRule 없이 생성)
+        AlertHistory alertHistory = createAlertHistoryForMVP(member, alertResult);
+        AlertHistory savedHistory = alertHistoryRepository.save(alertHistory);
+
+        // 3. 보호자 알림 발송 트리거
+        sendGuardianNotification(memberId, alertResult.getAlertLevel(), alertResult.getMessage());
+
+        return savedHistory.getId();
+    }
+
+    /**
+     * MVP용 AlertHistory 생성 (AlertRule 없이)
+     * @param member 회원
+     * @param alertResult 알림 결과
+     * @return AlertHistory
+     */
+    private AlertHistory createAlertHistoryForMVP(MemberEntity member, AlertResult alertResult) {
+        // 알림 결과를 JSON 형태로 저장할 상세 정보 구성
+        String detectionDetails = String.format("{\"alertLevel\":\"%s\",\"analysisDetails\":\"%s\"}",
+                alertResult.getAlertLevel(), alertResult.getAnalysisDetails());
+
+        // AlertHistory 빌더를 사용하여 직접 생성 (MVP용)
+        return AlertHistory.builder()
+                .alertRule(null) // MVP에서는 AlertRule 없이 생성
+                .member(member)
+                .alertLevel(alertResult.getAlertLevel())
+                .alertMessage(alertResult.getMessage())
+                .detectionDetails(detectionDetails)
+                .alertDate(LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0))
+                .isNotificationSent(false)
+                .build();
     }
 
     /**
