@@ -10,6 +10,7 @@ import com.anyang.maruni.domain.alertrule.domain.repository.AlertRuleRepository;
 import com.anyang.maruni.domain.conversation.domain.entity.MessageEntity;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
 import com.anyang.maruni.domain.member.domain.repository.MemberRepository;
+import com.anyang.maruni.domain.notification.domain.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +33,7 @@ public class AlertRuleService {
     private final AlertRuleRepository alertRuleRepository;
     private final AlertHistoryRepository alertHistoryRepository;
     private final MemberRepository memberRepository;
+    private final NotificationService notificationService;
     private final EmotionPatternAnalyzer emotionAnalyzer;
     private final NoResponseAnalyzer noResponseAnalyzer;
     private final KeywordAnalyzer keywordAnalyzer;
@@ -157,10 +159,35 @@ public class AlertRuleService {
      */
     @Transactional
     public void sendGuardianNotification(Long memberId, AlertLevel alertLevel, String alertMessage) {
-        // TODO: TDD Red 단계 - 더미 구현
-        // 실제 구현에서는 Guardian 서비스와 연동
+        // 1. 회원 조회
+        MemberEntity member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원: " + memberId));
 
-        throw new UnsupportedOperationException("TDD Red 단계: 구현 예정");
+        // 2. 회원의 보호자 확인
+        if (member.getGuardian() == null) {
+            // 보호자가 없는 경우 로깅 후 종료
+            return;
+        }
+
+        // 3. 알림 제목 구성
+        String alertTitle = String.format("[MARUNI 알림] %s 단계 이상징후 감지", alertLevel.name());
+
+        // 4. 보호자에게 알림 발송 시도
+        try {
+            boolean notificationSent = notificationService.sendPushNotification(
+                    member.getGuardian().getId(),
+                    alertTitle,
+                    alertMessage
+            );
+
+            if (!notificationSent) {
+                // 발송 실패 로깅 (실제로는 로거 사용)
+                System.err.println("Guardian notification failed for member: " + memberId);
+            }
+        } catch (Exception e) {
+            // 알림 발송 실패 처리 (서비스 계속 진행)
+            System.err.println("Error sending guardian notification: " + e.getMessage());
+        }
     }
 
     /**
