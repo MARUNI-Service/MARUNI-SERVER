@@ -93,11 +93,32 @@ Architecture: DDD (Domain-Driven Design)
 5. 가이드 문서 즉시 업데이트
 ```
 
-### **코딩 표준**
+### **코딩 표준 & 기술 규격**
 - **DDD 구조**: Domain/Application/Infrastructure/Presentation 계층 분리
 - **TDD 방법론**: Red(실패) → Green(성공) → Blue(리팩토링) 완전 사이클
 - **Spring Boot**: @Transactional, Bean Validation, JWT 인증 적용
 - **테스트**: Unit/Integration/Mock 테스트 조합으로 90% 커버리지
+
+📋 **[기술 규격서 통합 인덱스](./project-specifications.md)** - 분리된 specifications 문서 가이드
+
+## 📝 기술 규격 문서 ([specifications/](./specifications/))
+
+### **일상 개발 필수 문서**
+- **[코딩 표준](./specifications/coding-standards.md)** ⭐⭐⭐ - Java 컨벤션, Entity/Service 패턴 (매일 참조)
+- **[빠른 참조](./specifications/quick-reference.md)** ⭐⭐⭐ - 템플릿, 체크리스트 (일상 작업)
+
+### **아키텍처 & 설계**
+- **[아키텍처 가이드](./specifications/architecture-guide.md)** ⭐⭐ - DDD 구조, 패키지 조직 (새 기능 개발)
+- **[API 설계 가이드](./specifications/api-design-guide.md)** ⭐⭐ - REST 설계, Controller 패턴 (API 개발)
+- **[데이터베이스 설계](./specifications/database-design-guide.md)** ⭐ - Entity 패턴, JPA 매핑 (DB 작업)
+
+### **품질 & 보안**
+- **[테스트 가이드](./specifications/testing-guide.md)** ⭐ - TDD 사이클, Mock 패턴 (테스트 작성)
+- **[보안 가이드](./specifications/security-guide.md)** 🔒 - JWT 구현, Spring Security (보안 설정)
+- **[성능 최적화](./specifications/performance-guide.md)** ⚡ - JPA 튜닝, 캐싱 전략 (성능 작업)
+
+### **환경 & 기술 스택**
+- **[기술 스택](./specifications/tech-stack.md)** 🛠️ - 전체 기술 정보, Docker 설정 (환경 구성)
 
 ---
 
