@@ -55,10 +55,6 @@
 - [Conversation 도메인 가이드](./implementation/conversation-domain-guide.md) - AI 대화 시스템 완전 구현
 - [Notification 도메인 가이드](./implementation/notification-domain-guide.md) - 알림 서비스 완전 구현
 
-### ✅ 완료된 작업 ([completed/](./completed/))
-- [Week 5 TDD 완료 보고서](./completed/week5-tdd-report.md) ✅
-- [Week 6 Guardian TDD 완전 사이클 보고서](./completed/week6-guardian-report.md) ✅
-- [환경 설정 완료 기록](./completed/environment-setup.md) ✅
 
 ## 🎉 **Week 7 AlertRule 도메인 TDD Blue 단계 완료!**
 
@@ -72,7 +68,6 @@
 - ✅ **REST API 계층**: 8개 엔드포인트 + 6개 DTO + Swagger 문서화 완성
 
 🚀 **Phase 2 MVP 100% 완성으로 실제 운영 준비 완료!**
-상세 성과: [Week 7 완료 보고서](./completed/week7-alertrule-report.md) ⭐ **Blue 단계 완벽 달성**
 
 ## 🏆 Phase 2 MVP 최종 달성 상태 (2025-09-16 완성)
 ```yaml

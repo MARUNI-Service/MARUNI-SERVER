@@ -34,7 +34,7 @@ MARUNI 프로젝트의 모든 문서가 체계적으로 정리되어 있습니�
 
 #### 🏆 현재 상태 (2025-09-16)
 - **[Phase 2 MVP 완성!](./phase2/README.md)** - 🎉 100% 완료, 실제 운영 준비 완료!
-- **[Week 7 AlertRule 완성](./phase2/completed/week7-alertrule-report.md)** - 🏆 **TDD Blue 단계 완료, REST API 완성**
+- **Week 7 AlertRule 완성** - 🏆 **TDD Blue 단계 완료, REST API 완성**
 
 #### 📖 도메인별 구현 가이드 (Phase 2 완성)
 - **[DailyCheck 도메인](./phase2/implementation/dailycheck-domain-guide.md)** - 스케줄링 시스템 완전 구현 가이드
@@ -43,10 +43,6 @@ MARUNI 프로젝트의 모든 문서가 체계적으로 정리되어 있습니�
 - **[Conversation 도메인](./phase2/implementation/conversation-domain-guide.md)** - AI 대화 시스템 완전 구현 가이드
 - **[Notification 도메인](./phase2/implementation/notification-domain-guide.md)** - 알림 서비스 완전 구현 가이드
 
-#### ✅ 완료 기록
-- **[Week 5 TDD 보고서](./phase2/completed/week5-tdd-report.md)** - DailyCheck 도메인 완벽한 TDD 사이클
-- **[Week 6 TDD 보고서](./phase2/completed/week6-guardian-report.md)** - Guardian 도메인 TDD 완전 사이클 + REST API 구현
-- **[환경 설정 완료](./phase2/completed/environment-setup.md)** - Phase 2 인프라 구축
 
 ### 📊 프로젝트 현황 요약
 
