@@ -47,10 +47,6 @@
 
 ## 📁 문서 구조
 
-### 📋 계획 문서 ([planning/](./planning/))
-- [Week 5: DailyCheck 도메인](./planning/week5-dailycheck.md) - 완료 ✅
-- [Week 6: Guardian 도메인](./planning/week6-guardian.md) - 완료 ✅
-- [Week 7: AlertRule 도메인](./planning/week7-alertrule.md) - **계획 완료** 📋✅
 
 ### 🏗️ 도메인별 구현 가이드 ([implementation/](./implementation/))
 - [DailyCheck 도메인 가이드](./implementation/dailycheck-domain-guide.md) - 스케줄링 시스템 완전 구현
@@ -76,7 +72,7 @@
 - ✅ **REST API 계층**: 8개 엔드포인트 + 6개 DTO + Swagger 문서화 완성
 
 🚀 **Phase 2 MVP 100% 완성으로 실제 운영 준비 완료!**
-상세 성과: [Week 7 계획서](./planning/week7-alertrule.md) ⭐ **Blue 단계 완벽 달성**
+상세 성과: [Week 7 완료 보고서](./completed/week7-alertrule-report.md) ⭐ **Blue 단계 완벽 달성**
 
 ## 🏆 Phase 2 MVP 최종 달성 상태 (2025-09-16 완성)
 ```yaml
