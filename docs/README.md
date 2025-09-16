@@ -1,85 +1,54 @@
 # MARUNI 프로젝트 문서
 
-## 📚 문서 구조 가이드
+**노인 돌봄을 위한 AI 기반 소통 서비스** - 완전한 추가개발 가이드
 
-MARUNI 프로젝트의 모든 문서가 체계적으로 정리되어 있습니다.
+## 📋 프로젝트 현황
 
-### 📂 폴더별 문서 구조
+### 🎉 **완성된 시스템**
+- ✅ **AI 대화 시스템**: OpenAI GPT-4o 연동, 감정 분석
+- ✅ **스케줄링 시스템**: 매일 정시 안부 메시지 자동 발송
+- ✅ **보호자 관리**: Guardian 등록 및 알림 설정
+- ✅ **이상징후 감지**: 3종 알고리즘으로 위험 상황 자동 감지
+- ✅ **알림 시스템**: Mock 기반 푸시 알림 (실제 구현 준비 완료)
 
-#### 🎉 [Phase 2: 스케줄링 & 알림 시스템](./phase2/)
-**100% 완료** - 매일 안부 메시지 스케줄링 및 보호자 알림 시스템 MVP 완성! 🚀
-- ✅ **완료**: Week 5 DailyCheck 도메인 TDD 완료 (Red→Green→Blue)
-- ✅ **완료**: Week 6 Guardian 도메인 TDD 완전 사이클 완료 + REST API
-- 🎉 **완료**: Week 7 AlertRule 도메인 TDD 완전 사이클 완료 (2025-09-16)
-  - ✅ Red → Green → Blue 완전 사이클 달성 + 8개 REST API 완성
-- 🏆 **달성**: Phase 2 MVP 100% 완성! 실제 운영 준비 완료
+### 🚀 **다음 단계**
+- 📊 고급 건강 분석 시스템
+- 📱 모바일 앱 연동 API
+- 🎯 실시간 모니터링 대시보드
 
-#### 🤖 Phase 1: AI 대화 시스템 (완료)
-**100% 완료** - OpenAI 기반 AI 대화 및 감정 분석 시스템
-- ✅ GPT-4o 연동 AI 응답 생성
-- ✅ 키워드 기반 감정 분석
-- ✅ DDD 아키텍처 완벽 적용
+## 📂 문서 구조
 
-#### 🏗️ [Architecture](./architecture/)
-아키텍처 설계 및 분석 문서
-- 📊 보안 계층 분석 보고서
-- 🏛️ DDD 구조 가이드라인
+### 🏗️ **도메인별 구현 가이드** ([domains/](./domains/))
+추가 개발 시 참고할 완전한 구현 가이드
 
-#### 📝 [General](./general/)
-전체 프로젝트 계획 및 일반 문서
-- 🗺️ 전체 개발 로드맵
-- 🔧 백엔드 우선 개발 전략
+- **[DailyCheck](./domains/dailycheck.md)** - 스케줄링 시스템
+- **[Guardian](./domains/guardian.md)** - 보호자 관리 시스템
+- **[AlertRule](./domains/alertrule.md)** - 이상징후 감지 시스템
+- **[Conversation](./domains/conversation.md)** - AI 대화 시스템
+- **[Notification](./domains/notification.md)** - 알림 서비스
 
-### 🔗 주요 링크
+### 🎯 **확장 로드맵** ([roadmap/](./roadmap/))
+다음 단계 개발을 위한 계획
 
-#### 🏆 현재 상태 (2025-09-16)
-- **[Phase 2 MVP 완성!](./phase2/README.md)** - 🎉 100% 완료, 실제 운영 준비 완료!
-- **Week 7 AlertRule 완성** - 🏆 **TDD Blue 단계 완료, REST API 완성**
+- **[Phase 3 계획](./roadmap/phase3.md)** - 고도화 & 모바일 연동
 
-#### 📖 도메인별 구현 가이드 (Phase 2 완성)
-- **[DailyCheck 도메인](./phase2/implementation/dailycheck-domain-guide.md)** - 스케줄링 시스템 완전 구현 가이드
-- **[Guardian 도메인](./phase2/implementation/guardian-domain-guide.md)** - 보호자 관리 시스템 완전 구현 가이드
-- **[AlertRule 도메인](./phase2/implementation/alertrule-domain-guide.md)** - 이상징후 감지 시스템 완전 구현 가이드
-- **[Conversation 도메인](./phase2/implementation/conversation-domain-guide.md)** - AI 대화 시스템 완전 구현 가이드
-- **[Notification 도메인](./phase2/implementation/notification-domain-guide.md)** - 알림 서비스 완전 구현 가이드
+## 🛠️ 개발 가이드
 
+### **새로운 도메인 추가 시**
+1. 기존 도메인 가이드를 참고하여 DDD 구조 적용
+2. TDD Red-Green-Blue 사이클로 개발
+3. 실제 구현 완료 후 domains 폴더에 가이드 추가
 
-### 📊 프로젝트 현황 요약
+### **기존 도메인 확장 시**
+1. 해당 도메인 가이드에서 현재 구현 상태 확인
+2. 확장 방향 섹션 참고하여 호환성 유지
+3. 테스트 커버리지 90% 이상 유지
 
-```yaml
-전체 진행률: 100% 완료 (2025-09-16 MVP 완성!) 🎉
+### **문서 관리 원칙**
+- 실제 구현과 100% 일치하도록 유지
+- 계획서가 아닌 구현 가이드 중심
+- 추가 개발 완료 시 즉시 가이드 업데이트
 
-Phase 1 (AI 대화): ✅ 100% 완료
-- OpenAI GPT-4o 연동
-- 감정 분석 시스템
-- DDD 아키텍처 완성
+---
 
-Phase 2 (스케줄링 & 알림): 🎉 100% 완료 (MVP 완전 완성!)
-- DailyCheck 도메인: ✅ 100% 완료 (완벽한 TDD 사이클)
-- Guardian 도메인: ✅ 100% 완료 (TDD 완전 사이클 + REST API)
-- AlertRule 도메인: ✅ 100% 완료 (TDD 완전 사이클 + REST API)
-  • ✅ 5개 핵심 Entity/Enum 구현 완료
-  • ✅ 6개 테스트 클래스 완료 (Red → Green → Blue 완료)
-  • ✅ 이상징후 감지 알고리즘 3종 구현 완료
-  • ✅ AlertRuleService 50%+ 코드 품질 향상 완료
-  • ✅ Blue(Refactor) 단계 완료 + 8개 REST API 완성
-- Notification 시스템: ✅ 100% 완료 (Mock 구현체 포함)
-
-🚀 달성: Phase 2 MVP 100% 완성! 실제 운영 준비 완료!
-```
-
-### 🔧 문서 이용 가이드
-
-1. **개발자**: [Phase 2 README](./phase2/README.md)에서 현재 진행 상황 확인
-2. **아키텍트**: [도메인 아키텍처](./phase2/implementation/domain-architecture.md)에서 설계 확인
-3. **PM**: 각 Phase별 README에서 진행률 및 다음 단계 확인
-4. **QA**: [완료 기록](./phase2/completed/) 폴더에서 테스트 커버리지 확인
-
-### 📝 문서 업데이트 원칙
-
-- **실시간 업데이트**: 작업 완료 시 즉시 문서 업데이트
-- **구조화**: 관심사별로 문서 분리 유지
-- **상호 링크**: README 파일을 통한 네비게이션 제공
-- **버전 관리**: Git을 통한 문서 변경 이력 추적
-
-**MARUNI 프로젝트는 체계적인 문서화를 통해 개발 효율성과 코드 품질을 동시에 추구합니다.** 🚀
+**MARUNI는 TDD 방법론과 DDD 아키텍처를 완벽히 적용한 견고한 시스템입니다.** 🚀
