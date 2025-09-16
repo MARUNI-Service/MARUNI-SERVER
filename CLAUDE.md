@@ -9,26 +9,39 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 📚 **핵심 문서 구조**
 ```
 docs/
-├── README.md              # 📋 전체 프로젝트 가이드 (필수 읽기)
-├── domains/               # 🏗️ 도메인별 구현 가이드
-│   ├── README.md          # 도메인 아키텍처 개요 및 의존 관계
-│   ├── conversation.md    # AI 대화 시스템 (OpenAI GPT-4o)
-│   ├── dailycheck.md      # 스케줄링 시스템 (TDD 완전 사이클)
-│   ├── alertrule.md       # 이상징후 감지 (3종 알고리즘)
-│   ├── guardian.md        # 보호자 관리 시스템
-│   ├── member.md          # 회원 관리 시스템
-│   ├── auth.md            # JWT 인증/인가 시스템
-│   └── notification.md    # 알림 시스템
-└── roadmap/               # 🚀 발전 계획
-    ├── README.md          # 전체 로드맵 및 Phase별 현황
-    └── phase3.md          # 고도화 & 모바일 연동 계획
+├── README.md                   # 📋 전체 프로젝트 가이드 (필수 읽기)
+├── domains/                    # 🏗️ 도메인별 구현 가이드
+│   ├── README.md               # 도메인 아키텍처 개요 및 의존 관계
+│   ├── conversation.md         # AI 대화 시스템 (OpenAI GPT-4o)
+│   ├── dailycheck.md           # 스케줄링 시스템 (TDD 완전 사이클)
+│   ├── alertrule.md            # 이상징후 감지 (3종 알고리즘)
+│   ├── guardian.md             # 보호자 관리 시스템
+│   ├── member.md               # 회원 관리 시스템
+│   ├── auth.md                 # JWT 인증/인가 시스템
+│   └── notification.md         # 알림 시스템
+├── roadmap/                    # 🚀 발전 계획
+│   ├── README.md               # 전체 로드맵 및 Phase별 현황
+│   └── phase3.md               # 고도화 & 모바일 연동 계획
+└── specifications/             # 📝 기술 규격서 (9개 문서)
+    ├── README.md               # 기술 규격서 통합 가이드
+    ├── coding-standards.md     # ⭐⭐⭐ Java 코딩 컨벤션 (매일 참조)
+    ├── quick-reference.md      # ⭐⭐⭐ 빠른 참조 템플릿 (일상 작업)
+    ├── architecture-guide.md   # ⭐⭐ DDD 아키텍처 설계 (새 기능 개발)
+    ├── api-design-guide.md     # ⭐⭐ REST API 설계 (API 개발)
+    ├── database-design-guide.md # ⭐ Entity 설계 패턴 (DB 작업)
+    ├── testing-guide.md        # ⭐ TDD 테스트 작성법 (테스트 작성)
+    ├── security-guide.md       # 🔒 JWT 보안 구현 (보안 설정)
+    ├── performance-guide.md    # ⚡ JPA 성능 최적화 (성능 작업)
+    └── tech-stack.md           # 🛠️ 기술 스택 전체 (환경 구성)
 ```
 
 ### ⚠️ **작업 시 필수 순서**
 1. **`docs/README.md`** 전체 현황 파악
 2. **`docs/domains/README.md`** 도메인 구조 이해
-3. **해당 도메인 가이드 숙지** (예: `domains/conversation.md`)
-4. **실제 코드 확인 후 작업 진행**
+3. **`docs/specifications/README.md`** 기술 규격서 확인
+4. **해당 도메인 가이드 숙지** (예: `domains/conversation.md`)
+5. **관련 기술 규격 확인** (예: `specifications/coding-standards.md`)
+6. **실제 코드 확인 후 작업 진행**
 
 ## Project Overview
 
@@ -274,9 +287,15 @@ com.anyang.maruni/
 ```
 1. docs/README.md → 전체 프로젝트 현황 파악
 2. docs/domains/README.md → 도메인 아키텍처 이해
-3. docs/domains/{domain}.md → 해당 도메인 구현 가이드 숙지
-4. 실제 코드 확인 → 문서와 코드 일치성 검증
-5. 작업 진행 → 문서 기반 패턴 준수
+3. docs/specifications/README.md → 기술 규격서 통합 가이드 확인
+4. docs/domains/{domain}.md → 해당 도메인 구현 가이드 숙지
+5. docs/specifications/{관련규격}.md → 해당 기술 규격 숙지
+   ├── coding-standards.md (매일 참조)
+   ├── architecture-guide.md (새 기능 개발)
+   ├── api-design-guide.md (API 작업)
+   └── database-design-guide.md (Entity 작업)
+6. 실제 코드 확인 → 문서와 코드 일치성 검증
+7. 작업 진행 → 문서 기반 패턴 준수
 ```
 
 #### ⚠️ **중요: MARUNI는 완성된 프로젝트**
@@ -299,25 +318,31 @@ com.anyang.maruni/
 ✅ "docs/domains/member.md를 확인하니 MemberService가 이미 완성되어 있습니다"
 
 ❌ "JWT 설정을 새로 하겠습니다"
-✅ "docs/domains/auth.md에 JWT 시스템이 완전히 구현되어 있어 기존 패턴을 사용하겠습니다"
+✅ "docs/specifications/security-guide.md에 JWT 시스템이 완전히 구현되어 있어 기존 패턴을 사용하겠습니다"
+
+❌ "Entity를 만들어야겠습니다"
+✅ "docs/specifications/database-design-guide.md의 BaseTimeEntity 상속 패턴을 따르겠습니다"
 ```
 
 #### 2. **기존 패턴 준수**
 ```
 ❌ "새로운 방식으로 Entity를 만들겠습니다"
-✅ "BaseTimeEntity 상속 + 정적 팩토리 메서드 패턴을 따르겠습니다"
+✅ "docs/specifications/database-design-guide.md의 BaseTimeEntity 상속 + 정적 팩토리 메서드 패턴을 따르겠습니다"
 
 ❌ "Controller를 간단하게 만들겠습니다"
-✅ "@AutoApiResponse + Swagger 어노테이션 패턴을 적용하겠습니다"
+✅ "docs/specifications/api-design-guide.md의 @AutoApiResponse + Swagger 어노테이션 패턴을 적용하겠습니다"
+
+❌ "테스트를 대충 만들겠습니다"
+✅ "docs/specifications/testing-guide.md의 TDD Red-Green-Blue 사이클을 적용하겠습니다"
 ```
 
 #### 3. **TDD 사이클 준수**
 ```
 완성된 도메인 확장 시:
-1. 기존 테스트 패턴 분석
-2. Red: 실패 테스트 작성
-3. Green: 최소 구현
-4. Blue: 리팩토링 + 품질 향상
+1. docs/specifications/testing-guide.md의 테스트 패턴 분석
+2. Red: 기존 스타일로 실패 테스트 작성
+3. Green: 기존 패턴 준수한 최소 구현
+4. Blue: 리팩토링 + 50% 이상 코드 품질 향상
 ```
 
 ## 🔄 개발 워크플로우
@@ -339,12 +364,17 @@ com.anyang.maruni/
 ### 🔧 **기존 도메인 확장 시** (현재 주요 작업)
 ```
 1. docs/domains/{해당도메인}.md 가이드 완전 숙지
-2. 실제 코드 확인 → 문서와 일치성 검증
-3. 기존 테스트 패턴 분석
+2. docs/specifications/ 관련 기술 규격 확인:
+   ├── coding-standards.md (코딩 컨벤션)
+   ├── architecture-guide.md (DDD 구조)
+   ├── api-design-guide.md (API 패턴)
+   ├── database-design-guide.md (Entity 패턴)
+   └── testing-guide.md (TDD 패턴)
+3. 실제 코드 확인 → 문서와 일치성 검증
 4. TDD 사이클 준수:
    ├── Red: 기존 테스트 스타일로 실패 테스트 작성
    ├── Green: 기존 패턴 준수한 최소 구현
-   └── Blue: 기존 리팩토링 수준에 맞는 코드 개선
+   └── Blue: 50% 이상 코드 품질 향상
 5. 해당 도메인 가이드 문서 업데이트
 ```
 
