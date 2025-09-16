@@ -1,56 +1,54 @@
-# MARUNI 프로젝트 기술 규격서 (통합 인덱스)
+# MARUNI 기술 규격서
 
-**📌 이 파일은 분리된 specifications 문서들의 통합 인덱스입니다.**
+**프로젝트 전반의 기술 표준 및 개발 컨벤션 통합 가이드**
 
 ---
 
-## 📁 분리된 문서 구조
+## 📝 기술 규격 문서 구조
 
-기존의 큰 문서가 관리 편의성을 위해 다음과 같이 분리되었습니다:
+### **📂 `specifications/` 폴더 (9개 문서)**
 
-### **📂 `docs/specifications/` 폴더**
-
-1. **[coding-standards.md](specifications/coding-standards.md)** ⭐ **(매일 참조)**
+1. **[coding-standards.md](coding-standards.md)** ⭐⭐⭐ **(매일 참조)**
    - Java 코딩 컨벤션 및 네이밍 규칙
    - Entity/Service/Controller/DTO 표준 패턴
    - Import 순서 및 어노테이션 순서
 
-2. **[architecture-guide.md](specifications/architecture-guide.md)** ⭐ **(새 기능 개발)**
+2. **[architecture-guide.md](architecture-guide.md)** ⭐⭐ **(새 기능 개발)**
    - DDD 계층 구조 및 의존성 규칙
    - 도메인 간 상호작용 패턴
    - Package 구조 및 조직화 표준
 
-3. **[api-design-guide.md](specifications/api-design-guide.md)** ⭐ **(API 개발)**
+3. **[api-design-guide.md](api-design-guide.md)** ⭐⭐ **(API 개발)**
    - REST API 설계 원칙
    - Controller 구현 표준
    - 응답 래핑 및 예외 처리
 
-4. **[database-design-guide.md](specifications/database-design-guide.md)** ⭐ **(Entity 작업)**
+4. **[database-design-guide.md](database-design-guide.md)** ⭐ **(Entity 작업)**
    - Entity 설계 원칙 (BaseTimeEntity 상속)
    - JPA 관계 매핑 패턴
    - Repository 쿼리 작성법
 
-5. **[testing-guide.md](specifications/testing-guide.md)** ⭐ **(테스트 작성)**
+5. **[testing-guide.md](testing-guide.md)** ⭐ **(테스트 작성)**
    - TDD Red-Green-Blue 사이클
    - 테스트 구조 및 명명 규칙
    - Mock 활용 패턴
 
-6. **[security-guide.md](specifications/security-guide.md)** 🔒 **(보안 설정)**
+6. **[security-guide.md](security-guide.md)** 🔒 **(보안 설정)**
    - JWT 인증 시스템 구현
    - Spring Security 설정
    - 데이터 암호화 및 보안 모범사례
 
-7. **[performance-guide.md](specifications/performance-guide.md)** ⚡ **(성능 최적화)**
+7. **[performance-guide.md](performance-guide.md)** ⚡ **(성능 최적화)**
    - JPA N+1 쿼리 해결
    - 캐싱 전략
    - 데이터베이스 인덱스 설계
 
-8. **[tech-stack.md](specifications/tech-stack.md)** 🛠️ **(기술 스택 정보)**
+8. **[tech-stack.md](tech-stack.md)** 🛠️ **(기술 스택 정보)**
    - 전체 기술 스택 및 버전 정보
    - 환경 설정 및 Docker 구성
    - 개발 환경 설정
 
-9. **[quick-reference.md](specifications/quick-reference.md)** 🚀 **(빠른 참조)**
+9. **[quick-reference.md](quick-reference.md)** 🚀 **(빠른 참조)**
    - 자주 사용하는 템플릿 모음
    - 체크리스트 및 어노테이션 모음
    - 트러블슈팅 가이드
@@ -103,6 +101,6 @@
 
 ---
 
-**📍 기존 대용량 문서는 이제 사용하지 않습니다. 위의 분리된 문서들을 사용해 주세요.**
+**📍 이 폴더의 9개 문서가 MARUNI 프로젝트의 모든 기술 표준을 정의합니다.**
 
 **Version**: v2.0.0 | **Updated**: 2025-09-16

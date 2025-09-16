@@ -99,7 +99,7 @@ Architecture: DDD (Domain-Driven Design)
 - **Spring Boot**: @Transactional, Bean Validation, JWT 인증 적용
 - **테스트**: Unit/Integration/Mock 테스트 조합으로 90% 커버리지
 
-📋 **[기술 규격서 통합 인덱스](./project-specifications.md)** - 분리된 specifications 문서 가이드
+📋 **[기술 규격서 통합 가이드](./specifications/README.md)** - specifications 문서 통합 인덱스
 
 ## 📝 기술 규격 문서 ([specifications/](./specifications/))
 
