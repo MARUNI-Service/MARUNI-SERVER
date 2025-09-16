@@ -32,6 +32,7 @@ Architecture: DDD (Domain-Driven Design)
 ## 📋 현재 완성 상태
 
 ### 🎉 **100% 완성된 시스템**
+- ✅ **JWT 인증 시스템**: Access/Refresh Token, Redis 저장, 블랙리스트 관리
 - ✅ **AI 대화 시스템**: OpenAI GPT-4o 연동, 감정 분석
 - ✅ **스케줄링 시스템**: 매일 정시 안부 메시지 자동 발송
 - ✅ **보호자 관리**: Guardian 등록 및 알림 설정
@@ -55,6 +56,8 @@ Architecture: DDD (Domain-Driven Design)
 
 | 도메인 | 핵심 기능 | 상태 | 가이드 |
 |--------|----------|------|--------|
+| **[Member](./domains/member.md)** | 회원 관리 시스템<br/>• CRUD • Spring Security 연동 | ✅ 100% | Foundation Layer |
+| **[Auth](./domains/auth.md)** | JWT 기반 인증/인가 시스템<br/>• Access/Refresh Token • Redis 저장 • 블랙리스트 관리 | ✅ 100% | DDD 의존성 역전 |
 | **[DailyCheck](./domains/dailycheck.md)** | 매일 정시 안부 메시지 자동 발송<br/>• Cron 스케줄링 • 중복 방지 • 자동 재시도 | ✅ 100% | TDD 완전 사이클 |
 | **[Guardian](./domains/guardian.md)** | 보호자-회원 관계 관리<br/>• 관계 설정 • 알림 설정 • 권한 관리 | ✅ 100% | 7개 REST API |
 | **[AlertRule](./domains/alertrule.md)** | 이상징후 자동 감지 시스템<br/>• 감정패턴 • 무응답 • 키워드 분석 | ✅ 100% | 3종 알고리즘 |
