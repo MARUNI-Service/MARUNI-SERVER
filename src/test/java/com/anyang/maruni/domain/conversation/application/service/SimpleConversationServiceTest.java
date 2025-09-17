@@ -21,7 +21,8 @@ import com.anyang.maruni.domain.conversation.domain.entity.MessageEntity;
 import com.anyang.maruni.domain.conversation.domain.entity.MessageType;
 import com.anyang.maruni.domain.conversation.domain.repository.ConversationRepository;
 import com.anyang.maruni.domain.conversation.domain.repository.MessageRepository;
-import com.anyang.maruni.domain.conversation.infrastructure.SimpleAIResponseGenerator;
+import com.anyang.maruni.domain.conversation.domain.port.AIResponsePort;
+import com.anyang.maruni.domain.conversation.domain.port.EmotionAnalysisPort;
 
 /**
  * SimpleConversationService 테스트 (실제 비즈니스 로직)
@@ -39,7 +40,10 @@ class SimpleConversationServiceTest {
     private MessageRepository messageRepository;
 
     @Mock
-    private SimpleAIResponseGenerator aiResponseGenerator;
+    private AIResponsePort aiResponsePort;              // 변경
+
+    @Mock
+    private EmotionAnalysisPort emotionAnalysisPort;    // 변경
 
     @InjectMocks
     private SimpleConversationService simpleConversationService;
@@ -77,12 +81,12 @@ class SimpleConversationServiceTest {
         // Mock 설정
         when(conversationRepository.findActiveByMemberId(memberId))
                 .thenReturn(Optional.of(existingConversation));
-        when(aiResponseGenerator.analyzeBasicEmotion(userContent))
+        when(emotionAnalysisPort.analyzeEmotion(userContent))
                 .thenReturn(EmotionType.POSITIVE);
         when(messageRepository.save(any(MessageEntity.class)))
                 .thenReturn(savedUserMessage)
                 .thenReturn(savedAiMessage);
-        when(aiResponseGenerator.generateResponse(userContent))
+        when(aiResponsePort.generateResponse(userContent))
                 .thenReturn(aiResponse);
 
         // When
@@ -107,8 +111,8 @@ class SimpleConversationServiceTest {
         // Repository 메서드 호출 검증
         verify(conversationRepository).findActiveByMemberId(memberId);
         verify(conversationRepository, never()).save(any()); // 기존 대화 사용
-        verify(aiResponseGenerator).analyzeBasicEmotion(userContent);
-        verify(aiResponseGenerator).generateResponse(userContent);
+        verify(emotionAnalysisPort).analyzeEmotion(userContent);
+        verify(aiResponsePort).generateResponse(userContent);
         verify(messageRepository, times(2)).save(any(MessageEntity.class));
     }
 
@@ -147,12 +151,12 @@ class SimpleConversationServiceTest {
                 .thenReturn(Optional.empty()); // 기존 대화 없음
         when(conversationRepository.save(any(ConversationEntity.class)))
                 .thenReturn(newConversation);
-        when(aiResponseGenerator.analyzeBasicEmotion(userContent))
+        when(emotionAnalysisPort.analyzeEmotion(userContent))
                 .thenReturn(EmotionType.NEUTRAL);
         when(messageRepository.save(any(MessageEntity.class)))
                 .thenReturn(savedUserMessage)
                 .thenReturn(savedAiMessage);
-        when(aiResponseGenerator.generateResponse(userContent))
+        when(aiResponsePort.generateResponse(userContent))
                 .thenReturn(aiResponse);
 
         // When
@@ -201,12 +205,12 @@ class SimpleConversationServiceTest {
         // Mock 설정
         when(conversationRepository.findActiveByMemberId(memberId))
                 .thenReturn(Optional.of(conversation));
-        when(aiResponseGenerator.analyzeBasicEmotion(userContent))
+        when(emotionAnalysisPort.analyzeEmotion(userContent))
                 .thenReturn(EmotionType.NEGATIVE);
         when(messageRepository.save(any(MessageEntity.class)))
                 .thenReturn(savedUserMessage)
                 .thenReturn(savedAiMessage);
-        when(aiResponseGenerator.generateResponse(userContent))
+        when(aiResponsePort.generateResponse(userContent))
                 .thenReturn(aiResponse);
 
         // When
@@ -217,6 +221,6 @@ class SimpleConversationServiceTest {
         assertThat(result.getAiMessage().getContent()).contains("걱정하고 있어요");
 
         // 감정 분석 호출 검증
-        verify(aiResponseGenerator).analyzeBasicEmotion(userContent);
+        verify(emotionAnalysisPort).analyzeEmotion(userContent);
     }
 }

@@ -31,9 +31,8 @@ public class SimpleConversationService {
     private final ConversationRepository conversationRepository;
     private final MessageRepository messageRepository;
 
-    // ✅ 변경: Port 인터페이스에 의존
-    private final AIResponsePort aiResponsePort;              // 기존: SimpleAIResponseGenerator
-    private final EmotionAnalysisPort emotionAnalysisPort;    // 기존: SimpleAIResponseGenerator.analyzeBasicEmotion
+    private final AIResponsePort aiResponsePort;
+    private final EmotionAnalysisPort emotionAnalysisPort;
 
     /**
      * 사용자 메시지 처리 및 AI 응답 생성
