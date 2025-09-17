@@ -1,21 +1,33 @@
-# Conversation 도메인 리팩토링 분석 보고서
+# Conversation 도메인 리팩토링 분석 보고서 (v2.2)
 
 **작성일**: 2025-09-17
 **분석 대상**: conversation 도메인 전체 구조
 **분석 관점**: DDD 구조화, 책임 분리, 오버 엔지니어링 여부
+**업데이트**: 노인 돌봄 도메인 특성 반영 (멀티턴 대화 필수)
+
+### 📝 **v2.2 주요 변경사항 (도메인 특성 재검토)**
+- **🎯 도메인 우선**: 노인 돌봄 챗봇 = 지속적 대화가 핵심 요구사항
+- **🔥 멀티턴 대화**: YAGNI 대상이 아닌 **즉시 필요한 핵심 기능**
+- **📈 ConversationContext**: Medium → **High Priority**로 승격
+- **🏥 도메인 특화**: 건강 상태, 감정 패턴, 증상 추적 등 전문 요구사항 반영
 
 ---
 
-## 📋 **Executive Summary**
+## 📋 **Executive Summary (v2.2 - 도메인 특성 반영)**
 
-conversation 도메인은 **전반적으로 잘 설계**되어 있으나, **Anemic Domain Model**과 **Fat Service Layer** 문제가 주요 개선점입니다. Port-Adapter 패턴과 설정 중앙화는 적절한 수준이며, 오버 엔지니어링보다는 **적절한 아키텍처 설계**로 판단됩니다.
+conversation 도메인은 **전반적으로 잘 설계**되어 있으나, **노인 돌봄 챗봇**이라는 도메인 특성을 고려할 때 **멀티턴 대화**와 **도메인 특화 기능**이 즉시 필요합니다. **도메인 전문성**이 **일반적인 YAGNI 원칙**보다 우선합니다.
 
-**핵심 문제점**:
-- 도메인 엔티티에 비즈니스 로직 부재 (Anemic Domain Model)
-- Application Service의 과도한 책임 집중
-- Repository 계층의 비즈니스 로직 침투
+**🔥 즉시 해결 필요 (도메인 핵심 요구사항)**:
+- **멀티턴 대화 지원** (ConversationContext 도입) - 노인 돌봄의 핵심
+- **Anemic Domain Model** → Rich Domain Model (최우선)
+- **Repository 비즈니스 로직 분리** (Clean Architecture 기본 원칙)
 
-**권장 방향**: 도메인 로직을 엔티티로 이동 + 서비스 책임 분리
+**🏥 도메인 특화 요구사항**:
+- 건강 상태 추적 (증상, 약물, 병원 방문 등)
+- 감정 패턴 분석 (우울감, 외로움 감지)
+- 보호자 알림 연동 (응급 상황 감지)
+
+**권장 방향**: **도메인 전문성 우선** + **지속적 돌봄 관점**
 
 ---
 
@@ -209,7 +221,7 @@ public class ConversationService {
 }
 ```
 
-#### 2) **OpenAIResponseAdapter - 과도한 책임**
+#### 2) **OpenAIResponseAdapter - 적정 수준 책임 분리** ⚠️ **YAGNI 적용**
 
 **현재 문제**:
 ```java
@@ -224,42 +236,42 @@ public class OpenAIResponseAdapter implements AIResponsePort {
 }
 ```
 
-**개선안**:
+**개선안 (Gemini 리뷰 반영 - 3개 클래스로 적절히 분리)**:
 ```java
-// 책임별 클래스 분리
-@Component
-public class MessageValidator {
-    public String sanitize(String message) { /* 입력 검증 전담 */ }
-}
-
+// 과도한 분리(5개)에서 적정 수준(3개)으로 조정
 @Component
 public class OpenAIClient {
-    public String callApi(String prompt) { /* API 호출 전담 */ }
+    public String callApi(String prompt) {
+        // API 호출 + 기본 에러 처리 통합
+    }
 }
 
 @Component
 public class ResponseProcessor {
-    public String process(String rawResponse) { /* 응답 후처리 전담 */ }
+    public String processMessage(String message) {
+        // 입력 검증 + 응답 후처리 통합
+    }
 }
 
 @Component
 public class OpenAIResponseAdapter implements AIResponsePort {
     // 조율 역할만 담당
     public String generateResponse(String userMessage) {
-        String sanitized = messageValidator.sanitize(userMessage);
-        String response = openAIClient.callApi(sanitized);
-        return responseProcessor.process(response);
+        String processed = responseProcessor.processMessage(userMessage);
+        return openAIClient.callApi(processed);
     }
 }
 ```
 
-#### 3) **Repository의 비즈니스 로직 포함**
+**변경 사유**: YAGNI 원칙에 따라 현재 필요한 수준에서만 분리
+
+#### 3) **Repository의 비즈니스 로직 포함** 🔥 **타협 불가 (Gemini 의견과 다름)**
 
 **현재 문제**:
 ```java
 @Repository
 public interface ConversationRepository extends JpaRepository<ConversationEntity, Long> {
-    // 문제: Repository에 비즈니스 규칙이 포함됨
+    // 명확한 안티패턴: Repository에 비즈니스 규칙 하드코딩
     default Optional<ConversationEntity> findActiveByMemberId(Long memberId) {
         return findTopByMemberIdOrderByCreatedAtDesc(memberId); // "최신 = 활성"이라는 비즈니스 규칙
     }
@@ -267,10 +279,11 @@ public interface ConversationRepository extends JpaRepository<ConversationEntity
 ```
 
 **문제점**:
-- "가장 최근 대화 = 활성 대화"라는 비즈니스 규칙이 Repository에 있음
-- Repository는 데이터 접근만 담당해야 함
+- "가장 최근 대화 = 활성 대화"라는 비즈니스 규칙이 Repository에 하드코딩됨
+- Clean Architecture 기본 원칙 위반 (Repository는 데이터 접근만 담당)
+- 활성 상태 정의 변경 시 Repository 수정 필요 (OCP 위반)
 
-**개선안**:
+**개선안 (Clean Architecture 준수)**:
 ```java
 // Repository는 순수 데이터 접근만
 @Repository
@@ -688,35 +701,50 @@ public class ConversationEntity extends BaseTimeEntity {
 - 비즈니스 규칙의 중앙화
 - Service 계층 복잡도 감소
 
-### 🟡 **Medium Priority (점진적 개선)**
+### 🔥 **High Priority (도메인 핵심 요구사항)**
 
-#### 3) **AIResponsePort 개선 - 컨텍스트 지원**
-**예상 소요 시간**: 2-3일
+#### 3) **AIResponsePort 개선 - 멀티턴 대화 지원** 🏥 **도메인 특성 (Medium → High 승격)**
+**예상 소요 시간**: 3-4일
 
-**개선 내용**:
+**노인 돌봄 대화 시나리오**:
+```
+👵 "오늘 기분이 좀 안 좋아요"
+🤖 "어떤 일이 있으셨나요? 말씀해보세요"
+👵 "무릎이 아파서 산책을 못 갔어요"
+🤖 "무릎이 아프시는군요. 언제부터 아프셨나요?" (이전 맥락 필요)
+👵 "어제부터요. 계단 오르내릴 때 특히 아파요"
+🤖 "병원에 가보시는 것이 좋겠어요. 가족분께 연락해드릴까요?" (증상 종합 판단)
+```
+
+**필수 개선안**:
 ```java
-// 기존: 단순한 String → String
+// 기존: 단순한 String → String (맥락 상실)
 public interface AIResponsePort {
     String generateResponse(String userMessage);
 }
 
-// 개선: 풍부한 컨텍스트 지원
+// 개선: 노인 돌봄 특화 컨텍스트 지원
 public interface AIResponsePort {
     String generateResponse(ConversationContext context);
 }
 
 public class ConversationContext {
     private String currentMessage;
-    private List<Message> recentHistory;    // 멀티턴 대화 지원
-    private MemberProfile memberProfile;    // 개인화
-    private MessageType expectedType;       // 응답 타입 힌트
+    private List<Message> recentHistory;        // 대화 맥락 유지 (필수)
+    private MemberProfile memberProfile;        // 나이, 건강상태 (필수)
+    private HealthContext healthContext;        // 증상, 약물 정보 (도메인 특화)
+    private EmotionPattern recentEmotions;      // 감정 변화 추적 (돌봄 핵심)
+    private Set<String> mentionedSymptoms;      // 언급된 증상들
+    private AlertLevel currentAlertLevel;       // 위험도 평가
 }
 ```
 
-**기대 효과**:
-- 멀티턴 대화 지원
-- 개인화된 AI 응답
-- 컨텍스트 기반 더 정확한 응답
+**도메인 필요성**:
+- **지속적 돌봄**: 단발성 대화가 아닌 장기간 관계 형성 필요
+- **건강 상태 추적**: 증상 변화, 약물 복용, 병원 방문 등 연속성 중요
+- **감정 패턴 분석**: 우울감, 외로움 등 장기적 변화 모니터링
+
+### 🟡 **Medium Priority (점진적 개선)**
 
 #### 4) **DTO 변환 로직 개선**
 **예상 소요 시간**: 1일
@@ -748,35 +776,52 @@ public class ConversationMapper {
 - Magic String 제거
 - 사용하지 않는 메서드 제거 (YAGNI 적용)
 
-#### 6) **EmotionAnalysisPort 재검토**
-**예상 소요 시간**: 판단에 따라 결정
+#### 6) **EmotionAnalysisPort 재검토** ⚠️ **Phase 3 계획 확인 후 결정**
+**예상 소요 시간**: Phase 3 로드맵 확인 후 결정
 
-**옵션 1**: 포트 유지 (ML 도입 계획 시)
-**옵션 2**: 도메인 서비스로 단순화 (키워드만 계속 사용 시)
+**현재 상황**:
+```java
+// 단순한 키워드 매칭만 수행 (List.contains 수준)
+public class KeywordBasedEmotionAnalyzer implements EmotionAnalysisPort {
+    public EmotionType analyzeEmotion(String message) {
+        return keywords.get("negative").stream().anyMatch(message::contains)
+            ? EmotionType.NEGATIVE : EmotionType.POSITIVE;
+    }
+}
+```
+
+**판단 기준 (Gemini 리뷰 반영)**:
+- **옵션 1**: Phase 3에서 6개월 내 ML 감정분석 도입 계획 있음 → 포트 유지
+- **옵션 2**: 단순 키워드 매칭만 계속 사용 → 도메인 서비스로 단순화
+- **결정 방법**: `docs/roadmap/phase3.md` 확인 후 실용적 판단
 
 ---
 
-## 📊 **리팩토링 로드맵**
+## 📊 **리팩토링 로드맵 (v2.2 - 도메인 특성 반영)**
 
-### **Week 1: 기반 구조 개선**
-- [ ] SimpleConversationService 책임 분리
-- [ ] ConversationManager, MessageProcessor 도입
+### **🔥 Week 1: 핵심 안티패턴 해결 + 도메인 모델 강화**
+- [ ] **Repository 비즈니스 로직 분리** (최우선 - Clean Architecture 기본 원칙)
+- [ ] **ConversationEntity 도메인 로직 추가** (Anemic → Rich Domain Model)
+- [ ] **도메인 특화 엔티티 설계** (HealthContext, EmotionPattern 등)
 - [ ] 기본 테스트 코드 작성
 
-### **Week 2: 도메인 모델 강화**
-- [ ] ConversationEntity에 비즈니스 로직 추가
-- [ ] Aggregate 경계 명확화
-- [ ] Repository 인터페이스 정리
+### **🏥 Week 2: 멀티턴 대화 지원 (노인 돌봄 핵심)**
+- [ ] **ConversationContext 도입** (건강상태, 감정패턴, 대화맥락 포함)
+- [ ] **AIResponsePort 인터페이스 개선** (단순 String → Context 기반)
+- [ ] **OpenAIResponseAdapter 개선** (멀티턴 대화 지원)
+- [ ] **대화 히스토리 관리** 로직 구현
 
-### **Week 3: 확장성 개선**
-- [ ] ConversationContext 도입
-- [ ] AIResponsePort 인터페이스 개선
-- [ ] 멀티턴 대화 지원 구조 구축
+### **🟡 Week 3: 적정 수준 책임 분리 (YAGNI 적용)**
+- [ ] **SimpleConversationService 책임 분리** (3-4개 클래스로 적절히)
+- [ ] **ConversationManager, MessageProcessor 도입**
+- [ ] **도메인 서비스 계층** 구성 (HealthTracker, EmotionAnalyzer 등)
+- [ ] **EmotionAnalysisPort 재검토** (Phase 3 ML 계획 확인 후)
 
-### **Week 4: 품질 개선**
-- [ ] DTO 변환 로직 최적화
-- [ ] 중복 코드 제거
-- [ ] 통합 테스트 강화
+### **🟢 Week 4: 도메인 특화 기능 + 품질 개선**
+- [ ] **AlertRule 도메인 연동** 강화 (건강 이상 징후 감지)
+- [ ] **Guardian 도메인 연동** (응급 상황 알림)
+- [ ] DTO 변환 로직 최적화 (MessageDto.from() 등)
+- [ ] 중복 코드 제거 및 통합 테스트 강화
 
 ---
 
@@ -799,14 +844,36 @@ public class ConversationMapper {
 
 ---
 
-## 🎯 **최종 결론**
+## 🎯 **최종 결론 (v2.2 - 도메인 전문성 우선)**
 
-conversation 도메인은 **전반적으로 적절한 수준의 아키텍처 설계**가 이루어져 있습니다. 주요 개선점은 **Anemic Domain Model 해결**과 **Service 계층 책임 분리**이며, 이는 오버 엔지니어링이 아닌 **필요한 구조 개선**으로 판단됩니다.
+conversation 도메인은 **전반적으로 적절한 수준의 아키텍처 설계**가 이루어져 있으나, **노인 돌봄 챗봇**이라는 도메인 특성을 고려할 때 **멀티턴 대화와 지속적 관계 형성**이 핵심 요구사항임을 재확인했습니다.
 
-**핵심 메시지**:
-- ✅ Port-Adapter 패턴과 DDD 구조는 적절함 (유지)
-- 🔧 도메인 로직을 엔티티로 이동 (Rich Domain Model)
-- 🎯 Service 계층 책임 분리 (Single Responsibility)
-- 📈 확장성을 위한 점진적 개선 (ConversationContext 등)
+**🏥 도메인 특성 재평가**:
+- **지속적 돌봄**: 단발성 대화가 아닌 장기간 관계 형성이 핵심
+- **건강 상태 추적**: 증상 변화, 감정 패턴, 응급 상황 감지 필요
+- **멀티턴 대화**: YAGNI 대상이 아닌 **도메인 본질적 요구사항**
 
-위 리팩토링을 통해 더욱 견고하고 확장 가능한 conversation 도메인이 될 것으로 기대됩니다.
+**🔥 즉시 해결 (도메인 핵심)**:
+- 🏥 **멀티턴 대화 지원** (ConversationContext 도입) - 돌봄의 핵심
+- 🚨 **Repository 비즈니스 로직 분리** (Clean Architecture 기본 원칙)
+- 🔧 **Anemic Domain Model → Rich Domain Model** (도메인 로직 강화)
+
+**📋 핵심 교훈**:
+- **도메인 전문성** > **일반적인 개발 원칙** (YAGNI 등)
+- 노인 돌봄 = 지속적 관계 형성 + 건강 상태 모니터링
+- 기술적 완성도보다는 **실제 돌봄 효과**에 집중
+
+**최종 방향**: **도메인 전문성 우선** + **지속적 돌봄 관점**으로 노인분들께 실질적 도움이 되는 conversation 도메인 구축
+
+---
+
+### 🎭 **Gemini vs 도메인 전문가 관점 비교**
+
+| 관점 | Gemini (일반 개발) | 도메인 전문가 (노인 돌봄) |
+|------|-----------------|----------------------|
+| 멀티턴 대화 | YAGNI 적용 대상 | **핵심 요구사항** |
+| ConversationContext | 선제적 설계 | **즉시 필요** |
+| 우선순위 | 기술적 완성도 | **돌봄 효과** |
+| 결론 | 신중한 접근 | **도메인 특성 우선** |
+
+**결론**: 도메인 전문성이 일반적인 개발 원칙보다 우선하는 좋은 사례
