@@ -7,6 +7,14 @@ spring:
   config:
     import:
       - optional:file:.env[.properties]
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY:your_openai_api_key_here}
+      chat:
+        options:
+          model: ${OPENAI_MODEL:gpt-4o}
+          temperature: ${OPENAI_TEMPERATURE:0.7}
+          max-tokens: ${OPENAI_MAX_TOKENS:100}
 
 # 공통 보안 설정
 security:
@@ -22,12 +30,6 @@ jwt:
     expiration: ${JWT_ACCESS_EXPIRATION:3600000}  # 1시간 (밀리초)
   refresh-token:
     expiration: ${JWT_REFRESH_EXPIRATION:1209600000}  # 14일 (밀리초)
-
-# OpenAI API 설정
-openai:
-  api:
-    key: ${OPENAI_API_KEY:your_openai_api_key_here}
-  model: ${OPENAI_MODEL:gpt-4o}
 
 # 공통 Swagger 설정
 swagger:

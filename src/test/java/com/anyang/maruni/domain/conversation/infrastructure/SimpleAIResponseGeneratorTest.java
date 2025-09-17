@@ -1,17 +1,17 @@
 package com.anyang.maruni.domain.conversation.infrastructure;
 
 import com.anyang.maruni.domain.conversation.domain.entity.EmotionType;
-import com.theokanning.openai.completion.chat.ChatCompletionChoice;
-import com.theokanning.openai.completion.chat.ChatCompletionResult;
-import com.theokanning.openai.completion.chat.ChatMessage;
-import com.theokanning.openai.completion.chat.ChatMessageRole;
-import com.theokanning.openai.service.OpenAiService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 
@@ -20,18 +20,16 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 /**
- * SimpleAIResponseGenerator 테스트 (TDD Red 단계)
- * 
- * 이 테스트들은 현재 모두 실패할 예정입니다.
- * TDD의 Red 단계에서 먼저 실패하는 테스트를 작성하고,
- * Green 단계에서 테스트를 통과하는 최소한의 코드를 작성할 예정입니다.
+ * SimpleAIResponseGenerator 테스트 (Spring AI 버전)
+ *
+ * Spring AI ChatModel을 사용한 AI 응답 생성기 테스트입니다.
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AI 응답 생성기 테스트")
 class SimpleAIResponseGeneratorTest {
 
     @Mock
-    private OpenAiService openAiService;
+    private ChatModel chatModel;
 
     @InjectMocks
     private SimpleAIResponseGenerator simpleAIResponseGenerator;
@@ -41,16 +39,19 @@ class SimpleAIResponseGeneratorTest {
     void generateResponse_WithUserMessage_ReturnsAIResponse() {
         // Given
         String userMessage = "안녕하세요, 오늘 기분이 좋지 않아요";
-        
-        // OpenAI API Mock 응답 설정
-        ChatCompletionResult mockResult = createMockChatCompletionResult(
+
+        // Spring AI Mock 응답 설정
+        ChatResponse mockResponse = createMockChatResponse(
             "안녕하세요! 무슨 일이 있으셨나요? 이야기해보세요."
         );
-        when(openAiService.createChatCompletion(any())).thenReturn(mockResult);
-        
+        when(chatModel.call(any(Prompt.class))).thenReturn(mockResponse);
+
+        // 필요한 프로퍼티 설정
+        setUpProperties();
+
         // When
         String response = simpleAIResponseGenerator.generateResponse(userMessage);
-        
+
         // Then
         assertThat(response).isNotNull();
         assertThat(response).isNotBlank();
@@ -63,15 +64,18 @@ class SimpleAIResponseGeneratorTest {
     void generateResponse_WithEmptyMessage_ReturnsDefaultResponse() {
         // Given
         String emptyMessage = "";
-        
-        ChatCompletionResult mockResult = createMockChatCompletionResult(
+
+        ChatResponse mockResponse = createMockChatResponse(
             "안녕하세요! 어떻게 지내세요?"
         );
-        when(openAiService.createChatCompletion(any())).thenReturn(mockResult);
-        
+        when(chatModel.call(any(Prompt.class))).thenReturn(mockResponse);
+
+        // 필요한 프로퍼티 설정
+        setUpProperties();
+
         // When
         String response = simpleAIResponseGenerator.generateResponse(emptyMessage);
-        
+
         // Then
         assertThat(response).isNotNull();
         assertThat(response).isNotBlank();
@@ -82,10 +86,10 @@ class SimpleAIResponseGeneratorTest {
     void analyzeBasicEmotion_WithPositiveMessage_ReturnsPositive() {
         // Given
         String positiveMessage = "오늘 정말 기분이 좋아요! 감사합니다.";
-        
+
         // When
         EmotionType emotion = simpleAIResponseGenerator.analyzeBasicEmotion(positiveMessage);
-        
+
         // Then
         assertThat(emotion).isEqualTo(EmotionType.POSITIVE);
     }
@@ -95,10 +99,10 @@ class SimpleAIResponseGeneratorTest {
     void analyzeBasicEmotion_WithNegativeMessage_ReturnsNegative() {
         // Given
         String negativeMessage = "오늘 너무 슬프고 우울해요. 힘들어요.";
-        
+
         // When
         EmotionType emotion = simpleAIResponseGenerator.analyzeBasicEmotion(negativeMessage);
-        
+
         // Then
         assertThat(emotion).isEqualTo(EmotionType.NEGATIVE);
     }
@@ -108,10 +112,10 @@ class SimpleAIResponseGeneratorTest {
     void analyzeBasicEmotion_WithNeutralMessage_ReturnsNeutral() {
         // Given
         String neutralMessage = "그냥 그래요. 별일 없어요.";
-        
+
         // When
         EmotionType emotion = simpleAIResponseGenerator.analyzeBasicEmotion(neutralMessage);
-        
+
         // Then
         assertThat(emotion).isEqualTo(EmotionType.NEUTRAL);
     }
@@ -121,31 +125,28 @@ class SimpleAIResponseGeneratorTest {
     void analyzeBasicEmotion_WithNullMessage_ReturnsNeutral() {
         // Given
         String nullMessage = null;
-        
+
         // When
         EmotionType emotion = simpleAIResponseGenerator.analyzeBasicEmotion(nullMessage);
-        
+
         // Then
         assertThat(emotion).isEqualTo(EmotionType.NEUTRAL);
     }
 
     /**
-     * OpenAI API 응답 Mock 객체 생성 헬퍼 메서드
+     * Spring AI ChatResponse Mock 객체 생성 헬퍼 메서드
      */
-    private ChatCompletionResult createMockChatCompletionResult(String content) {
-        // 간단한 Mock 객체 생성 (실제 SDK 클래스 구조에 맞춰 수정)
-        ChatMessage responseMessage = new ChatMessage(ChatMessageRole.ASSISTANT.value(), content);
-        
-        ChatCompletionChoice choice = new ChatCompletionChoice();
-        choice.setIndex(0);
-        choice.setMessage(responseMessage);
-        choice.setFinishReason("stop");
+    private ChatResponse createMockChatResponse(String content) {
+        Generation generation = new Generation(content);
+        return new ChatResponse(List.of(generation));
+    }
 
-        ChatCompletionResult result = new ChatCompletionResult();
-        result.setId("chatcmpl-test-id");
-        result.setObject("chat.completion");
-        result.setChoices(List.of(choice));
-        
-        return result;
+    /**
+     * 테스트에 필요한 프로퍼티 설정
+     */
+    private void setUpProperties() {
+        ReflectionTestUtils.setField(simpleAIResponseGenerator, "model", "gpt-4o");
+        ReflectionTestUtils.setField(simpleAIResponseGenerator, "temperature", 0.7);
+        ReflectionTestUtils.setField(simpleAIResponseGenerator, "maxTokens", 100);
     }
 }
