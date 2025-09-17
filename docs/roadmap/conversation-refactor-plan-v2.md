@@ -221,9 +221,9 @@ public class ConversationService {
 }
 ```
 
-#### 2) **OpenAIResponseAdapter - 적정 수준 책임 분리** ⚠️ **YAGNI 적용**
+#### 2) **OpenAIResponseAdapter - 현재 구조 유지 권장** ✅ **적절한 수준**
 
-**현재 문제**:
+**현재 구조 분석**:
 ```java
 public class OpenAIResponseAdapter implements AIResponsePort {
     public String generateResponse(String userMessage) {
@@ -236,34 +236,26 @@ public class OpenAIResponseAdapter implements AIResponsePort {
 }
 ```
 
-**개선안 (Gemini 리뷰 반영 - 3개 클래스로 적절히 분리)**:
+**현재 구조 유지 근거**:
+1. **적절한 응집도**: 모든 메서드가 "AI 응답 생성"이라는 단일 목적에 집중
+2. **명확한 책임**: OpenAI API 관련 모든 로직이 한 곳에 응집
+3. **현실적 복잡도**: 121줄로 관리 가능한 수준의 클래스 크기
+4. **변경 빈도**: AI 관련 로직은 함께 변경되는 경우가 많음
+
+**과도한 분리의 문제점**:
+- **불필요한 복잡성**: 3개 클래스로 분리 시 오히려 추적 어려움
+- **인위적 책임 분할**: sanitize와 truncate는 본질적으로 하나의 플로우
+- **YAGNI 위반**: 현재 요구사항에 비해 과도한 설계
+
+**최종 권장사항**: **현재 OpenAIResponseAdapter 구조 유지**
 ```java
-// 과도한 분리(5개)에서 적정 수준(3개)으로 조정
-@Component
-public class OpenAIClient {
-    public String callApi(String prompt) {
-        // API 호출 + 기본 에러 처리 통합
-    }
-}
-
-@Component
-public class ResponseProcessor {
-    public String processMessage(String message) {
-        // 입력 검증 + 응답 후처리 통합
-    }
-}
-
+// 현재 구조가 이미 적절함 - 분리하지 않고 유지
 @Component
 public class OpenAIResponseAdapter implements AIResponsePort {
-    // 조율 역할만 담당
-    public String generateResponse(String userMessage) {
-        String processed = responseProcessor.processMessage(userMessage);
-        return openAIClient.callApi(processed);
-    }
+    // 입력 검증, API 호출, 응답 처리, 에러 처리를 하나의 클래스에서 관리
+    // → AI 응답 생성이라는 단일 책임에 충실한 구조
 }
 ```
-
-**변경 사유**: YAGNI 원칙에 따라 현재 필요한 수준에서만 분리
 
 #### 3) **Repository의 비즈니스 로직 포함** 🔥 **타협 불가 (Gemini 의견과 다름)**
 
@@ -776,7 +768,13 @@ public class ConversationMapper {
 - Magic String 제거
 - 사용하지 않는 메서드 제거 (YAGNI 적용)
 
-#### 6) **EmotionAnalysisPort 재검토** ⚠️ **Phase 3 계획 확인 후 결정**
+#### 6) **OpenAIResponseAdapter 과도한 분리 지양** ✅ **현재 구조 유지**
+**결정 사항**: 현재 121줄의 단일 클래스 구조가 이미 적절한 수준
+- AI 응답 생성이라는 단일 책임에 충실
+- 불필요한 복잡성 증가 방지
+- YAGNI 원칙에 부합
+
+#### 7) **EmotionAnalysisPort 재검토** ⚠️ **Phase 3 계획 확인 후 결정**
 **예상 소요 시간**: Phase 3 로드맵 확인 후 결정
 
 **현재 상황**:
@@ -815,6 +813,7 @@ public class KeywordBasedEmotionAnalyzer implements EmotionAnalysisPort {
 - [ ] **SimpleConversationService 책임 분리** (3-4개 클래스로 적절히)
 - [ ] **ConversationManager, MessageProcessor 도입**
 - [ ] **도메인 서비스 계층** 구성 (HealthTracker, EmotionAnalyzer 등)
+- [ ] **OpenAIResponseAdapter 구조 유지** (과도한 분리 지양)
 - [ ] **EmotionAnalysisPort 재검토** (Phase 3 ML 계획 확인 후)
 
 ### **🟢 Week 4: 도메인 특화 기능 + 품질 개선**
