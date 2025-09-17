@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import com.anyang.maruni.domain.conversation.config.ConversationProperties;
 import com.anyang.maruni.domain.conversation.domain.port.AIResponsePort;
 
 import lombok.RequiredArgsConstructor;
@@ -25,8 +26,9 @@ import lombok.extern.slf4j.Slf4j;
 public class OpenAIResponseAdapter implements AIResponsePort {
 
     private final ChatModel chatModel;
+    private final ConversationProperties properties;  // 추가
 
-    // 기존 SimpleAIResponseGenerator의 설정값 그대로 사용
+    // Spring AI 기본 설정은 여전히 @Value로 사용 (application-ai.yml에서)
     @Value("${spring.ai.openai.chat.options.model}")
     private String model;
 
@@ -36,15 +38,9 @@ public class OpenAIResponseAdapter implements AIResponsePort {
     @Value("${spring.ai.openai.chat.options.max-tokens}")
     private Integer maxTokens;
 
-    // 응답 관련 상수 (기존 값 그대로 유지)
-    private static final int MAX_RESPONSE_LENGTH = 100;
+    // 응답 관련 상수
     private static final int ELLIPSIS_LENGTH = 3;
     private static final String ELLIPSIS = "...";
-
-    // 메시지 관련 상수 (기존 값 그대로 유지)
-    private static final String DEFAULT_USER_MESSAGE = "안녕하세요";
-    private static final String DEFAULT_RESPONSE = "안녕하세요! 어떻게 지내세요?";
-    private static final String SYSTEM_PROMPT = "당신은 노인 돌봄 전문 AI 상담사입니다. 따뜻하고 공감적으로 30자 이내로 응답하세요.";
 
     /**
      * 사용자 메시지에 대한 AI 응답 생성
@@ -73,21 +69,22 @@ public class OpenAIResponseAdapter implements AIResponsePort {
     }
 
     /**
-     * 사용자 메시지 입력 검증 및 정제 (기존 로직 그대로)
+     * 사용자 메시지 입력 검증 및 정제 (Properties 사용)
      */
     private String sanitizeUserMessage(String userMessage) {
         if (!StringUtils.hasText(userMessage)) {
-            return DEFAULT_USER_MESSAGE;
+            return properties.getAi().getDefaultUserMessage();  // Properties 사용
         }
         return userMessage;
     }
 
     /**
-     * Spring AI를 사용한 응답 생성 (기존 로직 그대로)
+     * Spring AI를 사용한 응답 생성 (Properties 사용)
      */
     private String callSpringAI(String userMessage) {
         // 시스템 프롬프트와 사용자 메시지를 결합한 프롬프트 생성
-        String combinedPrompt = SYSTEM_PROMPT + "\n\n사용자: " + userMessage + "\n\nAI:";
+        String systemPrompt = properties.getAi().getSystemPrompt();  // Properties 사용
+        String combinedPrompt = systemPrompt + "\n\n사용자: " + userMessage + "\n\nAI:";
 
         // OpenAI Chat Options 설정
         OpenAiChatOptions options = OpenAiChatOptions.builder()
@@ -104,20 +101,21 @@ public class OpenAIResponseAdapter implements AIResponsePort {
     }
 
     /**
-     * 응답 길이 제한 (SMS 특성상) - 기존 로직 그대로
+     * 응답 길이 제한 (SMS 특성상) - Properties 사용
      */
     private String truncateResponse(String response) {
-        if (response.length() > MAX_RESPONSE_LENGTH) {
-            return response.substring(0, MAX_RESPONSE_LENGTH - ELLIPSIS_LENGTH) + ELLIPSIS;
+        int maxLength = properties.getAi().getMaxResponseLength();  // Properties 사용
+        if (response.length() > maxLength) {
+            return response.substring(0, maxLength - ELLIPSIS_LENGTH) + ELLIPSIS;
         }
         return response;
     }
 
     /**
-     * API 에러 처리 (기존 로직 그대로)
+     * API 에러 처리 (Properties 사용)
      */
     private String handleApiError(Exception e) {
         log.error("AI 응답 생성 실패: {}", e.getMessage(), e);
-        return DEFAULT_RESPONSE;
+        return properties.getAi().getDefaultResponse();  // Properties 사용
     }
 }

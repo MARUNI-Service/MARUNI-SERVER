@@ -6,9 +6,11 @@ import java.util.Map;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import com.anyang.maruni.domain.conversation.config.ConversationProperties;
 import com.anyang.maruni.domain.conversation.domain.entity.EmotionType;
 import com.anyang.maruni.domain.conversation.domain.port.EmotionAnalysisPort;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -19,13 +21,10 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class KeywordBasedEmotionAnalyzer implements EmotionAnalysisPort {
 
-    // 감정분석 키워드 맵 (기존 SimpleAIResponseGenerator에서 그대로 이관)
-    private static final Map<EmotionType, List<String>> EMOTION_KEYWORDS = Map.of(
-        EmotionType.NEGATIVE, List.of("슬프", "우울", "아프", "힘들", "외로", "무서", "걱정", "답답"),
-        EmotionType.POSITIVE, List.of("좋", "행복", "기쁘", "감사", "즐거", "만족", "고마")
-    );
+    private final ConversationProperties properties;
 
     /**
      * 간단한 감정 분석 수행 (키워드 기반)
@@ -43,15 +42,16 @@ public class KeywordBasedEmotionAnalyzer implements EmotionAnalysisPort {
         }
 
         String lowerMessage = message.toLowerCase();
+        Map<String, List<String>> keywords = properties.getEmotion().getKeywords();
 
         // 부정적 키워드 체크 (우선 순위 높음)
-        if (containsAnyKeyword(lowerMessage, EMOTION_KEYWORDS.get(EmotionType.NEGATIVE))) {
+        if (containsAnyKeyword(lowerMessage, keywords.get("negative"))) {
             log.debug("부정적 감정 감지: NEGATIVE");
             return EmotionType.NEGATIVE;
         }
 
         // 긍정적 키워드 체크
-        if (containsAnyKeyword(lowerMessage, EMOTION_KEYWORDS.get(EmotionType.POSITIVE))) {
+        if (containsAnyKeyword(lowerMessage, keywords.get("positive"))) {
             log.debug("긍정적 감정 감지: POSITIVE");
             return EmotionType.POSITIVE;
         }
