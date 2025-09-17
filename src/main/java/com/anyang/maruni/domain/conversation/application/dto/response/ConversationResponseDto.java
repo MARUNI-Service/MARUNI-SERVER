@@ -1,4 +1,6 @@
-package com.anyang.maruni.domain.conversation.application.dto;
+package com.anyang.maruni.domain.conversation.application.dto.response;
+
+import com.anyang.maruni.domain.conversation.application.dto.MessageDto;
 
 import lombok.Builder;
 import lombok.Getter;

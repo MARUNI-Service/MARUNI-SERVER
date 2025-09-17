@@ -14,7 +14,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.anyang.maruni.domain.conversation.application.dto.ConversationResponseDto;
+import com.anyang.maruni.domain.conversation.application.dto.response.ConversationResponseDto;
 import com.anyang.maruni.domain.conversation.domain.entity.ConversationEntity;
 import com.anyang.maruni.domain.conversation.domain.entity.EmotionType;
 import com.anyang.maruni.domain.conversation.domain.entity.MessageEntity;

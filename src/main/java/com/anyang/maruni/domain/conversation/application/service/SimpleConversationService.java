@@ -1,18 +1,19 @@
 package com.anyang.maruni.domain.conversation.application.service;
 
-import com.anyang.maruni.domain.conversation.application.dto.ConversationResponseDto;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.anyang.maruni.domain.conversation.application.dto.MessageDto;
+import com.anyang.maruni.domain.conversation.application.dto.response.ConversationResponseDto;
 import com.anyang.maruni.domain.conversation.domain.entity.ConversationEntity;
 import com.anyang.maruni.domain.conversation.domain.entity.EmotionType;
 import com.anyang.maruni.domain.conversation.domain.entity.MessageEntity;
-import com.anyang.maruni.domain.conversation.domain.entity.MessageType;
 import com.anyang.maruni.domain.conversation.domain.repository.ConversationRepository;
 import com.anyang.maruni.domain.conversation.domain.repository.MessageRepository;
 import com.anyang.maruni.domain.conversation.infrastructure.SimpleAIResponseGenerator;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 간단한 대화 서비스 (MVP 버전)

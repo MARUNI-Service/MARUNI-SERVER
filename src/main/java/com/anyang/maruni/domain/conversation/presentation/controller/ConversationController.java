@@ -6,8 +6,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.anyang.maruni.domain.conversation.application.dto.ConversationRequestDto;
-import com.anyang.maruni.domain.conversation.application.dto.ConversationResponseDto;
+import com.anyang.maruni.domain.conversation.application.dto.request.ConversationRequestDto;
+import com.anyang.maruni.domain.conversation.application.dto.response.ConversationResponseDto;
 import com.anyang.maruni.domain.conversation.application.service.SimpleConversationService;
 import com.anyang.maruni.global.response.annotation.AutoApiResponse;
 import com.anyang.maruni.global.response.annotation.SuccessCodeAnnotation;
