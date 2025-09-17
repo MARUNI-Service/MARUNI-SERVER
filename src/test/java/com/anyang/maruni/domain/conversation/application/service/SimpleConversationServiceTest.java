@@ -19,7 +19,6 @@ import com.anyang.maruni.domain.conversation.domain.entity.ConversationEntity;
 import com.anyang.maruni.domain.conversation.domain.entity.EmotionType;
 import com.anyang.maruni.domain.conversation.domain.entity.MessageEntity;
 import com.anyang.maruni.domain.conversation.domain.entity.MessageType;
-import com.anyang.maruni.domain.conversation.domain.repository.ConversationRepository;
 import com.anyang.maruni.domain.conversation.domain.repository.MessageRepository;
 import com.anyang.maruni.domain.conversation.domain.port.AIResponsePort;
 import com.anyang.maruni.domain.conversation.domain.port.EmotionAnalysisPort;
@@ -34,7 +33,7 @@ import com.anyang.maruni.domain.conversation.domain.port.EmotionAnalysisPort;
 class SimpleConversationServiceTest {
 
     @Mock
-    private ConversationRepository conversationRepository;
+    private ConversationManager conversationManager;
 
     @Mock
     private MessageRepository messageRepository;
@@ -79,8 +78,8 @@ class SimpleConversationServiceTest {
                 .build();
 
         // Mock 설정
-        when(conversationRepository.findActiveByMemberId(memberId))
-                .thenReturn(Optional.of(existingConversation));
+        when(conversationManager.findOrCreateActive(memberId))
+                .thenReturn(existingConversation);
         when(emotionAnalysisPort.analyzeEmotion(userContent))
                 .thenReturn(EmotionType.POSITIVE);
         when(messageRepository.save(any(MessageEntity.class)))
@@ -108,9 +107,8 @@ class SimpleConversationServiceTest {
         assertThat(result.getAiMessage().getType()).isEqualTo(MessageType.AI_RESPONSE);
         assertThat(result.getAiMessage().getEmotion()).isEqualTo(EmotionType.NEUTRAL);
 
-        // Repository 메서드 호출 검증
-        verify(conversationRepository).findActiveByMemberId(memberId);
-        verify(conversationRepository, never()).save(any()); // 기존 대화 사용
+        // ConversationManager 메서드 호출 검증
+        verify(conversationManager).findOrCreateActive(memberId);
         verify(emotionAnalysisPort).analyzeEmotion(userContent);
         verify(aiResponsePort).generateResponse(userContent);
         verify(messageRepository, times(2)).save(any(MessageEntity.class));
@@ -147,9 +145,7 @@ class SimpleConversationServiceTest {
                 .build();
 
         // Mock 설정
-        when(conversationRepository.findActiveByMemberId(memberId))
-                .thenReturn(Optional.empty()); // 기존 대화 없음
-        when(conversationRepository.save(any(ConversationEntity.class)))
+        when(conversationManager.findOrCreateActive(memberId))
                 .thenReturn(newConversation);
         when(emotionAnalysisPort.analyzeEmotion(userContent))
                 .thenReturn(EmotionType.NEUTRAL);
@@ -166,9 +162,8 @@ class SimpleConversationServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.getConversationId()).isEqualTo(200L);
 
-        // Repository 메서드 호출 검증
-        verify(conversationRepository).findActiveByMemberId(memberId);
-        verify(conversationRepository).save(any(ConversationEntity.class)); // 새 대화 생성
+        // ConversationManager 메서드 호출 검증
+        verify(conversationManager).findOrCreateActive(memberId);
         verify(messageRepository, times(2)).save(any(MessageEntity.class));
     }
 
@@ -203,8 +198,8 @@ class SimpleConversationServiceTest {
                 .build();
 
         // Mock 설정
-        when(conversationRepository.findActiveByMemberId(memberId))
-                .thenReturn(Optional.of(conversation));
+        when(conversationManager.findOrCreateActive(memberId))
+                .thenReturn(conversation);
         when(emotionAnalysisPort.analyzeEmotion(userContent))
                 .thenReturn(EmotionType.NEGATIVE);
         when(messageRepository.save(any(MessageEntity.class)))

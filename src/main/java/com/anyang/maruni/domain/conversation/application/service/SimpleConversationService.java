@@ -8,7 +8,6 @@ import com.anyang.maruni.domain.conversation.application.dto.response.Conversati
 import com.anyang.maruni.domain.conversation.domain.entity.ConversationEntity;
 import com.anyang.maruni.domain.conversation.domain.entity.EmotionType;
 import com.anyang.maruni.domain.conversation.domain.entity.MessageEntity;
-import com.anyang.maruni.domain.conversation.domain.repository.ConversationRepository;
 import com.anyang.maruni.domain.conversation.domain.repository.MessageRepository;
 import com.anyang.maruni.domain.conversation.domain.port.AIResponsePort;
 import com.anyang.maruni.domain.conversation.domain.port.EmotionAnalysisPort;
@@ -28,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class SimpleConversationService {
 
-    private final ConversationRepository conversationRepository;
+    private final ConversationManager conversationManager;
     private final MessageRepository messageRepository;
 
     private final AIResponsePort aiResponsePort;
@@ -46,7 +45,7 @@ public class SimpleConversationService {
         log.info("Processing user message for member {}: {}", memberId, content);
 
         // 1. 활성 대화 조회 또는 새 대화 생성
-        ConversationEntity conversation = findOrCreateActiveConversation(memberId);
+        ConversationEntity conversation = conversationManager.findOrCreateActive(memberId);
 
         // 2. 사용자 메시지 감정 분석 및 저장
         MessageEntity userMessage = saveUserMessage(conversation.getId(), content);
@@ -77,17 +76,6 @@ public class SimpleConversationService {
                 .build();
     }
 
-    /**
-     * 활성 대화 조회 또는 새 대화 생성
-     */
-    private ConversationEntity findOrCreateActiveConversation(Long memberId) {
-        return conversationRepository.findActiveByMemberId(memberId)
-                .orElseGet(() -> {
-                    log.info("Creating new conversation for member {}", memberId);
-                    ConversationEntity newConversation = ConversationEntity.createNew(memberId);
-                    return conversationRepository.save(newConversation);
-                });
-    }
 
     /**
      * 사용자 메시지 저장 (감정 분석 포함)
@@ -121,7 +109,7 @@ public class SimpleConversationService {
         log.info("Processing system message for member {}: {}", memberId, systemMessage);
 
         // 1. 활성 대화 조회 또는 새 대화 생성
-        ConversationEntity conversation = findOrCreateActiveConversation(memberId);
+        ConversationEntity conversation = conversationManager.findOrCreateActive(memberId);
 
         // 2. 시스템 메시지를 AI 메시지로 저장 (사용자가 응답할 수 있도록)
         MessageEntity systemMessageEntity = MessageEntity.createAIResponse(conversation.getId(), systemMessage);
