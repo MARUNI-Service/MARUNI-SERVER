@@ -10,7 +10,8 @@ import com.anyang.maruni.domain.conversation.domain.entity.EmotionType;
 import com.anyang.maruni.domain.conversation.domain.entity.MessageEntity;
 import com.anyang.maruni.domain.conversation.domain.repository.ConversationRepository;
 import com.anyang.maruni.domain.conversation.domain.repository.MessageRepository;
-import com.anyang.maruni.domain.conversation.infrastructure.SimpleAIResponseGenerator;
+import com.anyang.maruni.domain.conversation.domain.port.AIResponsePort;
+import com.anyang.maruni.domain.conversation.domain.port.EmotionAnalysisPort;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +30,10 @@ public class SimpleConversationService {
 
     private final ConversationRepository conversationRepository;
     private final MessageRepository messageRepository;
-    private final SimpleAIResponseGenerator aiResponseGenerator;
+
+    // ✅ 변경: Port 인터페이스에 의존
+    private final AIResponsePort aiResponsePort;              // 기존: SimpleAIResponseGenerator
+    private final EmotionAnalysisPort emotionAnalysisPort;    // 기존: SimpleAIResponseGenerator.analyzeBasicEmotion
 
     /**
      * 사용자 메시지 처리 및 AI 응답 생성
@@ -48,8 +52,8 @@ public class SimpleConversationService {
         // 2. 사용자 메시지 감정 분석 및 저장
         MessageEntity userMessage = saveUserMessage(conversation.getId(), content);
 
-        // 3. AI 응답 생성
-        String aiResponse = aiResponseGenerator.generateResponse(content);
+        // 3. AI 응답 생성 (Port 사용)
+        String aiResponse = aiResponsePort.generateResponse(content);
 
         // 4. AI 응답 메시지 저장
         MessageEntity aiMessage = saveAIMessage(conversation.getId(), aiResponse);
@@ -90,8 +94,8 @@ public class SimpleConversationService {
      * 사용자 메시지 저장 (감정 분석 포함)
      */
     private MessageEntity saveUserMessage(Long conversationId, String content) {
-        // AI 응답 생성기를 통해 감정 분석
-        EmotionType emotion = aiResponseGenerator.analyzeBasicEmotion(content);
+        // ✅ 수정: 감정 분석 로직을 Port로 위임
+        EmotionType emotion = emotionAnalysisPort.analyzeEmotion(content);  // Port 사용
 
         MessageEntity userMessage = MessageEntity.createUserMessage(conversationId, content, emotion);
         return messageRepository.save(userMessage);

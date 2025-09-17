@@ -1,0 +1,71 @@
+package com.anyang.maruni.domain.conversation.infrastructure.analyzer;
+
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+
+import com.anyang.maruni.domain.conversation.domain.entity.EmotionType;
+import com.anyang.maruni.domain.conversation.domain.port.EmotionAnalysisPort;
+
+import lombok.extern.slf4j.Slf4j;
+
+/**
+ * 키워드 기반 감정 분석기
+ *
+ * 기존 SimpleAIResponseGenerator의 감정 분석 로직을 독립적인 컴포넌트로 분리했습니다.
+ * AI 모델과 무관하게 키워드 매칭을 통한 감정 분석을 수행합니다.
+ */
+@Slf4j
+@Component
+public class KeywordBasedEmotionAnalyzer implements EmotionAnalysisPort {
+
+    // 감정분석 키워드 맵 (기존 SimpleAIResponseGenerator에서 그대로 이관)
+    private static final Map<EmotionType, List<String>> EMOTION_KEYWORDS = Map.of(
+        EmotionType.NEGATIVE, List.of("슬프", "우울", "아프", "힘들", "외로", "무서", "걱정", "답답"),
+        EmotionType.POSITIVE, List.of("좋", "행복", "기쁘", "감사", "즐거", "만족", "고마")
+    );
+
+    /**
+     * 간단한 감정 분석 수행 (키워드 기반)
+     *
+     * @param message 분석할 메시지
+     * @return 감정 타입
+     */
+    @Override
+    public EmotionType analyzeEmotion(String message) {
+        log.debug("감정 분석 시작: {}", message);
+
+        // null 또는 빈 문자열 처리
+        if (!StringUtils.hasText(message)) {
+            return EmotionType.NEUTRAL;
+        }
+
+        String lowerMessage = message.toLowerCase();
+
+        // 부정적 키워드 체크 (우선 순위 높음)
+        if (containsAnyKeyword(lowerMessage, EMOTION_KEYWORDS.get(EmotionType.NEGATIVE))) {
+            log.debug("부정적 감정 감지: NEGATIVE");
+            return EmotionType.NEGATIVE;
+        }
+
+        // 긍정적 키워드 체크
+        if (containsAnyKeyword(lowerMessage, EMOTION_KEYWORDS.get(EmotionType.POSITIVE))) {
+            log.debug("긍정적 감정 감지: POSITIVE");
+            return EmotionType.POSITIVE;
+        }
+
+        // 기본값: 중립
+        log.debug("중립적 감정: NEUTRAL");
+        return EmotionType.NEUTRAL;
+    }
+
+    /**
+     * 메시지에 키워드 목록 중 하나라도 포함되는지 확인
+     */
+    private boolean containsAnyKeyword(String message, List<String> keywords) {
+        return keywords.stream()
+                .anyMatch(message::contains);
+    }
+}
