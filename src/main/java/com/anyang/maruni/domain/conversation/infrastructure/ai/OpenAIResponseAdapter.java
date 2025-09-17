@@ -9,7 +9,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import com.anyang.maruni.domain.conversation.config.ConversationProperties;
+import com.anyang.maruni.domain.conversation.domain.entity.MessageEntity;
+import com.anyang.maruni.domain.conversation.domain.entity.MessageType;
 import com.anyang.maruni.domain.conversation.domain.port.AIResponsePort;
+import com.anyang.maruni.domain.conversation.domain.vo.ConversationContext;
+import com.anyang.maruni.domain.conversation.domain.vo.MemberProfile;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,12 +47,35 @@ public class OpenAIResponseAdapter implements AIResponsePort {
     private static final String ELLIPSIS = "...";
 
     /**
-     * 사용자 메시지에 대한 AI 응답 생성
+     * 대화 컨텍스트를 활용한 AI 응답 생성 (권장)
+     *
+     * @param context 대화 컨텍스트
+     * @return AI 응답 내용
+     */
+    @Override
+    public String generateResponse(ConversationContext context) {
+        try {
+            log.info("AI 응답 생성 요청 (컨텍스트): {}", context.getCurrentMessage());
+
+            // 컨텍스트 기반 프롬프트 생성
+            String enhancedPrompt = buildPromptWithContext(context);
+            String response = callSpringAI(enhancedPrompt);
+            String finalResponse = truncateResponse(response);
+
+            log.info("AI 응답 생성 완료 (컨텍스트): {}", finalResponse);
+            return finalResponse;
+
+        } catch (Exception e) {
+            return handleApiError(e);
+        }
+    }
+
+    /**
+     * 사용자 메시지에 대한 AI 응답 생성 (하위 호환성)
      *
      * @param userMessage 사용자 메시지
      * @return AI 응답 내용
      */
-    @Override
     public String generateResponse(String userMessage) {
         try {
             log.info("AI 응답 생성 요청: {}", userMessage);
@@ -98,6 +125,49 @@ public class OpenAIResponseAdapter implements AIResponsePort {
         ChatResponse response = chatModel.call(prompt);
 
         return response.getResult().getOutput().getContent().trim();
+    }
+
+    /**
+     * 대화 컨텍스트를 활용한 프롬프트 생성
+     */
+    private String buildPromptWithContext(ConversationContext context) {
+        StringBuilder prompt = new StringBuilder();
+
+        // 기본 시스템 프롬프트
+        prompt.append(properties.getAi().getSystemPrompt());
+
+        // 사용자 프로필 반영
+        MemberProfile profile = context.getMemberProfile();
+        if (profile != null) {
+            prompt.append("\n\n사용자 정보: ").append(profile.getAgeGroup());
+            if (StringUtils.hasText(profile.getPersonalityType())) {
+                prompt.append(", 성격: ").append(profile.getPersonalityType());
+            }
+
+            if (!profile.getHealthConcerns().isEmpty()) {
+                prompt.append(", 건강 관심사: ").append(String.join(", ", profile.getHealthConcerns()));
+            }
+        }
+
+        // 최근 대화 히스토리 반영
+        if (!context.getRecentHistory().isEmpty()) {
+            prompt.append("\n\n최근 대화:");
+            for (MessageEntity message : context.getRecentHistory()) {
+                String sender = message.getType() == MessageType.USER_MESSAGE ? "사용자" : "AI";
+                prompt.append("\n").append(sender).append(": ").append(message.getContent());
+            }
+        }
+
+        // 현재 메시지와 감정 상태
+        prompt.append("\n\n현재 메시지: ").append(context.getCurrentMessage());
+
+        if (context.getCurrentEmotion() != null) {
+            prompt.append("\n감정 상태: ").append(context.getCurrentEmotion().name());
+        }
+
+        prompt.append("\n\nAI 응답:");
+
+        return prompt.toString();
     }
 
     /**

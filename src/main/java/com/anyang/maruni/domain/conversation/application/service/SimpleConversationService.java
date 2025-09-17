@@ -11,6 +11,8 @@ import com.anyang.maruni.domain.conversation.domain.entity.MessageEntity;
 import com.anyang.maruni.domain.conversation.domain.repository.MessageRepository;
 import com.anyang.maruni.domain.conversation.domain.port.AIResponsePort;
 import com.anyang.maruni.domain.conversation.domain.port.EmotionAnalysisPort;
+import com.anyang.maruni.domain.conversation.domain.vo.ConversationContext;
+import com.anyang.maruni.domain.conversation.domain.vo.MemberProfile;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,7 +36,7 @@ public class SimpleConversationService {
     private final EmotionAnalysisPort emotionAnalysisPort;
 
     /**
-     * 사용자 메시지 처리 및 AI 응답 생성
+     * 사용자 메시지 처리 및 AI 응답 생성 (컨텍스트 기반)
      *
      * @param memberId 회원 ID
      * @param content 메시지 내용
@@ -47,16 +49,24 @@ public class SimpleConversationService {
         // 1. 활성 대화 조회 또는 새 대화 생성
         ConversationEntity conversation = conversationManager.findOrCreateActive(memberId);
 
-        // 2. 사용자 메시지 감정 분석 및 저장
-        MessageEntity userMessage = saveUserMessage(conversation.getId(), content);
+        // 2. 사용자 메시지 감정 분석
+        EmotionType emotion = emotionAnalysisPort.analyzeEmotion(content);
 
-        // 3. AI 응답 생성 (Port 사용)
-        String aiResponse = aiResponsePort.generateResponse(content);
+        // 3. 대화 컨텍스트 구성 (최근 히스토리 포함)
+        ConversationContext context = buildConversationContext(conversation, content, memberId, emotion);
 
-        // 4. AI 응답 메시지 저장
-        MessageEntity aiMessage = saveAIMessage(conversation.getId(), aiResponse);
+        // 4. 컨텍스트 기반 AI 응답 생성
+        String aiResponse = aiResponsePort.generateResponse(context);
 
-        // 5. 응답 DTO 생성
+        // 5. 사용자 메시지 저장 (도메인 로직 활용)
+        MessageEntity userMessage = conversation.addUserMessage(content, emotion);
+        messageRepository.save(userMessage);
+
+        // 6. AI 응답 메시지 저장 (도메인 로직 활용)
+        MessageEntity aiMessage = conversation.addAIMessage(aiResponse);
+        messageRepository.save(aiMessage);
+
+        // 7. 응답 DTO 생성
         return ConversationResponseDto.builder()
                 .conversationId(conversation.getId())
                 .userMessage(MessageDto.builder()
@@ -78,21 +88,21 @@ public class SimpleConversationService {
 
 
     /**
-     * 사용자 메시지 저장 (감정 분석 포함)
+     * 대화 컨텍스트 구성 (멀티턴 대화 지원)
      */
-    private MessageEntity saveUserMessage(Long conversationId, String content) {
-        EmotionType emotion = emotionAnalysisPort.analyzeEmotion(content);  // Port 사용
+    private ConversationContext buildConversationContext(
+            ConversationEntity conversation,
+            String currentMessage,
+            Long memberId,
+            EmotionType emotion) {
 
-        MessageEntity userMessage = MessageEntity.createUserMessage(conversationId, content, emotion);
-        return messageRepository.save(userMessage);
-    }
+        // 사용자 프로필 생성 (MVP에서는 기본값 사용)
+        MemberProfile profile = MemberProfile.createDefault(memberId);
 
-    /**
-     * AI 응답 메시지 저장
-     */
-    private MessageEntity saveAIMessage(Long conversationId, String content) {
-        MessageEntity aiMessage = MessageEntity.createAIResponse(conversationId, content);
-        return messageRepository.save(aiMessage);
+        // 최근 대화 히스토리 조회 (최대 5턴)
+        java.util.List<MessageEntity> recentHistory = conversation.getRecentHistory(5);
+
+        return ConversationContext.forUserMessage(currentMessage, recentHistory, profile, emotion);
     }
 
     /**
@@ -111,8 +121,8 @@ public class SimpleConversationService {
         // 1. 활성 대화 조회 또는 새 대화 생성
         ConversationEntity conversation = conversationManager.findOrCreateActive(memberId);
 
-        // 2. 시스템 메시지를 AI 메시지로 저장 (사용자가 응답할 수 있도록)
-        MessageEntity systemMessageEntity = MessageEntity.createAIResponse(conversation.getId(), systemMessage);
+        // 2. 시스템 메시지를 AI 메시지로 저장 (도메인 로직 활용)
+        MessageEntity systemMessageEntity = conversation.addAIMessage(systemMessage);
         messageRepository.save(systemMessageEntity);
 
         log.debug("System message saved as AI message for conversation {}", conversation.getId());

@@ -22,6 +22,7 @@ import com.anyang.maruni.domain.conversation.domain.entity.MessageType;
 import com.anyang.maruni.domain.conversation.domain.repository.MessageRepository;
 import com.anyang.maruni.domain.conversation.domain.port.AIResponsePort;
 import com.anyang.maruni.domain.conversation.domain.port.EmotionAnalysisPort;
+import com.anyang.maruni.domain.conversation.domain.vo.ConversationContext;
 
 /**
  * SimpleConversationService 테스트 (실제 비즈니스 로직)
@@ -61,6 +62,10 @@ class SimpleConversationServiceTest {
                 .startedAt(LocalDateTime.now().minusHours(1))
                 .build();
 
+        // 도메인 로직을 통해 생성되는 메시지들을 Mock
+        MessageEntity userMessage = MessageEntity.createUserMessage(100L, userContent, EmotionType.POSITIVE);
+        MessageEntity aiMessage = MessageEntity.createAIResponse(100L, aiResponse);
+
         MessageEntity savedUserMessage = MessageEntity.builder()
                 .id(1L)
                 .conversationId(100L)
@@ -85,7 +90,7 @@ class SimpleConversationServiceTest {
         when(messageRepository.save(any(MessageEntity.class)))
                 .thenReturn(savedUserMessage)
                 .thenReturn(savedAiMessage);
-        when(aiResponsePort.generateResponse(userContent))
+        when(aiResponsePort.generateResponse(any(ConversationContext.class)))
                 .thenReturn(aiResponse);
 
         // When
@@ -110,7 +115,7 @@ class SimpleConversationServiceTest {
         // ConversationManager 메서드 호출 검증
         verify(conversationManager).findOrCreateActive(memberId);
         verify(emotionAnalysisPort).analyzeEmotion(userContent);
-        verify(aiResponsePort).generateResponse(userContent);
+        verify(aiResponsePort).generateResponse(any(ConversationContext.class));
         verify(messageRepository, times(2)).save(any(MessageEntity.class));
     }
 
@@ -152,7 +157,7 @@ class SimpleConversationServiceTest {
         when(messageRepository.save(any(MessageEntity.class)))
                 .thenReturn(savedUserMessage)
                 .thenReturn(savedAiMessage);
-        when(aiResponsePort.generateResponse(userContent))
+        when(aiResponsePort.generateResponse(any(ConversationContext.class)))
                 .thenReturn(aiResponse);
 
         // When
@@ -205,7 +210,7 @@ class SimpleConversationServiceTest {
         when(messageRepository.save(any(MessageEntity.class)))
                 .thenReturn(savedUserMessage)
                 .thenReturn(savedAiMessage);
-        when(aiResponsePort.generateResponse(userContent))
+        when(aiResponsePort.generateResponse(any(ConversationContext.class)))
                 .thenReturn(aiResponse);
 
         // When
