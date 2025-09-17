@@ -93,7 +93,6 @@ public class SimpleConversationService {
      * 사용자 메시지 저장 (감정 분석 포함)
      */
     private MessageEntity saveUserMessage(Long conversationId, String content) {
-        // ✅ 수정: 감정 분석 로직을 Port로 위임
         EmotionType emotion = emotionAnalysisPort.analyzeEmotion(content);  // Port 사용
 
         MessageEntity userMessage = MessageEntity.createUserMessage(conversationId, content, emotion);
