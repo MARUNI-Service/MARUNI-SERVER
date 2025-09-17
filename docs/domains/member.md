@@ -8,7 +8,7 @@
 - ✅ **핵심 CRUD 기능**: 회원 가입, 조회, 수정, 삭제 기능 완전 구현
 - ✅ **Spring Security 통합**: `UserDetailsService`를 통한 완벽한 인증 연동
 - ✅ **비밀번호 암호화**: `PasswordEncoder`를 사용한 안전한 비밀번호 저장
-- ✅ **REST API 완성**: 2개의 컨트롤러, 6개 엔드포인트 + Swagger 문서화
+- ✅ **REST API 완성**: 2개의 컨트롤러, 5개 엔드포인트 + Swagger 문서화 (JWT 기반 보안 강화)
 - ✅ **도메인 연동**: Auth, Guardian, DailyCheck 도메인과의 의존 관계 명확히 구현
 - ✅ **실제 운영 준비**: 상용 서비스 수준의 회원 관리 시스템
 
@@ -41,7 +41,7 @@ com.anyang.maruni.domain.member/
 └── presentation/
     └── controller/
         ├── JoinApiController.java         ✅ 완성
-        └── UserApiController.java         ✅ 완성
+        └── MemberApiController.java       ✅ 완성 (JWT 기반 /me API)
 ```
 
 ### 주요 의존성
@@ -50,6 +50,10 @@ com.anyang.maruni.domain.member/
 - MemberRepository: 회원 데이터 영속성 관리
 - PasswordEncoder: 비밀번호 암호화
 - MemberMapper: DTO와 Entity 간의 변환
+
+// MemberApiController 의존성
+- MemberService: 비즈니스 로직 처리
+- TokenManager: JWT 토큰에서 사용자 ID 추출
 
 // CustomUserDetailsService 의존성
 - MemberRepository: 이메일 기반 회원 조회
@@ -182,11 +186,10 @@ public interface MemberRepository extends JpaRepository<MemberEntity, Long> {
 - **`POST /api/join`**: 회원가입 처리
 - **`GET /api/join/email-check`**: 이메일 중복 확인
 
-### UserApiController (회원 관리)
-- **`GET /api/users`**: 전체 회원 목록 조회
-- **`GET /api/users/{id}`**: 특정 회원 정보 조회
-- **`PUT /api/users/{id}`**: 회원 정보 수정
-- **`DELETE /api/users/{id}`**: 회원 삭제
+### MemberApiController (JWT 기반 본인 정보 관리)
+- **`GET /api/users/me`**: 내 정보 조회 (JWT 토큰 기반)
+- **`PUT /api/users/me`**: 내 정보 수정 (JWT 토큰 기반)
+- **`DELETE /api/users/me`**: 내 계정 삭제 (JWT 토큰 기반)
 
 ## 📝 DTO 계층
 
@@ -213,7 +216,8 @@ public interface MemberRepository extends JpaRepository<MemberEntity, Long> {
 ## 📈 보안 특성
 
 - **비밀번호 암호화**: `BCryptPasswordEncoder`를 사용하여 비밀번호를 단방향 암호화하여 저장합니다.
-- **인증**: Spring Security와 통합하여 폼 기반 로그인 및 JWT 인증의 기반을 제공합니다.
+- **JWT 기반 인증**: Spring Security와 통합하여 JWT 토큰 기반 인증을 제공합니다.
+- **본인 인증**: JWT 토큰에서 추출한 사용자 ID로만 접근 가능, 다른 사용자 정보 접근 원천 차단합니다.
 - **인가**: `CustomUserDetails`에서 `ROLE_USER` 권한을 부여하여 API 접근 제어의 기초를 마련합니다.
 
 ## 🎯 Claude Code 작업 가이드
@@ -236,8 +240,17 @@ POST /api/join
 # 이메일 중복 확인
 GET /api/join/email-check?memberEmail=test@example.com
 
-# 특정 회원 조회
-GET /api/users/1
+# 내 정보 조회 (JWT 필수)
+GET /api/users/me
+Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+
+# 내 정보 수정 (JWT 필수)
+PUT /api/users/me
+Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+{
+  "memberName": "수정된 이름",
+  "memberPassword": "newPassword123"
+}
 ```
 
 **Member 도메인은 MARUNI의 모든 사용자 데이터와 인증의 시작점 역할을 하는 핵심 기반 도메인입니다. Spring Security와 긴밀하게 통합되어 안정적이고 확장 가능한 회원 관리 기능을 제공합니다.** 🚀
