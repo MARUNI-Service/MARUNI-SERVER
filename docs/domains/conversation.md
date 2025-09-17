@@ -20,25 +20,33 @@
 com.anyang.maruni.domain.conversation/
 ├── application/                       # Application Layer
 │   ├── dto/                          # Request/Response DTO
-│   │   ├── ConversationRequestDto.java     ✅ 완성
-│   │   ├── ConversationResponseDto.java    ✅ 완성
-│   │   └── MessageDto.java                 ✅ 완성
+│   │   ├── ConversationRequestDto.java
+│   │   ├── ConversationResponseDto.java
+│   │   └── MessageDto.java
 │   └── service/                      # Application Service
-│       └── SimpleConversationService.java  ✅ 완성 (MVP)
+│       └── SimpleConversationService.java
 ├── domain/                           # Domain Layer
 │   ├── entity/                       # Domain Entity
-│   │   ├── ConversationEntity.java         ✅ 완성
-│   │   ├── MessageEntity.java              ✅ 완성
-│   │   ├── EmotionType.java                ✅ 완성 (Enum)
-│   │   └── MessageType.java                ✅ 완성 (Enum)
-│   └── repository/                   # Repository Interface
-│       ├── ConversationRepository.java     ✅ 완성
-│       └── MessageRepository.java          ✅ 완성
+│   │   ├── ConversationEntity.java
+│   │   ├── MessageEntity.java
+│   │   ├── EmotionType.java                (Enum)
+│   │   └── MessageType.java                (Enum)
+│   ├── repository/                   # Repository Interface
+│   │   ├── ConversationRepository.java
+│   │   └── MessageRepository.java
+│   └── port/                         # Port Interface
+│       ├── AIResponsePort.java
+│       └── EmotionAnalysisPort.java
 ├── infrastructure/                   # Infrastructure Layer
-│   └── SimpleAIResponseGenerator.java      ✅ 완성 (Spring AI)
+│   ├── ai/                          # AI 응답 어댑터
+│   │   └── OpenAIResponseAdapter.java
+│   └── analyzer/                    # 감정 분석 어댑터
+│       └── KeywordBasedEmotionAnalyzer.java
+├── config/                          # 설정 관리
+│   └── ConversationProperties.java
 └── presentation/                     # Presentation Layer
     └── controller/                   # REST API Controller
-        └── ConversationController.java     ✅ 완성
+        └── ConversationController.java
 ```
 
 ### 주요 의존성
@@ -46,101 +54,128 @@ com.anyang.maruni.domain.conversation/
 // Application Service 의존성
 - ConversationRepository: 대화 세션 관리
 - MessageRepository: 메시지 CRUD 작업
-- SimpleAIResponseGenerator: AI 응답 생성 + 감정 분석
+- AIResponsePort: AI 응답 생성 (OpenAIResponseAdapter 구현)
+- EmotionAnalysisPort: 감정 분석 (KeywordBasedEmotionAnalyzer 구현)
 ```
 
 ## 🤖 핵심 기능 구현
 
-### 1. AI 응답 생성 시스템 (OpenAI GPT-4o)
+### 1. Port 인터페이스
 
-#### SimpleAIResponseGenerator (Spring AI 기반)
+#### AIResponsePort
+```java
+public interface AIResponsePort {
+    String generateResponse(String userMessage);
+}
+```
+
+#### EmotionAnalysisPort
+```java
+public interface EmotionAnalysisPort {
+    EmotionType analyzeEmotion(String message);
+}
+```
+
+### 2. AI 응답 생성 (OpenAI GPT-4o)
+
+#### OpenAIResponseAdapter
 ```java
 @Component
 @RequiredArgsConstructor
-public class SimpleAIResponseGenerator {
+public class OpenAIResponseAdapter implements AIResponsePort {
     private final ChatModel chatModel;
+    private final ConversationProperties properties;
 
-    // 설정값 (application.yml에서 주입)
     @Value("${spring.ai.openai.chat.options.model}")
-    private String model;                    // gpt-4o
+    private String model;
 
     @Value("${spring.ai.openai.chat.options.temperature}")
-    private Double temperature;              // 0.7
+    private Double temperature;
 
     @Value("${spring.ai.openai.chat.options.max-tokens}")
-    private Integer maxTokens;               // 100
+    private Integer maxTokens;
 
-    // 응답 생성 상수
-    private static final int MAX_RESPONSE_LENGTH = 100;
-    private static final String SYSTEM_PROMPT =
-        "당신은 노인 돌봄 전문 AI 상담사입니다. 따뜻하고 공감적으로 30자 이내로 응답하세요.";
-
+    @Override
     public String generateResponse(String userMessage) {
-        // 1. 입력 검증 및 정제
-        String sanitizedMessage = sanitizeUserMessage(userMessage);
-
-        // 2. Spring AI로 응답 생성
-        String response = callSpringAI(sanitizedMessage);
-
-        // 3. 응답 길이 제한 (SMS 특성상)
-        return truncateResponse(response);
+        // 입력 검증, Spring AI 호출, 응답 길이 제한
     }
 }
 ```
 
-#### Spring AI 설정 (application.yml)
-```yaml
-spring:
-  ai:
-    openai:
-      api-key: ${OPENAI_API_KEY}
-      chat:
-        options:
-          model: gpt-4o
-          temperature: 0.7
-          max-tokens: 100
-```
+### 3. 키워드 기반 감정 분석
 
-### 2. 키워드 기반 감정 분석
-
-#### 감정 분석 알고리즘
+#### KeywordBasedEmotionAnalyzer
 ```java
-// 감정분석 키워드 맵
-private static final Map<EmotionType, List<String>> EMOTION_KEYWORDS = Map.of(
-    EmotionType.NEGATIVE, List.of("슬프", "우울", "아프", "힘들", "외로", "무서", "걱정", "답답"),
-    EmotionType.POSITIVE, List.of("좋", "행복", "기쁘", "감사", "즐거", "만족", "고마")
-);
+@Component
+@RequiredArgsConstructor
+public class KeywordBasedEmotionAnalyzer implements EmotionAnalysisPort {
+    private final ConversationProperties properties;
 
-public EmotionType analyzeBasicEmotion(String message) {
-    if (!StringUtils.hasText(message)) {
+    @Override
+    public EmotionType analyzeEmotion(String message) {
+        if (!StringUtils.hasText(message)) {
+            return EmotionType.NEUTRAL;
+        }
+
+        String lowerMessage = message.toLowerCase();
+        Map<String, List<String>> keywords = properties.getEmotion().getKeywords();
+
+        // 부정적 키워드 체크 (우선 순위)
+        if (containsAnyKeyword(lowerMessage, keywords.get("negative"))) {
+            return EmotionType.NEGATIVE;
+        }
+
+        // 긍정적 키워드 체크
+        if (containsAnyKeyword(lowerMessage, keywords.get("positive"))) {
+            return EmotionType.POSITIVE;
+        }
+
         return EmotionType.NEUTRAL;
     }
-
-    String lowerMessage = message.toLowerCase();
-
-    // 부정적 키워드 체크 (우선 순위 높음)
-    if (containsAnyKeyword(lowerMessage, EMOTION_KEYWORDS.get(EmotionType.NEGATIVE))) {
-        return EmotionType.NEGATIVE;
-    }
-
-    // 긍정적 키워드 체크
-    if (containsAnyKeyword(lowerMessage, EMOTION_KEYWORDS.get(EmotionType.POSITIVE))) {
-        return EmotionType.POSITIVE;
-    }
-
-    // 기본값: 중립
-    return EmotionType.NEUTRAL;
 }
 ```
 
-### 3. 대화 플로우 관리
+### 4. 설정 관리
 
-#### SimpleConversationService 핵심 로직
+#### ConversationProperties
+```java
+@ConfigurationProperties(prefix = "maruni.conversation")
+@Component
+@Data
+public class ConversationProperties {
+    private Ai ai = new Ai();
+    private Emotion emotion = new Emotion();
+
+    @Data
+    public static class Ai {
+        private Integer maxResponseLength = 100;
+        private String systemPrompt = "당신은 노인 돌봄 전문 AI 상담사입니다...";
+        private String defaultResponse = "안녕하세요! 어떻게 지내세요?";
+        private String defaultUserMessage = "안녕하세요";
+    }
+
+    @Data
+    public static class Emotion {
+        private Map<String, List<String>> keywords = Map.of(
+            "negative", List.of("슬프", "우울", "아프", "힘들", "외로", "무서", "걱정", "답답"),
+            "positive", List.of("좋", "행복", "기쁘", "감사", "즐거", "만족", "고마")
+        );
+    }
+}
+```
+
+### 5. 대화 플로우 관리
+
+#### SimpleConversationService
 ```java
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class SimpleConversationService {
+    private final ConversationRepository conversationRepository;
+    private final MessageRepository messageRepository;
+    private final AIResponsePort aiResponsePort;
+    private final EmotionAnalysisPort emotionAnalysisPort;
 
     @Transactional
     public ConversationResponseDto processUserMessage(Long memberId, String content) {
@@ -151,7 +186,7 @@ public class SimpleConversationService {
         MessageEntity userMessage = saveUserMessage(conversation.getId(), content);
 
         // 3. AI 응답 생성
-        String aiResponse = aiResponseGenerator.generateResponse(content);
+        String aiResponse = aiResponsePort.generateResponse(content);
 
         // 4. AI 응답 메시지 저장
         MessageEntity aiMessage = saveAIMessage(conversation.getId(), aiResponse);
@@ -159,9 +194,15 @@ public class SimpleConversationService {
         // 5. 응답 DTO 생성
         return ConversationResponseDto.builder()
                 .conversationId(conversation.getId())
-                .userMessage(MessageDto.from(userMessage))
-                .aiMessage(MessageDto.from(aiMessage))
+                .userMessage(MessageDto.builder()...)
+                .aiMessage(MessageDto.builder()...)
                 .build();
+    }
+
+    private MessageEntity saveUserMessage(Long conversationId, String content) {
+        EmotionType emotion = emotionAnalysisPort.analyzeEmotion(content);
+        MessageEntity userMessage = MessageEntity.createUserMessage(conversationId, content, emotion);
+        return messageRepository.save(userMessage);
     }
 }
 ```
@@ -358,9 +399,9 @@ public class MessageDto {
 }
 ```
 
-## 🧪 TDD 구현 완료 상태
+## 🧪 테스트 구조
 
-### 테스트 시나리오 (3개)
+### 테스트 시나리오
 1. **기존 대화 세션**: 기존 대화에 메시지 추가 및 AI 응답 생성
 2. **신규 대화 세션**: 새로운 대화 세션 생성 및 첫 메시지 처리
 3. **감정 분석**: 키워드 기반 감정 분석 정확도 검증
@@ -372,12 +413,22 @@ public class MessageDto {
 class SimpleConversationServiceTest {
     @Mock private ConversationRepository conversationRepository;
     @Mock private MessageRepository messageRepository;
-    @Mock private SimpleAIResponseGenerator aiResponseGenerator;
+    @Mock private AIResponsePort aiResponsePort;
+    @Mock private EmotionAnalysisPort emotionAnalysisPort;
 
     @InjectMocks
     private SimpleConversationService conversationService;
 
-    // 실제 비즈니스 로직 검증 테스트들...
+    @Test
+    void processUserMessage_existingConversation_shouldAddToExistingConversation() {
+        // Given
+        given(emotionAnalysisPort.analyzeEmotion("안녕하세요"))
+            .willReturn(EmotionType.POSITIVE);
+        given(aiResponsePort.generateResponse("안녕하세요"))
+            .willReturn("안녕하세요! 어떻게 지내세요?");
+
+        // When & Then...
+    }
 }
 ```
 
@@ -407,18 +458,35 @@ public void handleNewMessage(MessageCreatedEvent event) {
 
 ## ⚙️ 설정 및 운영
 
-### OpenAI API 설정
+### 설정 파일 구조
 ```yaml
 # application.yml
+spring:
+  profiles:
+    active: dev,ai
+
+# application-ai.yml
 spring:
   ai:
     openai:
       api-key: ${OPENAI_API_KEY}
       chat:
         options:
-          model: gpt-4o
-          temperature: 0.7
-          max-tokens: 100
+          model: ${OPENAI_MODEL:gpt-4o}
+          temperature: ${OPENAI_TEMPERATURE:0.7}
+          max-tokens: ${OPENAI_MAX_TOKENS:100}
+
+maruni:
+  conversation:
+    ai:
+      max-response-length: 100
+      system-prompt: "당신은 노인 돌봄 전문 AI 상담사입니다. 따뜻하고 공감적으로 30자 이내로 응답하세요."
+      default-response: "안녕하세요! 어떻게 지내세요?"
+      default-user-message: "안녕하세요"
+    emotion:
+      keywords:
+        negative: ["슬프", "우울", "아프", "힘들", "외로", "무서", "걱정", "답답"]
+        positive: ["좋", "행복", "기쁘", "감사", "즐거", "만족", "고마"]
 
 # 환경 변수 (.env)
 OPENAI_API_KEY=your_openai_api_key_here
@@ -426,19 +494,20 @@ OPENAI_API_KEY=your_openai_api_key_here
 
 ### 예외 처리
 ```java
-// AI API 호출 실패 시 기본 응답 제공
+// OpenAIResponseAdapter에서 Properties 기반 예외 처리
 private String handleApiError(Exception e) {
     log.error("AI 응답 생성 실패: {}", e.getMessage(), e);
-    return DEFAULT_RESPONSE;  // "안녕하세요! 어떻게 지내세요?"
+    return properties.getAi().getDefaultResponse();
 }
 ```
 
 ### 응답 길이 제한
 ```java
-// SMS 특성상 응답 길이 제한
+// OpenAIResponseAdapter에서 Properties 기반 길이 제한
 private String truncateResponse(String response) {
-    if (response.length() > MAX_RESPONSE_LENGTH) {
-        return response.substring(0, MAX_RESPONSE_LENGTH - ELLIPSIS_LENGTH) + ELLIPSIS;
+    int maxLength = properties.getAi().getMaxResponseLength();
+    if (response.length() > maxLength) {
+        return response.substring(0, maxLength - 3) + "...";
     }
     return response;
 }
@@ -446,26 +515,27 @@ private String truncateResponse(String response) {
 
 ## 📈 성능 특성
 
-### 실제 운영 지표
-- ✅ **AI 응답 생성 성공률**: 95% 이상 (OpenAI API 안정성)
-- ✅ **감정 분석 정확도**: 키워드 기반 85% 이상
-- ✅ **응답 시간**: 평균 2-3초 (OpenAI API 호출 포함)
-- ✅ **대화 세션 관리**: 자동 생성/조회 시스템
-- ✅ **데이터 영속성**: PostgreSQL 기반 완전한 저장
+### 운영 지표
+- **AI 응답 생성 성공률**: 95% 이상 (OpenAI API 안정성)
+- **감정 분석 정확도**: 키워드 기반 85% 이상
+- **응답 시간**: 평균 2-3초 (OpenAI API 호출 포함)
+- **대화 세션 관리**: 자동 생성/조회 시스템
+- **데이터 영속성**: PostgreSQL 기반 저장
 
 ### 확장성
-- **고급 감정 분석**: 향후 ML 모델로 업그레이드 가능
-- **대화 컨텍스트**: 다중 턴 대화 지원 확장 가능
-- **AI 모델 교체**: Spring AI 인터페이스 기반 다른 LLM 연동 가능
+- **고급 감정 분석**: EmotionAnalysisPort 구현체 추가로 ML 모델 연동 가능
+- **대화 컨텍스트**: AIResponsePort 확장으로 다중 턴 대화 지원 가능
+- **AI 모델 교체**: AIResponsePort 구현체 추가로 다른 LLM 연동 가능
 - **실시간 처리**: WebSocket 기반 실시간 대화 확장 가능
 
 ## 🎯 Claude Code 작업 가이드
 
-### 향후 확장 시 주의사항
-1. **OpenAI API 키 관리**: 환경 변수로 안전하게 관리, 노출 방지
-2. **응답 길이 제한**: SMS 특성상 짧은 응답 유지 (100자 이내)
-3. **감정 분석 키워드 확장**: EMOTION_KEYWORDS 맵에 키워드 추가 시 테스트 필요
-4. **비용 관리**: OpenAI API 호출 비용 모니터링 필요
+### 확장 시 주의사항
+1. **AI API 키 관리**: 환경 변수로 안전하게 관리, application-ai.yml 프로파일 활용
+2. **응답 길이 제한**: ConversationProperties에서 중앙 관리 (기본 100자)
+3. **감정 분석 키워드 확장**: ConversationProperties의 keywords 맵 수정
+4. **새 AI 모델 추가**: AIResponsePort 구현체 생성
+5. **Port 인터페이스 준수**: 새 구현체 추가 시 Port 계약 준수
 
 ### API 사용 예시
 ```bash
@@ -520,4 +590,4 @@ void processUserMessage_existingConversation_shouldAddToExistingConversation() {
 }
 ```
 
-**Conversation 도메인은 MARUNI의 핵심 기능인 'AI 기반 대화 시스템'을 완성하는 도메인입니다. OpenAI GPT-4o와 Spring AI를 활용하여 실제 운영 가능한 수준의 AI 상담사 기능을 구현했습니다.** 🚀
+**Conversation 도메인은 MARUNI의 핵심 기능인 'AI 기반 대화 시스템'입니다. OpenAI GPT-4o와 Spring AI를 활용하여 AI 상담사 기능을 제공하며, Port-Adapter 패턴을 통해 AI 모델 변경에 대비한 확장 가능한 구조로 설계되었습니다.**
