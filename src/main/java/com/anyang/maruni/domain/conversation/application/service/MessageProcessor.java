@@ -63,10 +63,6 @@ public class MessageProcessor {
         messageRepository.save(aiMessage);
         log.debug("Saved AI message with ID: {}", aiMessage.getId());
 
-        return MessageExchangeResult.builder()
-                .conversation(conversation)
-                .userMessage(userMessage)
-                .aiMessage(aiMessage)
-                .build();
+        return MessageExchangeResult.of(conversation, userMessage, aiMessage);
     }
 }

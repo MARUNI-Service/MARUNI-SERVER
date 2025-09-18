@@ -111,9 +111,9 @@ class MessageProcessorTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.getConversation()).isEqualTo(mockConversation);
-        assertThat(result.getUserMessage()).isEqualTo(savedUserMessage);
-        assertThat(result.getAiMessage()).isEqualTo(savedAiMessage);
+        assertThat(result.conversation()).isEqualTo(mockConversation);
+        assertThat(result.userMessage()).isEqualTo(savedUserMessage);
+        assertThat(result.aiMessage()).isEqualTo(savedAiMessage);
 
         // 호출 순서 검증
         verify(emotionAnalysisPort, times(1)).analyzeEmotion(userContent);
@@ -176,8 +176,8 @@ class MessageProcessorTest {
         MessageExchangeResult result = messageProcessor.processMessage(mockConversation, userContent);
 
         // Then
-        assertThat(result.getUserMessage().getEmotion()).isEqualTo(EmotionType.NEGATIVE);
-        assertThat(result.getAiMessage().getContent()).contains("함께 있어요");
+        assertThat(result.userMessage().getEmotion()).isEqualTo(EmotionType.NEGATIVE);
+        assertThat(result.aiMessage().getContent()).contains("함께 있어요");
 
         // 감정분석 호출 검증
         verify(emotionAnalysisPort, times(1)).analyzeEmotion(userContent);

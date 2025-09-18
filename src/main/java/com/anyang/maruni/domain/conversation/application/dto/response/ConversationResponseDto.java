@@ -42,9 +42,9 @@ public class ConversationResponseDto {
      */
     public static ConversationResponseDto from(MessageExchangeResult result) {
         return ConversationResponseDto.builder()
-                .conversationId(result.getConversation().getId())
-                .userMessage(MessageDto.from(result.getUserMessage()))
-                .aiMessage(MessageDto.from(result.getAiMessage()))
+                .conversationId(result.conversation().getId())
+                .userMessage(MessageDto.from(result.userMessage()))
+                .aiMessage(MessageDto.from(result.aiMessage()))
                 .build();
     }
 
