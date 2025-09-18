@@ -1,6 +1,7 @@
 package com.anyang.maruni.domain.conversation.application.dto;
 
 import com.anyang.maruni.domain.conversation.domain.entity.EmotionType;
+import com.anyang.maruni.domain.conversation.domain.entity.MessageEntity;
 import com.anyang.maruni.domain.conversation.domain.entity.MessageType;
 import lombok.Builder;
 import lombok.Getter;
@@ -40,4 +41,20 @@ public class MessageDto {
      * 메시지 생성 시간
      */
     private LocalDateTime createdAt;
+
+    /**
+     * MessageEntity를 MessageDto로 변환하는 정적 팩토리 메서드
+     *
+     * @param entity 메시지 엔티티
+     * @return 메시지 DTO
+     */
+    public static MessageDto from(MessageEntity entity) {
+        return MessageDto.builder()
+                .id(entity.getId())
+                .type(entity.getType())
+                .content(entity.getContent())
+                .emotion(entity.getEmotion())
+                .createdAt(entity.getCreatedAt())
+                .build();
+    }
 }

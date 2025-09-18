@@ -5,7 +5,6 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,59 +13,53 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.anyang.maruni.domain.conversation.application.dto.MessageExchangeResult;
 import com.anyang.maruni.domain.conversation.application.dto.response.ConversationResponseDto;
+import com.anyang.maruni.domain.conversation.application.mapper.ConversationMapper;
 import com.anyang.maruni.domain.conversation.domain.entity.ConversationEntity;
 import com.anyang.maruni.domain.conversation.domain.entity.EmotionType;
 import com.anyang.maruni.domain.conversation.domain.entity.MessageEntity;
 import com.anyang.maruni.domain.conversation.domain.entity.MessageType;
 import com.anyang.maruni.domain.conversation.domain.repository.MessageRepository;
-import com.anyang.maruni.domain.conversation.domain.port.AIResponsePort;
-import com.anyang.maruni.domain.conversation.domain.port.EmotionAnalysisPort;
-import com.anyang.maruni.domain.conversation.domain.vo.ConversationContext;
 
 /**
- * SimpleConversationService 테스트 (실제 비즈니스 로직)
+ * SimpleConversationService 통합 테스트 (리팩토링 완료)
  *
- * 실제 구현된 비즈니스 로직을 검증합니다.
+ * 리팩토링된 구조에서 서비스 조율 기능을 검증합니다.
  */
 @ExtendWith(MockitoExtension.class)
-@DisplayName("대화 서비스 테스트")
+@DisplayName("대화 서비스 통합 테스트 (리팩토링 완료)")
 class SimpleConversationServiceTest {
 
     @Mock
     private ConversationManager conversationManager;
 
     @Mock
+    private MessageProcessor messageProcessor;
+
+    @Mock
+    private ConversationMapper mapper;
+
+    @Mock
     private MessageRepository messageRepository;
-
-    @Mock
-    private AIResponsePort aiResponsePort;              // 변경
-
-    @Mock
-    private EmotionAnalysisPort emotionAnalysisPort;    // 변경
 
     @InjectMocks
     private SimpleConversationService simpleConversationService;
 
     @Test
-    @DisplayName("기존 대화가 있는 경우: 사용자 메시지를 처리하고 AI 응답을 생성한다")
-    void processUserMessage_ExistingConversation_Success() {
+    @DisplayName("사용자 메시지 처리: ConversationManager → MessageProcessor → ConversationMapper 순으로 위임한다")
+    void processUserMessage_Success_DelegationFlow() {
         // Given
         Long memberId = 1L;
         String userContent = "안녕하세요, 오늘 기분이 좋아요!";
-        String aiResponse = "안녕하세요! 오늘 기분이 좋으시다니 정말 다행이네요.";
 
-        ConversationEntity existingConversation = ConversationEntity.builder()
+        ConversationEntity conversation = ConversationEntity.builder()
                 .id(100L)
                 .memberId(memberId)
-                .startedAt(LocalDateTime.now().minusHours(1))
+                .startedAt(LocalDateTime.now())
                 .build();
 
-        // 도메인 로직을 통해 생성되는 메시지들을 Mock
-        MessageEntity userMessage = MessageEntity.createUserMessage(100L, userContent, EmotionType.POSITIVE);
-        MessageEntity aiMessage = MessageEntity.createAIResponse(100L, aiResponse);
-
-        MessageEntity savedUserMessage = MessageEntity.builder()
+        MessageEntity userMessage = MessageEntity.builder()
                 .id(1L)
                 .conversationId(100L)
                 .type(MessageType.USER_MESSAGE)
@@ -74,58 +67,50 @@ class SimpleConversationServiceTest {
                 .emotion(EmotionType.POSITIVE)
                 .build();
 
-        MessageEntity savedAiMessage = MessageEntity.builder()
+        MessageEntity aiMessage = MessageEntity.builder()
                 .id(2L)
                 .conversationId(100L)
                 .type(MessageType.AI_RESPONSE)
-                .content(aiResponse)
+                .content("안녕하세요! 기분이 좋으시다니 다행이네요.")
                 .emotion(EmotionType.NEUTRAL)
+                .build();
+
+        MessageExchangeResult exchangeResult = MessageExchangeResult.builder()
+                .conversation(conversation)
+                .userMessage(userMessage)
+                .aiMessage(aiMessage)
+                .build();
+
+        ConversationResponseDto expectedResponse = ConversationResponseDto.builder()
+                .conversationId(100L)
                 .build();
 
         // Mock 설정
         when(conversationManager.findOrCreateActive(memberId))
-                .thenReturn(existingConversation);
-        when(emotionAnalysisPort.analyzeEmotion(userContent))
-                .thenReturn(EmotionType.POSITIVE);
-        when(messageRepository.save(any(MessageEntity.class)))
-                .thenReturn(savedUserMessage)
-                .thenReturn(savedAiMessage);
-        when(aiResponsePort.generateResponse(any(ConversationContext.class)))
-                .thenReturn(aiResponse);
+                .thenReturn(conversation);
+        when(messageProcessor.processMessage(conversation, userContent))
+                .thenReturn(exchangeResult);
+        when(mapper.toResponseDto(exchangeResult))
+                .thenReturn(expectedResponse);
 
         // When
         ConversationResponseDto result = simpleConversationService.processUserMessage(memberId, userContent);
 
         // Then
-        assertThat(result).isNotNull();
-        assertThat(result.getConversationId()).isEqualTo(100L);
+        assertThat(result).isEqualTo(expectedResponse);
 
-        // 사용자 메시지 검증
-        assertThat(result.getUserMessage()).isNotNull();
-        assertThat(result.getUserMessage().getContent()).isEqualTo(userContent);
-        assertThat(result.getUserMessage().getType()).isEqualTo(MessageType.USER_MESSAGE);
-        assertThat(result.getUserMessage().getEmotion()).isEqualTo(EmotionType.POSITIVE);
-
-        // AI 메시지 검증
-        assertThat(result.getAiMessage()).isNotNull();
-        assertThat(result.getAiMessage().getContent()).isEqualTo(aiResponse);
-        assertThat(result.getAiMessage().getType()).isEqualTo(MessageType.AI_RESPONSE);
-        assertThat(result.getAiMessage().getEmotion()).isEqualTo(EmotionType.NEUTRAL);
-
-        // ConversationManager 메서드 호출 검증
+        // 위임 순서 검증
         verify(conversationManager).findOrCreateActive(memberId);
-        verify(emotionAnalysisPort).analyzeEmotion(userContent);
-        verify(aiResponsePort).generateResponse(any(ConversationContext.class));
-        verify(messageRepository, times(2)).save(any(MessageEntity.class));
+        verify(messageProcessor).processMessage(conversation, userContent);
+        verify(mapper).toResponseDto(exchangeResult);
     }
 
     @Test
-    @DisplayName("새로운 대화인 경우: 대화를 생성하고 메시지를 처리한다")
+    @DisplayName("새로운 대화 생성: ConversationManager가 새 대화를 생성하고 처리한다")
     void processUserMessage_NewConversation_Success() {
         // Given
         Long memberId = 2L;
         String userContent = "처음 인사드립니다";
-        String aiResponse = "안녕하세요! 만나서 반가워요.";
 
         ConversationEntity newConversation = ConversationEntity.builder()
                 .id(200L)
@@ -133,7 +118,7 @@ class SimpleConversationServiceTest {
                 .startedAt(LocalDateTime.now())
                 .build();
 
-        MessageEntity savedUserMessage = MessageEntity.builder()
+        MessageEntity userMessage = MessageEntity.builder()
                 .id(3L)
                 .conversationId(200L)
                 .type(MessageType.USER_MESSAGE)
@@ -141,44 +126,48 @@ class SimpleConversationServiceTest {
                 .emotion(EmotionType.NEUTRAL)
                 .build();
 
-        MessageEntity savedAiMessage = MessageEntity.builder()
+        MessageEntity aiMessage = MessageEntity.builder()
                 .id(4L)
                 .conversationId(200L)
                 .type(MessageType.AI_RESPONSE)
-                .content(aiResponse)
+                .content("안녕하세요! 만나서 반가워요.")
                 .emotion(EmotionType.NEUTRAL)
+                .build();
+
+        MessageExchangeResult exchangeResult = MessageExchangeResult.builder()
+                .conversation(newConversation)
+                .userMessage(userMessage)
+                .aiMessage(aiMessage)
+                .build();
+
+        ConversationResponseDto expectedResponse = ConversationResponseDto.builder()
+                .conversationId(200L)
                 .build();
 
         // Mock 설정
         when(conversationManager.findOrCreateActive(memberId))
                 .thenReturn(newConversation);
-        when(emotionAnalysisPort.analyzeEmotion(userContent))
-                .thenReturn(EmotionType.NEUTRAL);
-        when(messageRepository.save(any(MessageEntity.class)))
-                .thenReturn(savedUserMessage)
-                .thenReturn(savedAiMessage);
-        when(aiResponsePort.generateResponse(any(ConversationContext.class)))
-                .thenReturn(aiResponse);
+        when(messageProcessor.processMessage(newConversation, userContent))
+                .thenReturn(exchangeResult);
+        when(mapper.toResponseDto(exchangeResult))
+                .thenReturn(expectedResponse);
 
         // When
         ConversationResponseDto result = simpleConversationService.processUserMessage(memberId, userContent);
 
         // Then
-        assertThat(result).isNotNull();
-        assertThat(result.getConversationId()).isEqualTo(200L);
-
-        // ConversationManager 메서드 호출 검증
+        assertThat(result).isEqualTo(expectedResponse);
         verify(conversationManager).findOrCreateActive(memberId);
-        verify(messageRepository, times(2)).save(any(MessageEntity.class));
+        verify(messageProcessor).processMessage(newConversation, userContent);
+        verify(mapper).toResponseDto(exchangeResult);
     }
 
     @Test
-    @DisplayName("부정적 감정의 메시지도 올바르게 처리한다")
+    @DisplayName("부정적 감정 메시지 처리: MessageProcessor가 감정 분석을 담당한다")
     void processUserMessage_NegativeEmotion_Success() {
         // Given
         Long memberId = 3L;
-        String userContent = "오늘 너무 우울해요... 아무도 저를 신경쓰지 않는 것 같아요";
-        String aiResponse = "마음이 많이 힘드시겠어요. 항상 당신을 걱정하고 있어요.";
+        String userContent = "오늘 너무 우울해요...";
 
         ConversationEntity conversation = ConversationEntity.builder()
                 .id(300L)
@@ -186,7 +175,7 @@ class SimpleConversationServiceTest {
                 .startedAt(LocalDateTime.now())
                 .build();
 
-        MessageEntity savedUserMessage = MessageEntity.builder()
+        MessageEntity userMessage = MessageEntity.builder()
                 .id(5L)
                 .conversationId(300L)
                 .type(MessageType.USER_MESSAGE)
@@ -194,33 +183,124 @@ class SimpleConversationServiceTest {
                 .emotion(EmotionType.NEGATIVE)
                 .build();
 
-        MessageEntity savedAiMessage = MessageEntity.builder()
+        MessageEntity aiMessage = MessageEntity.builder()
                 .id(6L)
                 .conversationId(300L)
                 .type(MessageType.AI_RESPONSE)
-                .content(aiResponse)
+                .content("마음이 힘드시겠어요. 제가 함께 있어요.")
+                .emotion(EmotionType.NEUTRAL)
+                .build();
+
+        MessageExchangeResult exchangeResult = MessageExchangeResult.builder()
+                .conversation(conversation)
+                .userMessage(userMessage)
+                .aiMessage(aiMessage)
+                .build();
+
+        ConversationResponseDto expectedResponse = ConversationResponseDto.builder()
+                .conversationId(300L)
+                .build();
+
+        // Mock 설정
+        when(conversationManager.findOrCreateActive(memberId))
+                .thenReturn(conversation);
+        when(messageProcessor.processMessage(conversation, userContent))
+                .thenReturn(exchangeResult);
+        when(mapper.toResponseDto(exchangeResult))
+                .thenReturn(expectedResponse);
+
+        // When
+        ConversationResponseDto result = simpleConversationService.processUserMessage(memberId, userContent);
+
+        // Then
+        assertThat(result).isEqualTo(expectedResponse);
+        verify(messageProcessor).processMessage(conversation, userContent);
+    }
+
+    @Test
+    @DisplayName("시스템 메시지 처리: 도메인 로직을 활용하여 AI 메시지로 저장한다")
+    void processSystemMessage_Success() {
+        // Given
+        Long memberId = 4L;
+        String systemMessage = "안녕하세요! 오늘 안부 인사드립니다. 어떻게 지내세요?";
+
+        ConversationEntity conversation = ConversationEntity.builder()
+                .id(400L)
+                .memberId(memberId)
+                .startedAt(LocalDateTime.now())
+                .build();
+
+        MessageEntity savedSystemMessage = MessageEntity.builder()
+                .id(7L)
+                .conversationId(400L)
+                .type(MessageType.AI_RESPONSE)
+                .content(systemMessage)
                 .emotion(EmotionType.NEUTRAL)
                 .build();
 
         // Mock 설정
         when(conversationManager.findOrCreateActive(memberId))
                 .thenReturn(conversation);
-        when(emotionAnalysisPort.analyzeEmotion(userContent))
-                .thenReturn(EmotionType.NEGATIVE);
-        when(messageRepository.save(any(MessageEntity.class)))
-                .thenReturn(savedUserMessage)
-                .thenReturn(savedAiMessage);
-        when(aiResponsePort.generateResponse(any(ConversationContext.class)))
-                .thenReturn(aiResponse);
+
+        // ConversationEntity의 도메인 메서드 mock
+        ConversationEntity spyConversation = spy(conversation);
+        when(conversationManager.findOrCreateActive(memberId))
+                .thenReturn(spyConversation);
+        when(spyConversation.addAIMessage(systemMessage))
+                .thenReturn(savedSystemMessage);
+        when(messageRepository.save(savedSystemMessage))
+                .thenReturn(savedSystemMessage);
+
+        // When
+        simpleConversationService.processSystemMessage(memberId, systemMessage);
+
+        // Then
+        verify(conversationManager).findOrCreateActive(memberId);
+        verify(spyConversation).addAIMessage(systemMessage);
+        verify(messageRepository).save(savedSystemMessage);
+    }
+
+    @Test
+    @DisplayName("서비스 조율 기능: 각 컴포넌트에 올바른 순서로 위임한다")
+    void processUserMessage_CorrectDelegationOrder() {
+        // Given
+        Long memberId = 5L;
+        String userContent = "테스트 메시지";
+
+        ConversationEntity conversation = ConversationEntity.builder()
+                .id(500L)
+                .memberId(memberId)
+                .startedAt(LocalDateTime.now())
+                .build();
+
+        MessageExchangeResult exchangeResult = MessageExchangeResult.builder()
+                .conversation(conversation)
+                .userMessage(mock(MessageEntity.class))
+                .aiMessage(mock(MessageEntity.class))
+                .build();
+
+        ConversationResponseDto response = ConversationResponseDto.builder()
+                .conversationId(500L)
+                .build();
+
+        // Mock 설정
+        when(conversationManager.findOrCreateActive(memberId))
+                .thenReturn(conversation);
+        when(messageProcessor.processMessage(conversation, userContent))
+                .thenReturn(exchangeResult);
+        when(mapper.toResponseDto(exchangeResult))
+                .thenReturn(response);
 
         // When
         ConversationResponseDto result = simpleConversationService.processUserMessage(memberId, userContent);
 
         // Then
-        assertThat(result.getUserMessage().getEmotion()).isEqualTo(EmotionType.NEGATIVE);
-        assertThat(result.getAiMessage().getContent()).contains("걱정하고 있어요");
+        assertThat(result).isEqualTo(response);
 
-        // 감정 분석 호출 검증
-        verify(emotionAnalysisPort).analyzeEmotion(userContent);
+        // InOrder를 사용하여 호출 순서 검증
+        var inOrder = inOrder(conversationManager, messageProcessor, mapper);
+        inOrder.verify(conversationManager).findOrCreateActive(memberId);
+        inOrder.verify(messageProcessor).processMessage(conversation, userContent);
+        inOrder.verify(mapper).toResponseDto(exchangeResult);
     }
 }
