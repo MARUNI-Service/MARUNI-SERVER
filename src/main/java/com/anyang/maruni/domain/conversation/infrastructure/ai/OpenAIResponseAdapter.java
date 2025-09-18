@@ -71,31 +71,6 @@ public class OpenAIResponseAdapter implements AIResponsePort {
     }
 
     /**
-     * 사용자 메시지에 대한 AI 응답 생성 (하위 호환성)
-     *
-     * @param userMessage 사용자 메시지
-     * @return AI 응답 내용
-     */
-    public String generateResponse(String userMessage) {
-        try {
-            log.info("AI 응답 생성 요청: {}", userMessage);
-
-            // 입력 검증 (기존 로직 그대로)
-            String sanitizedMessage = sanitizeUserMessage(userMessage);
-
-            // Spring AI로 응답 생성 (기존 로직 그대로)
-            String response = callSpringAI(sanitizedMessage);
-            String finalResponse = truncateResponse(response);
-
-            log.info("AI 응답 생성 완료: {}", finalResponse);
-            return finalResponse;
-
-        } catch (Exception e) {
-            return handleApiError(e);
-        }
-    }
-
-    /**
      * 사용자 메시지 입력 검증 및 정제 (Properties 사용)
      */
     private String sanitizeUserMessage(String userMessage) {

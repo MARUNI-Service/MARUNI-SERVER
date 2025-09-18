@@ -1,10 +1,6 @@
 package com.anyang.maruni.domain.conversation.domain.port;
 
-import java.util.Collections;
-
-import com.anyang.maruni.domain.conversation.domain.entity.EmotionType;
 import com.anyang.maruni.domain.conversation.domain.vo.ConversationContext;
-import com.anyang.maruni.domain.conversation.domain.vo.MemberProfile;
 
 /**
  * AI 응답 생성 포트 인터페이스
@@ -23,21 +19,5 @@ public interface AIResponsePort {
      */
     String generateResponse(ConversationContext context);
 
-    /**
-     * 단순 메시지 기반 AI 응답 생성 (하위 호환성)
-     *
-     * @param userMessage 사용자 메시지
-     * @return AI 응답 내용
-     * @deprecated ConversationContext를 사용하는 generateResponse(ConversationContext) 메서드를 권장합니다
-     */
-    @Deprecated
-    default String generateResponse(String userMessage) {
-        ConversationContext context = ConversationContext.forUserMessage(
-                userMessage,
-                Collections.emptyList(),
-                MemberProfile.createDefault(null),
-                EmotionType.NEUTRAL
-        );
-        return generateResponse(context);
-    }
+
 }
