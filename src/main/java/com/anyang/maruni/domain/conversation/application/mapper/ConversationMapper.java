@@ -22,10 +22,6 @@ public class ConversationMapper {
      * @return 대화 응답 DTO
      */
     public ConversationResponseDto toResponseDto(MessageExchangeResult result) {
-        return ConversationResponseDto.builder()
-                .conversationId(result.getConversation().getId())
-                .userMessage(MessageDto.from(result.getUserMessage()))
-                .aiMessage(MessageDto.from(result.getAiMessage()))
-                .build();
+        return ConversationResponseDto.from(result);
     }
 }

@@ -81,9 +81,7 @@ class SimpleConversationServiceTest {
                 .aiMessage(aiMessage)
                 .build();
 
-        ConversationResponseDto expectedResponse = ConversationResponseDto.builder()
-                .conversationId(100L)
-                .build();
+        ConversationResponseDto expectedResponse = ConversationResponseDto.withId(100L);
 
         // Mock 설정
         when(conversationManager.findOrCreateActive(memberId))
@@ -140,9 +138,7 @@ class SimpleConversationServiceTest {
                 .aiMessage(aiMessage)
                 .build();
 
-        ConversationResponseDto expectedResponse = ConversationResponseDto.builder()
-                .conversationId(200L)
-                .build();
+        ConversationResponseDto expectedResponse = ConversationResponseDto.withId(200L);
 
         // Mock 설정
         when(conversationManager.findOrCreateActive(memberId))
@@ -197,9 +193,7 @@ class SimpleConversationServiceTest {
                 .aiMessage(aiMessage)
                 .build();
 
-        ConversationResponseDto expectedResponse = ConversationResponseDto.builder()
-                .conversationId(300L)
-                .build();
+        ConversationResponseDto expectedResponse = ConversationResponseDto.withId(300L);
 
         // Mock 설정
         when(conversationManager.findOrCreateActive(memberId))
@@ -279,9 +273,7 @@ class SimpleConversationServiceTest {
                 .aiMessage(mock(MessageEntity.class))
                 .build();
 
-        ConversationResponseDto response = ConversationResponseDto.builder()
-                .conversationId(500L)
-                .build();
+        ConversationResponseDto response = ConversationResponseDto.withId(500L);
 
         // Mock 설정
         when(conversationManager.findOrCreateActive(memberId))
