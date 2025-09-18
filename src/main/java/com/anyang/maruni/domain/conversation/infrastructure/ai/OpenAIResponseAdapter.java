@@ -47,7 +47,7 @@ public class OpenAIResponseAdapter implements AIResponsePort {
     private static final String ELLIPSIS = "...";
 
     /**
-     * 대화 컨텍스트를 활용한 AI 응답 생성 (권장)
+     * 대화 컨텍스트를 활용한 AI 응답 생성
      *
      * @param context 대화 컨텍스트
      * @return AI 응답 내용

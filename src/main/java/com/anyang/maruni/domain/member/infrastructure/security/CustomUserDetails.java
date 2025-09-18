@@ -52,4 +52,22 @@ public class CustomUserDetails implements UserDetails {
 	public boolean isEnabled() {
 		return true;
 	}
+
+	/**
+	 * 회원 ID 반환 (편의 메서드)
+	 *
+	 * @return 회원 ID
+	 */
+	public Long getMemberId() {
+		return member.getId();
+	}
+
+	/**
+	 * 회원 엔티티 반환
+	 *
+	 * @return 회원 엔티티
+	 */
+	public MemberEntity getMemberEntity() {
+		return member;
+	}
 }
