@@ -2,6 +2,7 @@ package com.anyang.maruni.domain.conversation.application.dto.response;
 
 import com.anyang.maruni.domain.conversation.application.dto.MessageDto;
 import com.anyang.maruni.domain.conversation.application.dto.MessageExchangeResult;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,21 +18,56 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Schema(
+    description = "AI 대화 처리 응답",
+    example = """
+        {
+          "conversationId": 1,
+          "userMessage": {
+            "id": 1,
+            "type": "USER_MESSAGE",
+            "content": "안녕하세요, 오늘 기분이 좋아요!",
+            "emotion": "POSITIVE",
+            "createdAt": "2025-09-18T10:30:00"
+          },
+          "aiMessage": {
+            "id": 2,
+            "type": "AI_RESPONSE",
+            "content": "안녕하세요! 기분이 좋으시다니 정말 다행이에요. 오늘 특별한 일이 있으셨나요?",
+            "emotion": "NEUTRAL",
+            "createdAt": "2025-09-18T10:30:03"
+          }
+        }
+        """
+)
 public class ConversationResponseDto {
 
     /**
      * 대화 ID
      */
+    @Schema(
+        description = "대화 세션의 고유 식별자",
+        example = "1",
+        requiredMode = Schema.RequiredMode.REQUIRED
+    )
     private Long conversationId;
 
     /**
      * 사용자 메시지 정보
      */
+    @Schema(
+        description = "사용자가 전송한 메시지의 상세 정보",
+        requiredMode = Schema.RequiredMode.REQUIRED
+    )
     private MessageDto userMessage;
 
     /**
      * AI 응답 메시지 정보
      */
+    @Schema(
+        description = "AI가 생성한 응답 메시지의 상세 정보",
+        requiredMode = Schema.RequiredMode.REQUIRED
+    )
     private MessageDto aiMessage;
 
     /**
