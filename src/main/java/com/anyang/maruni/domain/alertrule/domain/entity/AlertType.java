@@ -1,11 +1,14 @@
 package com.anyang.maruni.domain.alertrule.domain.entity;
 
+import lombok.Getter;
+
 /**
  * 알림 유형 열거형
  *
  * 이상징후 감지 시스템에서 사용하는 알림 유형을 정의합니다.
  * 각 유형에 따라 다른 감지 로직이 적용됩니다.
  */
+@Getter
 public enum AlertType {
     /**
      * 감정패턴: 연속적인 부정적 감정 감지
@@ -40,11 +43,4 @@ public enum AlertType {
         this.description = description;
     }
 
-    public String getDisplayName() {
-        return displayName;
-    }
-
-    public String getDescription() {
-        return description;
-    }
 }

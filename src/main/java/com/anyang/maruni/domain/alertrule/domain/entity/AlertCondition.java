@@ -1,7 +1,11 @@
 package com.anyang.maruni.domain.alertrule.domain.entity;
 
+import java.util.Arrays;
+import java.util.List;
+
 import com.anyang.maruni.domain.conversation.domain.entity.EmotionType;
 import com.anyang.maruni.domain.conversation.domain.entity.MessageEntity;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.EnumType;
@@ -10,9 +14,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * 알림 조건 임베디드 엔티티
@@ -100,16 +101,12 @@ public class AlertCondition {
      * @return 조건 만족 여부
      */
     public boolean evaluate(List<MessageEntity> recentMessages, AlertType alertType) {
-        switch (alertType) {
-            case EMOTION_PATTERN:
-                return evaluateEmotionPattern(recentMessages);
-            case NO_RESPONSE:
-                return evaluateNoResponsePattern(recentMessages);
-            case KEYWORD_DETECTION:
-                return evaluateKeywordPattern(recentMessages);
-            default:
-                return false;
-        }
+		return switch (alertType) {
+			case EMOTION_PATTERN -> evaluateEmotionPattern(recentMessages);
+			case NO_RESPONSE -> evaluateNoResponsePattern(recentMessages);
+			case KEYWORD_DETECTION -> evaluateKeywordPattern(recentMessages);
+			default -> false;
+		};
     }
 
     /**

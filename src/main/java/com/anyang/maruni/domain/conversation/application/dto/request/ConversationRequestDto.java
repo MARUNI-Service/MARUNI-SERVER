@@ -1,4 +1,4 @@
-package com.anyang.maruni.domain.conversation.application.dto;
+package com.anyang.maruni.domain.conversation.application.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
@@ -17,7 +17,14 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "대화 요청 정보")
+@Schema(
+    description = "AI 대화 메시지 전송 요청",
+    example = """
+        {
+          "content": "안녕하세요, 오늘 기분이 좋아요!"
+        }
+        """
+)
 public class ConversationRequestDto {
 
     /**
@@ -25,6 +32,11 @@ public class ConversationRequestDto {
      */
     @NotBlank(message = "메시지 내용은 필수입니다")
     @Size(max = 500, message = "메시지는 500자를 초과할 수 없습니다")
-    @Schema(description = "사용자 메시지 내용", example = "안녕하세요, 오늘 기분이 좋아요!")
+    @Schema(
+        description = "사용자가 AI에게 전송할 메시지 내용",
+        example = "안녕하세요, 오늘 기분이 좋아요!",
+        requiredMode = Schema.RequiredMode.REQUIRED,
+        maxLength = 500
+    )
     private String content;
 }
