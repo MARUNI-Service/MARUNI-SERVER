@@ -1,15 +1,13 @@
-package com.anyang.maruni.domain.dailycheck.application.service;
+package com.anyang.maruni.domain.dailycheck.application.scheduler;
 
 import com.anyang.maruni.domain.conversation.application.service.SimpleConversationService;
 import com.anyang.maruni.domain.dailycheck.domain.entity.DailyCheckRecord;
 import com.anyang.maruni.domain.dailycheck.domain.entity.RetryRecord;
 import com.anyang.maruni.domain.dailycheck.domain.repository.DailyCheckRecordRepository;
-import com.anyang.maruni.domain.dailycheck.domain.repository.RetryRecordRepository;
 import com.anyang.maruni.domain.member.domain.repository.MemberRepository;
 import com.anyang.maruni.domain.notification.domain.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,16 +17,15 @@ import java.time.LocalTime;
 import java.util.List;
 
 /**
- * 매일 안부 확인 서비스
+ * DailyCheck 오케스트레이터
  *
- * TDD Red Phase - 실패하는 구현
- * Week 5 Day 1-2: 테스트가 실패하도록 최소한의 구조만 제공
+ * 단일 책임: 메인 비즈니스 로직 조정 및 회원별 안부 확인 처리
  */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 @Slf4j
-public class DailyCheckService {
+public class DailyCheckOrchestrator {
 
     // 상수 정의
     private static final String DAILY_CHECK_TITLE = "안부 메시지";
@@ -40,16 +37,13 @@ public class DailyCheckService {
     private final SimpleConversationService conversationService;
     private final NotificationService notificationService;
     private final DailyCheckRecordRepository dailyCheckRecordRepository;
-    private final RetryRecordRepository retryRecordRepository;
+    private final RetryService retryService;
 
     /**
-     * 매일 오전 9시 안부 메시지 발송
+     * 모든 활성 회원에게 안부 메시지 발송 - 실제 비즈니스 로직
      */
-    @Scheduled(cron = "${maruni.scheduling.daily-check.cron}")
     @Transactional
-    public void sendDailyCheckMessages() {
-        log.info("Starting daily check message sending...");
-
+    public void processAllActiveMembers() {
         List<Long> activeMemberIds = memberRepository.findActiveMemberIds();
         log.info("Found {} active members", activeMemberIds.size());
 
@@ -58,6 +52,21 @@ public class DailyCheckService {
         }
 
         log.info("Daily check message sending completed");
+    }
+
+    /**
+     * 모든 재시도 대상 처리 - 실제 비즈니스 로직
+     */
+    @Transactional
+    public void processAllRetries() {
+        List<RetryRecord> pendingRetries = retryService.getPendingRetries(LocalDateTime.now());
+        log.info("Found {} pending retries", pendingRetries.size());
+
+        for (RetryRecord retryRecord : pendingRetries) {
+            processRetryRecord(retryRecord);
+        }
+
+        log.info("Retry processing completed");
     }
 
     /**
@@ -85,7 +94,33 @@ public class DailyCheckService {
 
         } catch (Exception e) {
             log.error("Error sending daily check message to member {}: {}", memberId, e.getMessage());
-            scheduleRetry(memberId, DAILY_CHECK_MESSAGE);
+            retryService.scheduleRetry(memberId, DAILY_CHECK_MESSAGE);
+        }
+    }
+
+    /**
+     * 개별 재시도 기록 처리
+     */
+    private void processRetryRecord(RetryRecord retryRecord) {
+        try {
+            boolean success = notificationService.sendPushNotification(
+                    retryRecord.getMemberId(),
+                    DAILY_CHECK_TITLE,
+                    retryRecord.getMessage()
+            );
+
+            if (success) {
+                handleSuccessfulRetry(retryRecord);
+            } else {
+                retryService.handleFailedRetry(retryRecord);
+            }
+
+            retryService.saveRetryRecord(retryRecord);
+
+        } catch (Exception e) {
+            log.error("Error during retry for member {}: {}",
+                    retryRecord.getMemberId(), e.getMessage());
+            retryService.incrementRetryCount(retryRecord);
         }
     }
 
@@ -94,6 +129,14 @@ public class DailyCheckService {
      */
     public boolean isAlreadySentToday(Long memberId) {
         return dailyCheckRecordRepository.existsSuccessfulRecordByMemberIdAndDate(memberId, LocalDate.now());
+    }
+
+    /**
+     * 허용된 발송 시간인지 확인 (오전 7시 ~ 오후 9시)
+     */
+    public boolean isAllowedSendingTime(LocalTime currentTime) {
+        int hour = currentTime.getHour();
+        return hour >= ALLOWED_START_HOUR && hour <= ALLOWED_END_HOUR;
     }
 
     /**
@@ -117,87 +160,8 @@ public class DailyCheckService {
         saveDailyCheckRecord(memberId, message, false);
 
         // 실패 시 재시도 스케줄에 등록
-        scheduleRetry(memberId, message);
+        retryService.scheduleRetry(memberId, message);
         log.warn("Failed to send daily check message to member {}, scheduled for retry", memberId);
-    }
-
-    /**
-     * 발송 기록 저장 (성공/실패 공통)
-     */
-    private void saveDailyCheckRecord(Long memberId, String message, boolean success) {
-        DailyCheckRecord record = success
-            ? DailyCheckRecord.createSuccessRecord(memberId, message)
-            : DailyCheckRecord.createFailureRecord(memberId, message);
-        dailyCheckRecordRepository.save(record);
-    }
-
-    /**
-     * 허용된 발송 시간인지 확인 (오전 7시 ~ 오후 9시)
-     */
-    public boolean isAllowedSendingTime(LocalTime currentTime) {
-        int hour = currentTime.getHour();
-        return hour >= ALLOWED_START_HOUR && hour <= ALLOWED_END_HOUR;
-    }
-
-    /**
-     * 실패한 알림에 대한 재시도 스케줄링
-     */
-    public void scheduleRetry(Long memberId, String message) {
-        RetryRecord retryRecord = RetryRecord.createRetryRecord(memberId, message);
-        retryRecordRepository.save(retryRecord);
-        log.info("Retry scheduled for member {} at {}", memberId, retryRecord.getScheduledTime());
-    }
-
-    /**
-     * 재시도 대상 회원 ID 목록 조회
-     */
-    public List<Long> getPendingRetryMemberIds() {
-        return retryRecordRepository.findPendingRetryMemberIds(LocalDateTime.now());
-    }
-
-    /**
-     * 실패한 알림 재시도 처리
-     */
-    @Scheduled(cron = "${maruni.scheduling.retry.cron}")
-    @Transactional
-    public void processRetries() {
-        log.info("Starting retry processing...");
-
-        List<RetryRecord> pendingRetries = retryRecordRepository.findPendingRetries(LocalDateTime.now());
-        log.info("Found {} pending retries", pendingRetries.size());
-
-        for (RetryRecord retryRecord : pendingRetries) {
-            processRetryRecord(retryRecord);
-        }
-
-        log.info("Retry processing completed");
-    }
-
-    /**
-     * 개별 재시도 기록 처리
-     */
-    private void processRetryRecord(RetryRecord retryRecord) {
-        try {
-            boolean success = notificationService.sendPushNotification(
-                    retryRecord.getMemberId(),
-                    DAILY_CHECK_TITLE,
-                    retryRecord.getMessage()
-            );
-
-            if (success) {
-                handleSuccessfulRetry(retryRecord);
-            } else {
-                handleFailedRetry(retryRecord);
-            }
-
-            retryRecordRepository.save(retryRecord);
-
-        } catch (Exception e) {
-            log.error("Error during retry for member {}: {}",
-                    retryRecord.getMemberId(), e.getMessage());
-            retryRecord.incrementRetryCount();
-            retryRecordRepository.save(retryRecord);
-        }
     }
 
     /**
@@ -205,7 +169,7 @@ public class DailyCheckService {
      */
     private void handleSuccessfulRetry(RetryRecord retryRecord) {
         // 재시도 성공
-        retryRecord.markCompleted();
+        retryService.markCompleted(retryRecord);
 
         // 대화 시스템에 기록 (중복 코드 재사용)
         conversationService.processSystemMessage(retryRecord.getMemberId(), retryRecord.getMessage());
@@ -217,12 +181,12 @@ public class DailyCheckService {
     }
 
     /**
-     * 실패한 재시도 처리
+     * 발송 기록 저장 (성공/실패 공통)
      */
-    private void handleFailedRetry(RetryRecord retryRecord) {
-        // 재시도 실패 - 횟수 증가
-        retryRecord.incrementRetryCount();
-        log.warn("Retry failed for member {}, attempt {} of 3",
-                retryRecord.getMemberId(), retryRecord.getRetryCount());
+    private void saveDailyCheckRecord(Long memberId, String message, boolean success) {
+        DailyCheckRecord record = success
+            ? DailyCheckRecord.createSuccessRecord(memberId, message)
+            : DailyCheckRecord.createFailureRecord(memberId, message);
+        dailyCheckRecordRepository.save(record);
     }
 }
