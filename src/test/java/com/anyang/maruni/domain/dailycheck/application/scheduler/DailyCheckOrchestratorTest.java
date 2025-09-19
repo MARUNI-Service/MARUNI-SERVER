@@ -1,8 +1,8 @@
-package com.anyang.maruni.domain.dailycheck.application.service;
+package com.anyang.maruni.domain.dailycheck.application.scheduler;
 
 import com.anyang.maruni.domain.conversation.application.service.SimpleConversationService;
+import com.anyang.maruni.domain.dailycheck.domain.entity.RetryRecord;
 import com.anyang.maruni.domain.dailycheck.domain.repository.DailyCheckRecordRepository;
-import com.anyang.maruni.domain.dailycheck.domain.repository.RetryRecordRepository;
 import com.anyang.maruni.domain.member.domain.repository.MemberRepository;
 import com.anyang.maruni.domain.notification.domain.service.NotificationService;
 import org.junit.jupiter.api.DisplayName;
@@ -23,16 +23,13 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
 
 /**
- * DailyCheckService TDD Red 테스트
+ * DailyCheckOrchestrator 테스트
  *
- * Week 5 Day 1-2: 실패하는 테스트 작성
- * - 스케줄링 실행 테스트
- * - 중복 방지 로직 테스트
- * - 시간 기반 필터링 테스트
+ * 메인 비즈니스 로직 테스트
  */
 @ExtendWith(MockitoExtension.class)
-@DisplayName("DailyCheckService 테스트")
-class DailyCheckServiceTest {
+@DisplayName("DailyCheckOrchestrator 테스트")
+class DailyCheckOrchestratorTest {
 
     @Mock
     private MemberRepository memberRepository;
@@ -47,10 +44,10 @@ class DailyCheckServiceTest {
     private DailyCheckRecordRepository dailyCheckRecordRepository;
 
     @Mock
-    private RetryRecordRepository retryRecordRepository;
+    private RetryService retryService;
 
     @InjectMocks
-    private DailyCheckService dailyCheckService;
+    private DailyCheckOrchestrator dailyCheckOrchestrator;
 
     @Test
     @DisplayName("매일 9시 안부 메시지를 모든 활성 회원에게 발송한다")
@@ -64,7 +61,7 @@ class DailyCheckServiceTest {
                 .willReturn(true);
 
         // When
-        dailyCheckService.processAllActiveMembers();
+        dailyCheckOrchestrator.processAllActiveMembers();
 
         // Then
         verify(notificationService, times(3))
@@ -89,7 +86,7 @@ class DailyCheckServiceTest {
                 .willReturn(true);
 
         // When
-        dailyCheckService.processAllActiveMembers();
+        dailyCheckOrchestrator.processAllActiveMembers();
 
         // Then
         verify(notificationService, times(1))
@@ -106,8 +103,8 @@ class DailyCheckServiceTest {
         LocalTime eveningTime = LocalTime.of(22, 0);
 
         // When & Then
-        assertTrue(dailyCheckService.isAllowedSendingTime(morningTime));
-        assertFalse(dailyCheckService.isAllowedSendingTime(eveningTime));
+        assertTrue(dailyCheckOrchestrator.isAllowedSendingTime(morningTime));
+        assertFalse(dailyCheckOrchestrator.isAllowedSendingTime(eveningTime));
     }
 
     @Test
@@ -122,10 +119,10 @@ class DailyCheckServiceTest {
                 .willReturn(false); // 실패 시나리오
 
         // When
-        dailyCheckService.processAllActiveMembers();
+        dailyCheckOrchestrator.processAllActiveMembers();
 
         // Then
-        verify(retryRecordRepository, times(1)).save(any());  // 재시도 기록 저장 확인
+        verify(retryService, times(1)).scheduleRetry(anyLong(), anyString());  // 재시도 기록 스케줄링 확인
         verify(dailyCheckRecordRepository, times(1)).save(any());  // 실패 기록 저장 확인
     }
 
@@ -133,14 +130,31 @@ class DailyCheckServiceTest {
     @DisplayName("일정 시간이 지나면 재시도를 실행한다")
     void processAllRetries_shouldRetryFailedNotifications() {
         // Given
-        given(retryRecordRepository.findPendingRetries(any(LocalDateTime.class)))
+        given(retryService.getPendingRetries(any(LocalDateTime.class)))
                 .willReturn(List.of()); // 빈 목록으로 설정하여 간단한 테스트
 
         // When
-        dailyCheckService.processAllRetries();
+        dailyCheckOrchestrator.processAllRetries();
 
         // Then - 빈 목록이므로 알림 발송은 없어야 함
         verify(notificationService, never())
                 .sendPushNotification(anyLong(), anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("특정 회원에게 오늘 이미 발송했는지 확인한다")
+    void isAlreadySentToday_shouldCheckTodayRecord() {
+        // Given
+        Long memberId = 1L;
+        given(dailyCheckRecordRepository.existsSuccessfulRecordByMemberIdAndDate(eq(memberId), any(LocalDate.class)))
+                .willReturn(true);
+
+        // When
+        boolean result = dailyCheckOrchestrator.isAlreadySentToday(memberId);
+
+        // Then
+        assertTrue(result);
+        verify(dailyCheckRecordRepository)
+                .existsSuccessfulRecordByMemberIdAndDate(eq(memberId), any(LocalDate.class));
     }
 }
