@@ -10,25 +10,28 @@ import com.anyang.maruni.global.response.error.ErrorCode;
  */
 public class EmotionAnalysisException extends BaseException {
 
-    public EmotionAnalysisException() {
-        super(ErrorCode.EMOTION_ANALYSIS_FAILED);
+    public EmotionAnalysisException(ErrorCode errorCode) {
+        super(errorCode);
     }
 
-    public EmotionAnalysisException(String message, Throwable cause) {
-        super(ErrorCode.EMOTION_ANALYSIS_FAILED);
+    /**
+     * 일반적인 감정 분석 실패
+     */
+    public static EmotionAnalysisException analysisFailure() {
+        return new EmotionAnalysisException(ErrorCode.EMOTION_ANALYSIS_FAILED);
     }
 
     /**
      * 감정 키워드 설정 로드 실패로 인한 예외
      */
-    public static EmotionAnalysisException keywordConfigLoadFailed(Throwable cause) {
-        return new EmotionAnalysisException("감정 키워드 설정 로드 실패", cause);
+    public static EmotionAnalysisException keywordConfigLoadFailed() {
+        return new EmotionAnalysisException(ErrorCode.EMOTION_KEYWORD_CONFIG_LOAD_FAILED);
     }
 
     /**
      * 메시지 전처리 실패로 인한 예외
      */
-    public static EmotionAnalysisException messagePreprocessingFailed(String message, Throwable cause) {
-        return new EmotionAnalysisException("메시지 전처리 실패: " + message, cause);
+    public static EmotionAnalysisException messagePreprocessingFailed() {
+        return new EmotionAnalysisException(ErrorCode.MESSAGE_PREPROCESSING_FAILED);
     }
 }

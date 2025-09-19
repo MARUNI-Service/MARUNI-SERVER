@@ -85,7 +85,7 @@ public class KeywordBasedEmotionAnalyzer implements EmotionAnalysisPort {
         try {
             return message.toLowerCase().trim();
         } catch (Exception e) {
-            throw EmotionAnalysisException.messagePreprocessingFailed(message, e);
+            throw EmotionAnalysisException.messagePreprocessingFailed();
         }
     }
 
@@ -97,13 +97,11 @@ public class KeywordBasedEmotionAnalyzer implements EmotionAnalysisPort {
             Map<String, List<String>> keywords = properties.getEmotion().getKeywords();
 
             if (keywords == null || keywords.isEmpty()) {
-                throw EmotionAnalysisException.keywordConfigLoadFailed(
-                    new IllegalStateException("감정 키워드 설정이 비어있습니다"));
+                throw EmotionAnalysisException.keywordConfigLoadFailed();
             }
 
             if (!keywords.containsKey("negative") || !keywords.containsKey("positive")) {
-                throw EmotionAnalysisException.keywordConfigLoadFailed(
-                    new IllegalStateException("필수 키워드 카테고리(positive/negative)가 누락되었습니다"));
+                throw EmotionAnalysisException.keywordConfigLoadFailed();
             }
 
             return keywords;
@@ -112,7 +110,7 @@ public class KeywordBasedEmotionAnalyzer implements EmotionAnalysisPort {
             if (e instanceof EmotionAnalysisException) {
                 throw e;
             }
-            throw EmotionAnalysisException.keywordConfigLoadFailed(e);
+            throw EmotionAnalysisException.keywordConfigLoadFailed();
         }
     }
 

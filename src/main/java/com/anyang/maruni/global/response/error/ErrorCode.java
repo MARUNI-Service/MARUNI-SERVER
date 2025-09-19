@@ -25,7 +25,11 @@ public enum ErrorCode implements ErrorType {
 
 	MEMBER_NOT_FOUND("E404", "회원을 찾을 수 없습니다", HttpStatus.NOT_FOUND.value()),
 	GUARDIAN_NOT_FOUND("E404", "보호자를 찾을 수 없습니다", HttpStatus.NOT_FOUND.value()),
+
+	// Conversation Not Found (구체적 분류)
 	CONVERSATION_NOT_FOUND("E404", "대화를 찾을 수 없습니다", HttpStatus.NOT_FOUND.value()),
+	CONVERSATION_NOT_FOUND_BY_ID("E404", "해당 ID의 대화를 찾을 수 없습니다", HttpStatus.NOT_FOUND.value()),
+	ACTIVE_CONVERSATION_NOT_FOUND("E404", "활성화된 대화가 없습니다. 새 대화를 시작해주세요", HttpStatus.NOT_FOUND.value()),
 
 	TOO_MANY_REQUESTS("E429", "너무 많은 요청입니다. 잠시 후 다시 시도해주세요.", HttpStatus.TOO_MANY_REQUESTS.value()),
 	DAILY_MESSAGE_LIMIT_EXCEEDED("E429", "일일 메시지 한도를 초과했습니다. 내일 다시 시도해주세요.", HttpStatus.TOO_MANY_REQUESTS.value()),
@@ -44,7 +48,10 @@ public enum ErrorCode implements ErrorType {
 	AI_NETWORK_ERROR("E500", "네트워크 연결에 실패했습니다. 인터넷 연결을 확인해주세요.", HttpStatus.INTERNAL_SERVER_ERROR.value()),
 	AI_RESPONSE_PARSING_FAILED("E500", "AI 응답 처리 중 오류가 발생했습니다.", HttpStatus.INTERNAL_SERVER_ERROR.value()),
 
+	// Emotion Analysis Errors (구체적 분류)
 	EMOTION_ANALYSIS_FAILED("E500", "감정 분석에 실패했습니다", HttpStatus.INTERNAL_SERVER_ERROR.value()),
+	EMOTION_KEYWORD_CONFIG_LOAD_FAILED("E500", "감정 키워드 설정을 불러오는데 실패했습니다", HttpStatus.INTERNAL_SERVER_ERROR.value()),
+	MESSAGE_PREPROCESSING_FAILED("E500", "메시지 전처리 중 오류가 발생했습니다", HttpStatus.INTERNAL_SERVER_ERROR.value()),
 
 	// 5xx Server Error
 	ENCRYPTION_ERROR("E500", "암호화 처리 중 오류가 발생했습니다", HttpStatus.INTERNAL_SERVER_ERROR.value()),
