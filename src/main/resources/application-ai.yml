@@ -1,0 +1,26 @@
+# AI 관련 설정 파일
+# Spring Boot Profile: ai
+
+# Spring AI 기본 설정
+spring:
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY:your_openai_api_key_here}
+      chat:
+        options:
+          model: ${OPENAI_MODEL:gpt-4o}
+          temperature: ${OPENAI_TEMPERATURE:0.7}
+          max-tokens: ${OPENAI_MAX_TOKENS:100}
+
+# Conversation 도메인 전용 설정
+maruni:
+  conversation:
+    ai:
+      max-response-length: 100
+      system-prompt: "당신은 노인 돌봄 전문 AI 상담사입니다. 따뜻하고 공감적으로 30자 이내로 응답하세요."
+      default-response: "안녕하세요! 어떻게 지내세요?"
+      default-user-message: "안녕하세요"
+    emotion:
+      keywords:
+        negative: ["슬프", "우울", "아프", "힘들", "외로", "무서", "걱정", "답답"]
+        positive: ["좋", "행복", "기쁘", "감사", "즐거", "만족", "고마"]
