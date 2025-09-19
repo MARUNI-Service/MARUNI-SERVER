@@ -43,13 +43,19 @@ public class DailyCheckService {
     private final RetryRecordRepository retryRecordRepository;
 
     /**
-     * 매일 오전 9시 안부 메시지 발송
+     * 매일 오전 9시 안부 메시지 발송 - 스케줄링 트리거 (단순 위임)
      */
     @Scheduled(cron = "${maruni.scheduling.daily-check.cron}")
-    @Transactional
-    public void sendDailyCheckMessages() {
-        log.info("Starting daily check message sending...");
+    public void triggerDailyCheck() {
+        log.info("Daily check triggered by scheduler");
+        processAllActiveMembers();
+    }
 
+    /**
+     * 모든 활성 회원에게 안부 메시지 발송 - 실제 비즈니스 로직
+     */
+    @Transactional
+    public void processAllActiveMembers() {
         List<Long> activeMemberIds = memberRepository.findActiveMemberIds();
         log.info("Found {} active members", activeMemberIds.size());
 
@@ -156,13 +162,19 @@ public class DailyCheckService {
     }
 
     /**
-     * 실패한 알림 재시도 처리
+     * 재시도 프로세스 트리거 - 스케줄링 트리거 (단순 위임)
      */
     @Scheduled(cron = "${maruni.scheduling.retry.cron}")
-    @Transactional
-    public void processRetries() {
-        log.info("Starting retry processing...");
+    public void triggerRetryProcess() {
+        log.info("Retry process triggered by scheduler");
+        processAllRetries();
+    }
 
+    /**
+     * 모든 재시도 대상 처리 - 실제 비즈니스 로직
+     */
+    @Transactional
+    public void processAllRetries() {
         List<RetryRecord> pendingRetries = retryRecordRepository.findPendingRetries(LocalDateTime.now());
         log.info("Found {} pending retries", pendingRetries.size());
 

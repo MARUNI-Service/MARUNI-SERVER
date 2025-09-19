@@ -54,7 +54,7 @@ class DailyCheckServiceTest {
 
     @Test
     @DisplayName("매일 9시 안부 메시지를 모든 활성 회원에게 발송한다")
-    void sendDailyCheckMessages_shouldSendToAllActiveMembers() {
+    void processAllActiveMembers_shouldSendToAllActiveMembers() {
         // Given
         List<Long> activeMemberIds = Arrays.asList(1L, 2L, 3L);
         given(memberRepository.findActiveMemberIds()).willReturn(activeMemberIds);
@@ -64,7 +64,7 @@ class DailyCheckServiceTest {
                 .willReturn(true);
 
         // When
-        dailyCheckService.sendDailyCheckMessages();
+        dailyCheckService.processAllActiveMembers();
 
         // Then
         verify(notificationService, times(3))
@@ -77,7 +77,7 @@ class DailyCheckServiceTest {
 
     @Test
     @DisplayName("같은 날 중복 발송을 방지한다")
-    void sendDailyCheckMessages_shouldPreventDuplicateOnSameDay() {
+    void processAllActiveMembers_shouldPreventDuplicateOnSameDay() {
         // Given
         List<Long> activeMemberIds = Arrays.asList(1L, 2L);
         given(memberRepository.findActiveMemberIds()).willReturn(activeMemberIds);
@@ -89,7 +89,7 @@ class DailyCheckServiceTest {
                 .willReturn(true);
 
         // When
-        dailyCheckService.sendDailyCheckMessages();
+        dailyCheckService.processAllActiveMembers();
 
         // Then
         verify(notificationService, times(1))
@@ -100,7 +100,7 @@ class DailyCheckServiceTest {
 
     @Test
     @DisplayName("지정된 시간대에만 메시지를 발송한다")
-    void sendDailyCheckMessages_shouldOnlySendDuringAllowedHours() {
+    void isAllowedSendingTime_shouldOnlySendDuringAllowedHours() {
         // Given
         LocalTime morningTime = LocalTime.of(9, 0);
         LocalTime eveningTime = LocalTime.of(22, 0);
@@ -112,7 +112,7 @@ class DailyCheckServiceTest {
 
     @Test
     @DisplayName("푸시 알림 실패 시 재시도 스케줄에 등록한다")
-    void sendDailyCheckMessages_shouldScheduleRetryOnFailure() {
+    void processAllActiveMembers_shouldScheduleRetryOnFailure() {
         // Given
         List<Long> activeMemberIds = Arrays.asList(1L);
         given(memberRepository.findActiveMemberIds()).willReturn(activeMemberIds);
@@ -122,7 +122,7 @@ class DailyCheckServiceTest {
                 .willReturn(false); // 실패 시나리오
 
         // When
-        dailyCheckService.sendDailyCheckMessages();
+        dailyCheckService.processAllActiveMembers();
 
         // Then
         verify(retryRecordRepository, times(1)).save(any());  // 재시도 기록 저장 확인
@@ -131,13 +131,13 @@ class DailyCheckServiceTest {
 
     @Test
     @DisplayName("일정 시간이 지나면 재시도를 실행한다")
-    void processRetries_shouldRetryFailedNotifications() {
+    void processAllRetries_shouldRetryFailedNotifications() {
         // Given
         given(retryRecordRepository.findPendingRetries(any(LocalDateTime.class)))
                 .willReturn(List.of()); // 빈 목록으로 설정하여 간단한 테스트
 
         // When
-        dailyCheckService.processRetries();
+        dailyCheckService.processAllRetries();
 
         // Then - 빈 목록이므로 알림 발송은 없어야 함
         verify(notificationService, never())
