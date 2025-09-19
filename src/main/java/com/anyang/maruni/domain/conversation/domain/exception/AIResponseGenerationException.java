@@ -15,15 +15,15 @@ public class AIResponseGenerationException extends BaseException {
     }
 
     public AIResponseGenerationException(String message) {
-        super(ErrorCode.AI_RESPONSE_GENERATION_FAILED, message);
+        super(ErrorCode.AI_RESPONSE_GENERATION_FAILED);
     }
 
     public AIResponseGenerationException(Throwable cause) {
-        super(ErrorCode.AI_RESPONSE_GENERATION_FAILED, cause);
+        super(ErrorCode.AI_RESPONSE_GENERATION_FAILED);
     }
 
     public AIResponseGenerationException(String message, Throwable cause) {
-        super(ErrorCode.AI_RESPONSE_GENERATION_FAILED, message, cause);
+        super(ErrorCode.AI_RESPONSE_GENERATION_FAILED);
     }
 
     /**

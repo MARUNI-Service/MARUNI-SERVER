@@ -14,16 +14,8 @@ public class EmotionAnalysisException extends BaseException {
         super(ErrorCode.EMOTION_ANALYSIS_FAILED);
     }
 
-    public EmotionAnalysisException(String message) {
-        super(ErrorCode.EMOTION_ANALYSIS_FAILED, message);
-    }
-
-    public EmotionAnalysisException(Throwable cause) {
-        super(ErrorCode.EMOTION_ANALYSIS_FAILED, cause);
-    }
-
     public EmotionAnalysisException(String message, Throwable cause) {
-        super(ErrorCode.EMOTION_ANALYSIS_FAILED, message, cause);
+        super(ErrorCode.EMOTION_ANALYSIS_FAILED);
     }
 
     /**

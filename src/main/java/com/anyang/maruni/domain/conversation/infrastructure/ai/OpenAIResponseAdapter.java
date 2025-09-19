@@ -114,18 +114,21 @@ public class OpenAIResponseAdapter implements AIResponsePort {
 
             return content.trim();
 
-        } catch (org.springframework.ai.retry.RetryableAiException e) {
-            log.error("OpenAI API 재시도 가능한 오류: {}", e.getMessage());
-            throw AIResponseGenerationException.apiCallFailed(e);
-        } catch (org.springframework.ai.openai.api.OpenAiApi.OpenAiApiException e) {
-            log.error("OpenAI API 오류 (상태코드: {}): {}", e.statusCode(), e.getMessage());
-            if (e.statusCode() == 429) {
-                throw AIResponseGenerationException.apiLimitExceeded();
+        } catch (RuntimeException e) {
+            // Spring AI 관련 예외들을 포괄적으로 처리
+            String errorMessage = e.getMessage();
+            log.error("OpenAI API 호출 오류: {}", errorMessage, e);
+
+            // 특정 오류 유형 구분
+            if (errorMessage != null) {
+                if (errorMessage.contains("429") || errorMessage.contains("rate limit")) {
+                    throw AIResponseGenerationException.apiLimitExceeded();
+                } else if (errorMessage.contains("timeout") || errorMessage.contains("connection")) {
+                    throw AIResponseGenerationException.networkError(e);
+                }
             }
+
             throw AIResponseGenerationException.apiCallFailed(e);
-        } catch (java.net.ConnectException | java.net.SocketTimeoutException e) {
-            log.error("네트워크 연결 오류: {}", e.getMessage());
-            throw AIResponseGenerationException.networkError(e);
         } catch (Exception e) {
             log.error("AI 응답 생성 중 예상치 못한 오류: {}", e.getMessage(), e);
             throw AIResponseGenerationException.apiCallFailed(e);

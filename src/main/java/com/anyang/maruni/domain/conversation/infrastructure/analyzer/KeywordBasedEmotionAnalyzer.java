@@ -67,9 +67,14 @@ public class KeywordBasedEmotionAnalyzer implements EmotionAnalysisPort {
             log.debug("중립적 감정: NEUTRAL");
             return EmotionType.NEUTRAL;
 
+        } catch (EmotionAnalysisException e) {
+            // 이미 정의된 도메인 예외는 그대로 전파
+            throw e;
         } catch (Exception e) {
-            log.error("감정 분석 중 오류 발생: {}", e.getMessage(), e);
-            throw EmotionAnalysisException.messagePreprocessingFailed(message, e);
+            log.error("감정 분석 중 예상치 못한 오류 발생: {}", e.getMessage(), e);
+            // 예상치 못한 오류 시 중립 감정 반환 (사용자 경험 우선)
+            log.warn("감정 분석 실패로 중립 감정 반환: {}", message);
+            return EmotionType.NEUTRAL;
         }
     }
 

@@ -15,10 +15,10 @@ public class ConversationNotFoundException extends BaseException {
     }
 
     public ConversationNotFoundException(Long conversationId) {
-        super(ErrorCode.CONVERSATION_NOT_FOUND, "대화 ID: " + conversationId);
+        super(ErrorCode.CONVERSATION_NOT_FOUND);
     }
 
     public ConversationNotFoundException(Long memberId, String context) {
-        super(ErrorCode.CONVERSATION_NOT_FOUND, "회원 ID: " + memberId + ", 컨텍스트: " + context);
+        super(ErrorCode.CONVERSATION_NOT_FOUND);
     }
 }
