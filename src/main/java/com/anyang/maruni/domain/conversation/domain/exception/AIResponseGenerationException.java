@@ -10,47 +10,42 @@ import com.anyang.maruni.global.response.error.ErrorCode;
  */
 public class AIResponseGenerationException extends BaseException {
 
-    public AIResponseGenerationException() {
-        super(ErrorCode.AI_RESPONSE_GENERATION_FAILED);
+    public AIResponseGenerationException(ErrorCode errorCode) {
+        super(errorCode);
     }
 
-    public AIResponseGenerationException(String message) {
-        super(ErrorCode.AI_RESPONSE_GENERATION_FAILED);
-    }
-
-    public AIResponseGenerationException(Throwable cause) {
-        super(ErrorCode.AI_RESPONSE_GENERATION_FAILED);
-    }
-
-    public AIResponseGenerationException(String message, Throwable cause) {
-        super(ErrorCode.AI_RESPONSE_GENERATION_FAILED);
+    /**
+     * 일반적인 AI 응답 생성 실패
+     */
+    public static AIResponseGenerationException generalFailure() {
+        return new AIResponseGenerationException(ErrorCode.AI_RESPONSE_GENERATION_FAILED);
     }
 
     /**
      * API 호출 실패로 인한 예외
      */
-    public static AIResponseGenerationException apiCallFailed(Throwable cause) {
-        return new AIResponseGenerationException("OpenAI API 호출 실패", cause);
+    public static AIResponseGenerationException apiCallFailed() {
+        return new AIResponseGenerationException(ErrorCode.AI_API_CALL_FAILED);
     }
 
     /**
      * API 응답 파싱 실패로 인한 예외
      */
-    public static AIResponseGenerationException responseParsingFailed(String response, Throwable cause) {
-        return new AIResponseGenerationException("API 응답 파싱 실패: " + response, cause);
+    public static AIResponseGenerationException responseParsingFailed() {
+        return new AIResponseGenerationException(ErrorCode.AI_RESPONSE_PARSING_FAILED);
     }
 
     /**
      * API 한도 초과로 인한 예외
      */
     public static AIResponseGenerationException apiLimitExceeded() {
-        return new AIResponseGenerationException("OpenAI API 사용 한도 초과");
+        return new AIResponseGenerationException(ErrorCode.AI_API_LIMIT_EXCEEDED);
     }
 
     /**
      * 네트워크 연결 실패로 인한 예외
      */
-    public static AIResponseGenerationException networkError(Throwable cause) {
-        return new AIResponseGenerationException("네트워크 연결 실패", cause);
+    public static AIResponseGenerationException networkError() {
+        return new AIResponseGenerationException(ErrorCode.AI_NETWORK_ERROR);
     }
 }

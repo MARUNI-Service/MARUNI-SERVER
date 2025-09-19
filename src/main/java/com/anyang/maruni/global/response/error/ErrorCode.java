@@ -36,7 +36,14 @@ public enum ErrorCode implements ErrorType {
 	// Conversation Domain Specific Errors
 	MESSAGE_EMPTY("E400", "메시지 내용은 필수입니다", HttpStatus.BAD_REQUEST.value()),
 	MESSAGE_TOO_LONG("E400", "메시지는 500자를 초과할 수 없습니다", HttpStatus.BAD_REQUEST.value()),
+
+	// AI Response Generation Errors (구체적 분류)
 	AI_RESPONSE_GENERATION_FAILED("E500", "AI 응답 생성에 실패했습니다. 잠시 후 다시 시도해주세요.", HttpStatus.INTERNAL_SERVER_ERROR.value()),
+	AI_API_CALL_FAILED("E500", "AI API 호출에 실패했습니다. 잠시 후 다시 시도해주세요.", HttpStatus.INTERNAL_SERVER_ERROR.value()),
+	AI_API_LIMIT_EXCEEDED("E429", "AI API 사용 한도를 초과했습니다. 잠시 후 다시 시도해주세요.", HttpStatus.TOO_MANY_REQUESTS.value()),
+	AI_NETWORK_ERROR("E500", "네트워크 연결에 실패했습니다. 인터넷 연결을 확인해주세요.", HttpStatus.INTERNAL_SERVER_ERROR.value()),
+	AI_RESPONSE_PARSING_FAILED("E500", "AI 응답 처리 중 오류가 발생했습니다.", HttpStatus.INTERNAL_SERVER_ERROR.value()),
+
 	EMOTION_ANALYSIS_FAILED("E500", "감정 분석에 실패했습니다", HttpStatus.INTERNAL_SERVER_ERROR.value()),
 
 	// 5xx Server Error

@@ -109,7 +109,7 @@ public class OpenAIResponseAdapter implements AIResponsePort {
 
             String content = response.getResult().getOutput().getContent();
             if (!StringUtils.hasText(content)) {
-                throw AIResponseGenerationException.responseParsingFailed("응답 내용이 비어있음", null);
+                throw AIResponseGenerationException.responseParsingFailed();
             }
 
             return content.trim();
@@ -124,14 +124,14 @@ public class OpenAIResponseAdapter implements AIResponsePort {
                 if (errorMessage.contains("429") || errorMessage.contains("rate limit")) {
                     throw AIResponseGenerationException.apiLimitExceeded();
                 } else if (errorMessage.contains("timeout") || errorMessage.contains("connection")) {
-                    throw AIResponseGenerationException.networkError(e);
+                    throw AIResponseGenerationException.networkError();
                 }
             }
 
-            throw AIResponseGenerationException.apiCallFailed(e);
+            throw AIResponseGenerationException.apiCallFailed();
         } catch (Exception e) {
             log.error("AI 응답 생성 중 예상치 못한 오류: {}", e.getMessage(), e);
-            throw AIResponseGenerationException.apiCallFailed(e);
+            throw AIResponseGenerationException.apiCallFailed();
         }
     }
 
