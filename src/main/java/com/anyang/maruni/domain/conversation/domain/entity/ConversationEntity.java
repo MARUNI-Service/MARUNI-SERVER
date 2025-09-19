@@ -157,10 +157,10 @@ public class ConversationEntity extends BaseTimeEntity {
      */
     private void validateMessageContent(String content) {
         if (!StringUtils.hasText(content)) {
-            throw new InvalidMessageException();
+            throw InvalidMessageException.emptyMessage();
         }
         if (content.length() > MAX_MESSAGE_LENGTH) {
-            throw new InvalidMessageException();
+            throw InvalidMessageException.messageTooLong();
         }
     }
 
@@ -168,8 +168,11 @@ public class ConversationEntity extends BaseTimeEntity {
      * 메시지 추가 가능 여부 검증
      */
     private void validateCanAddMessage() {
-        if (!canReceiveMessage()) {
-            throw new MessageLimitExceededException();
+        if (!isActive()) {
+            throw MessageLimitExceededException.inactiveConversation();
+        }
+        if (getDailyMessageCount() >= MAX_DAILY_MESSAGES) {
+            throw MessageLimitExceededException.dailyLimitExceeded();
         }
     }
 

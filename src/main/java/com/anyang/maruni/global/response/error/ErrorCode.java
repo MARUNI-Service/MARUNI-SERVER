@@ -25,10 +25,19 @@ public enum ErrorCode implements ErrorType {
 
 	MEMBER_NOT_FOUND("E404", "회원을 찾을 수 없습니다", HttpStatus.NOT_FOUND.value()),
 	GUARDIAN_NOT_FOUND("E404", "보호자를 찾을 수 없습니다", HttpStatus.NOT_FOUND.value()),
+	CONVERSATION_NOT_FOUND("E404", "대화를 찾을 수 없습니다", HttpStatus.NOT_FOUND.value()),
 
 	TOO_MANY_REQUESTS("E429", "너무 많은 요청입니다. 잠시 후 다시 시도해주세요.", HttpStatus.TOO_MANY_REQUESTS.value()),
+	DAILY_MESSAGE_LIMIT_EXCEEDED("E429", "일일 메시지 한도를 초과했습니다. 내일 다시 시도해주세요.", HttpStatus.TOO_MANY_REQUESTS.value()),
+	CONVERSATION_INACTIVE("E429", "비활성 대화입니다. 새 대화를 시작해주세요.", HttpStatus.TOO_MANY_REQUESTS.value()),
 
 	DUPLICATE_EMAIL("E409", "이미 가입된 이메일입니다", HttpStatus.CONFLICT.value()),
+
+	// Conversation Domain Specific Errors
+	MESSAGE_EMPTY("E400", "메시지 내용은 필수입니다", HttpStatus.BAD_REQUEST.value()),
+	MESSAGE_TOO_LONG("E400", "메시지는 500자를 초과할 수 없습니다", HttpStatus.BAD_REQUEST.value()),
+	AI_RESPONSE_GENERATION_FAILED("E500", "AI 응답 생성에 실패했습니다. 잠시 후 다시 시도해주세요.", HttpStatus.INTERNAL_SERVER_ERROR.value()),
+	EMOTION_ANALYSIS_FAILED("E500", "감정 분석에 실패했습니다", HttpStatus.INTERNAL_SERVER_ERROR.value()),
 
 	// 5xx Server Error
 	ENCRYPTION_ERROR("E500", "암호화 처리 중 오류가 발생했습니다", HttpStatus.INTERNAL_SERVER_ERROR.value()),

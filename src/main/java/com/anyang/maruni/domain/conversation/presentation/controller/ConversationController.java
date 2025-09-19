@@ -59,7 +59,7 @@ public class ConversationController {
         @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content),
         @ApiResponse(responseCode = "429", description = "일일 메시지 한도 초과 (50개)", content = @Content)
     })
-    @CustomExceptionDescription(SwaggerResponseDescription.COMMON_ERROR)
+    @CustomExceptionDescription(SwaggerResponseDescription.CONVERSATION_ERROR)
     @SuccessCodeAnnotation(SuccessCode.SUCCESS)
     public ConversationResponseDto sendMessage(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,

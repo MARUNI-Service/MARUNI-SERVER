@@ -15,6 +15,10 @@ public enum SwaggerResponseDescription {
 
 	AUTH_ERROR(ErrorCode.INVALID_TOKEN, ErrorCode.REFRESH_TOKEN_NOT_FOUND, ErrorCode.LOGIN_FAIL),
 
+	CONVERSATION_ERROR(ErrorCode.MESSAGE_EMPTY, ErrorCode.MESSAGE_TOO_LONG, ErrorCode.DAILY_MESSAGE_LIMIT_EXCEEDED,
+	                  ErrorCode.CONVERSATION_INACTIVE, ErrorCode.AI_RESPONSE_GENERATION_FAILED, ErrorCode.EMOTION_ANALYSIS_FAILED,
+	                  ErrorCode.CONVERSATION_NOT_FOUND),
+
 	COMMON_ERROR(ErrorCode.INTERNAL_SERVER_ERROR, ErrorCode.INVALID_INPUT_VALUE);
 
 	private final Set<ErrorCode> errorCodeList;

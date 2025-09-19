@@ -11,6 +11,7 @@ import org.springframework.util.StringUtils;
 import com.anyang.maruni.domain.conversation.config.ConversationProperties;
 import com.anyang.maruni.domain.conversation.domain.entity.MessageEntity;
 import com.anyang.maruni.domain.conversation.domain.entity.MessageType;
+import com.anyang.maruni.domain.conversation.domain.exception.AIResponseGenerationException;
 import com.anyang.maruni.domain.conversation.domain.port.AIResponsePort;
 import com.anyang.maruni.domain.conversation.domain.vo.ConversationContext;
 import com.anyang.maruni.domain.conversation.domain.vo.MemberProfile;
@@ -65,8 +66,14 @@ public class OpenAIResponseAdapter implements AIResponsePort {
             log.info("AI 응답 생성 완료 (컨텍스트): {}", finalResponse);
             return finalResponse;
 
+        } catch (AIResponseGenerationException e) {
+            // AI 응답 생성 실패 시 기본 응답 반환 (사용자 경험 우선)
+            log.warn("AI 응답 생성 실패, 기본 응답 사용: {}", e.getMessage());
+            return properties.getAi().getDefaultResponse();
         } catch (Exception e) {
-            return handleApiError(e);
+            // 예상치 못한 오류 시 기본 응답 반환
+            log.error("AI 응답 생성 중 예상치 못한 오류: {}", e.getMessage(), e);
+            return properties.getAi().getDefaultResponse();
         }
     }
 
@@ -81,25 +88,48 @@ public class OpenAIResponseAdapter implements AIResponsePort {
     }
 
     /**
-     * Spring AI를 사용한 응답 생성 (Properties 사용)
+     * Spring AI를 사용한 응답 생성 (예외 처리 강화)
      */
     private String callSpringAI(String userMessage) {
-        // 시스템 프롬프트와 사용자 메시지를 결합한 프롬프트 생성
-        String systemPrompt = properties.getAi().getSystemPrompt();  // Properties 사용
-        String combinedPrompt = systemPrompt + "\n\n사용자: " + userMessage + "\n\nAI:";
+        try {
+            // 시스템 프롬프트와 사용자 메시지를 결합한 프롬프트 생성
+            String systemPrompt = properties.getAi().getSystemPrompt();
+            String combinedPrompt = systemPrompt + "\n\n사용자: " + userMessage + "\n\nAI:";
 
-        // OpenAI Chat Options 설정
-        OpenAiChatOptions options = OpenAiChatOptions.builder()
-                .withModel(model)
-                .withTemperature(temperature)
-                .withMaxTokens(maxTokens)
-                .build();
+            // OpenAI Chat Options 설정
+            OpenAiChatOptions options = OpenAiChatOptions.builder()
+                    .withModel(model)
+                    .withTemperature(temperature)
+                    .withMaxTokens(maxTokens)
+                    .build();
 
-        // Prompt 생성 및 호출
-        Prompt prompt = new Prompt(combinedPrompt, options);
-        ChatResponse response = chatModel.call(prompt);
+            // Prompt 생성 및 호출
+            Prompt prompt = new Prompt(combinedPrompt, options);
+            ChatResponse response = chatModel.call(prompt);
 
-        return response.getResult().getOutput().getContent().trim();
+            String content = response.getResult().getOutput().getContent();
+            if (!StringUtils.hasText(content)) {
+                throw AIResponseGenerationException.responseParsingFailed("응답 내용이 비어있음", null);
+            }
+
+            return content.trim();
+
+        } catch (org.springframework.ai.retry.RetryableAiException e) {
+            log.error("OpenAI API 재시도 가능한 오류: {}", e.getMessage());
+            throw AIResponseGenerationException.apiCallFailed(e);
+        } catch (org.springframework.ai.openai.api.OpenAiApi.OpenAiApiException e) {
+            log.error("OpenAI API 오류 (상태코드: {}): {}", e.statusCode(), e.getMessage());
+            if (e.statusCode() == 429) {
+                throw AIResponseGenerationException.apiLimitExceeded();
+            }
+            throw AIResponseGenerationException.apiCallFailed(e);
+        } catch (java.net.ConnectException | java.net.SocketTimeoutException e) {
+            log.error("네트워크 연결 오류: {}", e.getMessage());
+            throw AIResponseGenerationException.networkError(e);
+        } catch (Exception e) {
+            log.error("AI 응답 생성 중 예상치 못한 오류: {}", e.getMessage(), e);
+            throw AIResponseGenerationException.apiCallFailed(e);
+        }
     }
 
     /**
