@@ -3,10 +3,11 @@ server:
 
 spring:
   profiles:
-    active: dev,ai # 기본 프로파일: dev + ai
+    active: dev
   config:
     import:
       - optional:file:.env[.properties]
+      - classpath:application-ai.yml
 
 # 공통 보안 설정
 security:
