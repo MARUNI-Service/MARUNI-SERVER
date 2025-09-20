@@ -2,14 +2,18 @@ package com.anyang.maruni.domain.alertrule.application.analyzer;
 
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertLevel;
 
+import lombok.Getter;
+
 /**
  * 알림 분석 결과 VO
  *
  * 각종 분석기에서 반환하는 공통 결과 객체입니다.
  */
+@Getter
 public class AlertResult {
 
-    private final boolean isAlert;
+	// Getter 메서드들
+	private final boolean isAlert;
     private final AlertLevel alertLevel;
     private final String message;
     private final Object analysisDetails;
@@ -40,13 +44,7 @@ public class AlertResult {
         return new AlertResult(false, null, null, null);
     }
 
-    // Getter 메서드들
-    public boolean isAlert() { return isAlert; }
-    public AlertLevel getAlertLevel() { return alertLevel; }
-    public String getMessage() { return message; }
-    public Object getAnalysisDetails() { return analysisDetails; }
-
-    @Override
+	@Override
     public String toString() {
         if (!isAlert) {
             return "AlertResult{알림 없음}";

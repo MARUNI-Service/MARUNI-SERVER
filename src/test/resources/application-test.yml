@@ -1,0 +1,132 @@
+# 테스트 환경 설정 - 외부 의존성 완전 제거
+server:
+  port: 0  # 랜덤 포트 사용
+
+spring:
+  # 설정 import 오버라이드 - 외부 파일 의존성 제거
+  config:
+    import: []  # 빈 배열로 기본 import 무시
+  # H2 인메모리 데이터베이스 설정
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  
+  # Bean override 허용
+  main:
+    allow-bean-definition-overriding: true 
+  
+  # JPA/Hibernate 설정
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+        
+  # H2 콘솔 활성화 (테스트 디버깅용)
+  h2:
+    console:
+      enabled: true
+      
+  # Redis 설정 완전 비활성화 (테스트용)
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisReactiveAutoConfiguration
+
+  # AI 설정 (테스트용) - 외부 의존성 없이 하드코딩
+  ai:
+    openai:
+      api-key: test-openai-api-key-for-testing
+      chat:
+        options:
+          model: gpt-4o
+          temperature: 0.7
+          max-tokens: 100
+
+# JWT 설정 (테스트용) - 하드코딩
+jwt:
+  secret-key: test-jwt-secret-key-for-testing-minimum-32-characters-required-for-security
+  access-token:
+    expiration: 3600000   # 1시간
+  refresh-token:
+    expiration: 86400000  # 24시간
+
+# 쿠키 설정 (테스트용)
+cookie:
+  secure: false
+  http-only: true
+  same-site: strict
+
+# 보안 설정
+security:
+  public-urls:
+    - "/api-docs"
+    - "/v3/api-docs/**"
+    - "/swagger-ui/**"
+    - "/api/join/**"  # 테스트용 회원가입 경로 허용
+
+# Swagger 설정
+swagger:
+  api:
+    title: "MARUNI TEST API"
+    description: "Test API Documentation"
+    version: "v1.0.0"
+  contact:
+    name: "Test Team"
+    email: "test@maruni.com"
+  server:
+    url: "http://localhost:8080"
+    description: "Test Server"
+
+springdoc:
+  swagger-ui:
+    path: /api-docs
+
+# 로깅 설정
+logging:
+  level:
+    com.anyang.maruni: DEBUG
+    org.springframework.security: WARN
+    org.hibernate.SQL: DEBUG
+    root: WARN
+
+# 테스트용 MARUNI 설정 - 모든 외부 의존성 제거
+maruni:
+  conversation:
+    ai:
+      max-response-length: 100
+      system-prompt: "테스트용 AI 상담사입니다."
+      default-response: "테스트 응답입니다."
+      default-user-message: "테스트 메시지"
+    emotion:
+      keywords:
+        negative: ["슬프", "우울", "아프", "힘들", "외로"]
+        positive: ["좋", "행복", "기쁘", "감사", "즐거"]
+
+  scheduling:
+    daily-check:
+      cron: "0 0 9 * * *"
+      batch-size: 10
+      timeout-seconds: 10
+    retry:
+      cron: "0 */5 * * * *"
+      max-retries: 1
+      delay-minutes: 1
+
+  notification:
+    push:
+      enabled: false  # 테스트에서는 비활성화
+      provider: "test"
+      project-id: "test-project"
+
+  encryption:
+    algorithm: "AES/GCM/NoPadding"
+    key: "test_encryption_key_32_bytes_long"

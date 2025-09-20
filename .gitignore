@@ -177,7 +177,6 @@ logs/
 
 ### Custom ###
 application-local.yml
-application-*.yml
 !application.yml
 
 # End of https://www.toptal.com/developers/gitignore/api/intellij,java,git,redis

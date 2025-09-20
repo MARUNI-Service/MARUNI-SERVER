@@ -1,18 +1,20 @@
 package com.anyang.maruni.domain.alertrule.application.analyzer;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Component;
+
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertLevel;
 import com.anyang.maruni.domain.conversation.domain.entity.EmotionType;
 import com.anyang.maruni.domain.conversation.domain.entity.MessageEntity;
 import com.anyang.maruni.domain.conversation.domain.entity.MessageType;
 import com.anyang.maruni.domain.conversation.domain.repository.MessageRepository;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 
 /**
  * 감정 패턴 분석기
@@ -112,8 +114,8 @@ public class EmotionPatternAnalyzer {
      * @return 알림 결과
      */
     private AlertResult evaluateRiskLevel(EmotionTrend emotionTrend) {
-        int consecutiveNegativeDays = emotionTrend.getConsecutiveNegativeDays();
-        double negativeRatio = emotionTrend.getNegativeRatio();
+        int consecutiveNegativeDays = emotionTrend.consecutiveNegativeDays();
+        double negativeRatio = emotionTrend.negativeRatio();
 
         // 고위험: 연속 부정감정 + 부정비율 기준 초과
         if (consecutiveNegativeDays >= HIGH_RISK_CONSECUTIVE_DAYS && negativeRatio >= HIGH_RISK_NEGATIVE_RATIO) {
@@ -134,32 +136,9 @@ public class EmotionPatternAnalyzer {
     }
 
     /**
-     * 감정 추세 정보 VO
-     */
-    public static class EmotionTrend {
-        private final int totalMessages;
-        private final int positiveCount;
-        private final int negativeCount;
-        private final int neutralCount;
-        private final int consecutiveNegativeDays;
-        private final double negativeRatio;
-
-        public EmotionTrend(int totalMessages, int positiveCount, int negativeCount,
-                           int neutralCount, int consecutiveNegativeDays, double negativeRatio) {
-            this.totalMessages = totalMessages;
-            this.positiveCount = positiveCount;
-            this.negativeCount = negativeCount;
-            this.neutralCount = neutralCount;
-            this.consecutiveNegativeDays = consecutiveNegativeDays;
-            this.negativeRatio = negativeRatio;
-        }
-
-        // Getter 메서드들
-        public int getTotalMessages() { return totalMessages; }
-        public int getPositiveCount() { return positiveCount; }
-        public int getNegativeCount() { return negativeCount; }
-        public int getNeutralCount() { return neutralCount; }
-        public int getConsecutiveNegativeDays() { return consecutiveNegativeDays; }
-        public double getNegativeRatio() { return negativeRatio; }
+         * 감정 추세 정보 VO
+         */
+        public record EmotionTrend(int totalMessages, int positiveCount, int negativeCount, int neutralCount,
+                                   int consecutiveNegativeDays, double negativeRatio) {
     }
 }

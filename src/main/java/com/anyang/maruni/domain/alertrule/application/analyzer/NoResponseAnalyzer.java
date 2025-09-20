@@ -1,14 +1,16 @@
 package com.anyang.maruni.domain.alertrule.application.analyzer;
 
+import java.time.LocalDate;
+import java.util.List;
+
+import org.springframework.stereotype.Component;
+
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertLevel;
 import com.anyang.maruni.domain.dailycheck.domain.entity.DailyCheckRecord;
 import com.anyang.maruni.domain.dailycheck.domain.repository.DailyCheckRecordRepository;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 
-import java.time.LocalDate;
-import java.util.List;
+import lombok.RequiredArgsConstructor;
 
 /**
  * 무응답 패턴 분석기
@@ -107,8 +109,8 @@ public class NoResponseAnalyzer {
      * @return 알림 결과
      */
     private AlertResult evaluateNoResponseRisk(ResponsePattern responsePattern) {
-        int consecutiveNoResponseDays = responsePattern.getConsecutiveNoResponseDays();
-        double responseRate = responsePattern.getResponseRate();
+        int consecutiveNoResponseDays = responsePattern.consecutiveNoResponseDays();
+        double responseRate = responsePattern.responseRate();
 
         // 고위험: 연속 무응답 또는 낮은 응답률
         if (consecutiveNoResponseDays >= HIGH_RISK_CONSECUTIVE_NO_RESPONSE_DAYS || responseRate < HIGH_RISK_MIN_RESPONSE_RATE) {
@@ -129,29 +131,9 @@ public class NoResponseAnalyzer {
     }
 
     /**
-     * 응답 패턴 정보 VO
-     */
-    public static class ResponsePattern {
-        private final int totalCheckDays;
-        private final int responseDays;
-        private final int noResponseDays;
-        private final int consecutiveNoResponseDays;
-        private final double responseRate;
-
-        public ResponsePattern(int totalCheckDays, int responseDays, int noResponseDays,
-                              int consecutiveNoResponseDays, double responseRate) {
-            this.totalCheckDays = totalCheckDays;
-            this.responseDays = responseDays;
-            this.noResponseDays = noResponseDays;
-            this.consecutiveNoResponseDays = consecutiveNoResponseDays;
-            this.responseRate = responseRate;
-        }
-
-        // Getter 메서드들
-        public int getTotalCheckDays() { return totalCheckDays; }
-        public int getResponseDays() { return responseDays; }
-        public int getNoResponseDays() { return noResponseDays; }
-        public int getConsecutiveNoResponseDays() { return consecutiveNoResponseDays; }
-        public double getResponseRate() { return responseRate; }
+         * 응답 패턴 정보 VO
+         */
+        public record ResponsePattern(int totalCheckDays, int responseDays, int noResponseDays,
+                                      int consecutiveNoResponseDays, double responseRate) {
     }
 }

@@ -1,87 +1,125 @@
 # MARUNI 프로젝트 문서
 
-## 📚 문서 구조 가이드
+**노인 돌봄을 위한 AI 기반 소통 서비스** - Claude Code 작업 가이드
 
-MARUNI 프로젝트의 모든 문서가 체계적으로 정리되어 있습니다.
+## 🚀 빠른 시작 (Claude Code 작업자용)
 
-### 📂 폴더별 문서 구조
+### **1️⃣ 프로젝트 개요 파악**
+- **서비스**: 매일 안부 문자 → AI 응답 분석 → 이상징후 감지 → 보호자 알림
+- **아키텍처**: Spring Boot 3.5 + Java 21, DDD + TDD 완전 적용
+- **상태**: Phase 2 MVP 100% 완성 (상용 서비스 준비 완료)
 
-#### 🎉 [Phase 2: 스케줄링 & 알림 시스템](./phase2/)
-**100% 완료** - 매일 안부 메시지 스케줄링 및 보호자 알림 시스템 MVP 완성! 🚀
-- ✅ **완료**: Week 5 DailyCheck 도메인 TDD 완료 (Red→Green→Blue)
-- ✅ **완료**: Week 6 Guardian 도메인 TDD 완전 사이클 완료 + REST API
-- 🎉 **완료**: Week 7 AlertRule 도메인 TDD 완전 사이클 완료 (2025-09-16)
-  - ✅ Red → Green → Blue 완전 사이클 달성 + 8개 REST API 완성
-- 🏆 **달성**: Phase 2 MVP 100% 완성! 실제 운영 준비 완료
-
-#### 🤖 [Phase 1: AI 대화 시스템](./phase1/)
-**100% 완료** - OpenAI 기반 AI 대화 및 감정 분석 시스템
-- ✅ GPT-4o 연동 AI 응답 생성
-- ✅ 키워드 기반 감정 분석
-- ✅ DDD 아키텍처 완벽 적용
-
-#### 🏗️ [Architecture](./architecture/)
-아키텍처 설계 및 분석 문서
-- 📊 보안 계층 분석 보고서
-- 🏛️ DDD 구조 가이드라인
-
-#### 📝 [General](./general/)
-전체 프로젝트 계획 및 일반 문서
-- 🗺️ 전체 개발 로드맵
-- 🔧 백엔드 우선 개발 전략
-
-### 🔗 주요 링크
-
-#### 🏆 현재 상태 (2025-09-16)
-- **[Phase 2 MVP 완성!](./phase2/README.md)** - 🎉 100% 완료, 실제 운영 준비 완료!
-- **[Week 7 AlertRule 완성](./phase2/planning/week7-alertrule.md)** - 🏆 **TDD Blue 단계 완료, REST API 완성**
-
-#### 📖 설계 문서
-- **[도메인 아키텍처](./phase2/implementation/domain-architecture.md)** - DDD 기반 도메인 설계
-- **[알림 시스템](./phase2/implementation/notification-system.md)** - Firebase FCM 기반 푸시 알림
-- **[스케줄링 시스템](./phase2/implementation/scheduling-system.md)** - Spring Boot 스케줄링
-
-#### ✅ 완료 기록
-- **[Week 5 TDD 보고서](./phase2/completed/week5-tdd-report.md)** - DailyCheck 도메인 완벽한 TDD 사이클
-- **[Week 6 TDD 보고서](./phase2/completed/week6-guardian-report.md)** - Guardian 도메인 TDD 완전 사이클 + REST API 구현
-- **[환경 설정 완료](./phase2/completed/environment-setup.md)** - Phase 2 인프라 구축
-
-### 📊 프로젝트 현황 요약
-
-```yaml
-전체 진행률: 100% 완료 (2025-09-16 MVP 완성!) 🎉
-
-Phase 1 (AI 대화): ✅ 100% 완료
-- OpenAI GPT-4o 연동
-- 감정 분석 시스템
-- DDD 아키텍처 완성
-
-Phase 2 (스케줄링 & 알림): 🎉 100% 완료 (MVP 완전 완성!)
-- DailyCheck 도메인: ✅ 100% 완료 (완벽한 TDD 사이클)
-- Guardian 도메인: ✅ 100% 완료 (TDD 완전 사이클 + REST API)
-- AlertRule 도메인: ✅ 100% 완료 (TDD 완전 사이클 + REST API)
-  • ✅ 5개 핵심 Entity/Enum 구현 완료
-  • ✅ 6개 테스트 클래스 완료 (Red → Green → Blue 완료)
-  • ✅ 이상징후 감지 알고리즘 3종 구현 완료
-  • ✅ AlertRuleService 50%+ 코드 품질 향상 완료
-  • ✅ Blue(Refactor) 단계 완료 + 8개 REST API 완성
-- Notification 시스템: ✅ 100% 완료 (Mock 구현체 포함)
-
-🚀 달성: Phase 2 MVP 100% 완성! 실제 운영 준비 완료!
+### **2️⃣ 기술 스택**
+```
+Backend: Spring Boot 3.5.x + Java 21
+Database: PostgreSQL + Redis
+AI: OpenAI GPT-4o (Spring AI)
+Auth: JWT (Access/Refresh Token)
+Testing: TDD Red-Green-Blue 사이클
+Architecture: DDD (Domain-Driven Design)
 ```
 
-### 🔧 문서 이용 가이드
+### **3️⃣ 핵심 도메인 구조**
+```
+✅ Member (회원 관리) + Auth (JWT 인증)
+✅ Conversation (AI 대화): OpenAI GPT-4o 연동 완성
+✅ DailyCheck (스케줄링): 매일 안부 메시지 자동 발송
+✅ Guardian (보호자): 관계 설정 및 알림 관리
+✅ AlertRule (이상징후): 3종 알고리즘 자동 감지
+✅ Notification (알림): Mock 서비스 (실제 구현 준비 완료)
+```
 
-1. **개발자**: [Phase 2 README](./phase2/README.md)에서 현재 진행 상황 확인
-2. **아키텍트**: [도메인 아키텍처](./phase2/implementation/domain-architecture.md)에서 설계 확인
-3. **PM**: 각 Phase별 README에서 진행률 및 다음 단계 확인
-4. **QA**: [완료 기록](./phase2/completed/) 폴더에서 테스트 커버리지 확인
+## 📋 현재 완성 상태
 
-### 📝 문서 업데이트 원칙
+### 🎉 **100% 완성된 시스템**
+- ✅ **JWT 인증 시스템**: Access/Refresh Token, Redis 저장, 블랙리스트 관리
+- ✅ **AI 대화 시스템**: OpenAI GPT-4o 연동, 감정 분석
+- ✅ **스케줄링 시스템**: 매일 정시 안부 메시지 자동 발송
+- ✅ **보호자 관리**: Guardian 등록 및 알림 설정
+- ✅ **이상징후 감지**: 3종 알고리즘으로 위험 상황 자동 감지
+- ✅ **알림 시스템**: Mock 기반 푸시 알림 (실제 구현 준비 완료)
 
-- **실시간 업데이트**: 작업 완료 시 즉시 문서 업데이트
-- **구조화**: 관심사별로 문서 분리 유지
-- **상호 링크**: README 파일을 통한 네비게이션 제공
-- **버전 관리**: Git을 통한 문서 변경 이력 추적
+### 🚀 **Phase 3 계획**
+- 📊 고급 건강 분석 시스템 (ML 기반 패턴 분석)
+- 📱 모바일 앱 연동 API (Flutter 최적화)
+- 🎯 실시간 모니터링 대시보드 (관리자/보호자용)
 
-**MARUNI 프로젝트는 체계적인 문서화를 통해 개발 효율성과 코드 품질을 동시에 추구합니다.** 🚀
+## 📂 도메인별 구현 가이드
+
+### 🏗️ **작업 순서 (Claude Code 가이드)**
+```
+1. 도메인 가이드 읽기 → 2. 실제 코드 확인 → 3. 테스트 작성 → 4. 구현 → 5. 문서 업데이트
+```
+
+### **핵심 도메인 ([domains/](./domains/))**
+📋 **[도메인 종합 가이드](./domains/README.md)** - 아키텍처 개요, 도메인간 관계, 작업 순서
+
+| 도메인 | 핵심 기능 | 상태 | 가이드 |
+|--------|----------|------|--------|
+| **[Member](./domains/member.md)** | 회원 관리 시스템<br/>• CRUD • Spring Security 연동 | ✅ 100% | Foundation Layer |
+| **[Auth](./domains/auth.md)** | JWT 기반 인증/인가 시스템<br/>• Access/Refresh Token • Redis 저장 • 블랙리스트 관리 | ✅ 100% | DDD 의존성 역전 |
+| **[DailyCheck](./domains/dailycheck.md)** | 매일 정시 안부 메시지 자동 발송<br/>• Cron 스케줄링 • 중복 방지 • 자동 재시도 | ✅ 100% | TDD 완전 사이클 |
+| **[Guardian](./domains/guardian.md)** | 보호자-회원 관계 관리<br/>• 관계 설정 • 알림 설정 • 권한 관리 | ✅ 100% | 7개 REST API |
+| **[AlertRule](./domains/alertrule.md)** | 이상징후 자동 감지 시스템<br/>• 감정패턴 • 무응답 • 키워드 분석 | ✅ 100% | 3종 알고리즘 |
+| **[Conversation](./domains/conversation.md)** | AI 대화 및 감정 분석<br/>• OpenAI GPT-4o • 키워드 감정분석 | ✅ 100% | Spring AI 연동 |
+| **[Notification](./domains/notification.md)** | 푸시 알림 발송 시스템<br/>• Mock 구현 • 인터페이스 기반 확장 | ✅ 100% | 실제 구현 준비 |
+
+## 🎯 확장 계획
+
+### **다음 단계 개발** ([roadmap/](./roadmap/))
+📋 **[로드맵 종합 가이드](./roadmap/README.md)** - 전체 발전 계획, Phase별 현황, 확장 전략
+
+- **[Phase 3 계획](./roadmap/phase3.md)** - 고도화 & 모바일 연동 (8주 계획)
+  - **Week 1-4**: 고급 건강 분석 (ML 패턴 분석, 리포팅 시스템)
+  - **Week 5-8**: 모바일 연동 (Flutter API, 실시간 시스템)
+
+## 🛠️ Claude Code 작업 가이드
+
+### **새 도메인 추가 워크플로우**
+```
+1. 요구사항 분석 및 DDD 설계
+2. TDD Red-Green-Blue 사이클 적용
+3. Entity → Repository → Service → Controller 순서
+4. 테스트 커버리지 90% 이상 확보
+5. domains/ 폴더에 가이드 문서 추가
+```
+
+### **기존 도메인 확장 워크플로우**
+```
+1. 해당 도메인 가이드 숙지
+2. 실제 코드와 테스트 확인
+3. 확장 방향 섹션 참고
+4. 호환성 유지하며 기능 추가
+5. 가이드 문서 즉시 업데이트
+```
+
+### **코딩 표준 & 기술 규격**
+- **DDD 구조**: Domain/Application/Infrastructure/Presentation 계층 분리
+- **TDD 방법론**: Red(실패) → Green(성공) → Blue(리팩토링) 완전 사이클
+- **Spring Boot**: @Transactional, Bean Validation, JWT 인증 적용
+- **테스트**: Unit/Integration/Mock 테스트 조합으로 90% 커버리지
+
+📋 **[기술 규격서 통합 가이드](./specifications/README.md)** - specifications 문서 통합 인덱스
+
+## 📝 기술 규격 문서 ([specifications/](./specifications/))
+
+### **일상 개발 필수 문서**
+- **[코딩 표준](./specifications/coding-standards.md)** ⭐⭐⭐ - Java 컨벤션, Entity/Service 패턴 (매일 참조)
+- **[빠른 참조](./specifications/quick-reference.md)** ⭐⭐⭐ - 템플릿, 체크리스트 (일상 작업)
+
+### **아키텍처 & 설계**
+- **[아키텍처 가이드](./specifications/architecture-guide.md)** ⭐⭐ - DDD 구조, 패키지 조직 (새 기능 개발)
+- **[API 설계 가이드](./specifications/api-design-guide.md)** ⭐⭐ - REST 설계, Controller 패턴 (API 개발)
+- **[데이터베이스 설계](./specifications/database-design-guide.md)** ⭐ - Entity 패턴, JPA 매핑 (DB 작업)
+
+### **품질 & 보안**
+- **[테스트 가이드](./specifications/testing-guide.md)** ⭐ - TDD 사이클, Mock 패턴 (테스트 작성)
+- **[보안 가이드](./specifications/security-guide.md)** 🔒 - JWT 구현, Spring Security (보안 설정)
+- **[성능 최적화](./specifications/performance-guide.md)** ⚡ - JPA 튜닝, 캐싱 전략 (성능 작업)
+
+### **환경 & 기술 스택**
+- **[기술 스택](./specifications/tech-stack.md)** 🛠️ - 전체 기술 정보, Docker 설정 (환경 구성)
+
+---
+
+**🚀 MARUNI는 TDD + DDD로 구축된 완전한 노인 돌봄 플랫폼입니다.**

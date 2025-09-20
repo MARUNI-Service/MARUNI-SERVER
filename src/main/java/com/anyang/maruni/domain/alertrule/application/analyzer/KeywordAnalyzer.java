@@ -5,6 +5,8 @@ import org.springframework.stereotype.Component;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertLevel;
 import com.anyang.maruni.domain.conversation.domain.entity.MessageEntity;
 
+import lombok.Getter;
+
 /**
  * 키워드 위험도 분석기
  *
@@ -61,8 +63,10 @@ public class KeywordAnalyzer {
     /**
      * 키워드 매칭 정보 VO
      */
-    public static class KeywordMatch {
-        private final String matchedKeyword;
+    @Getter
+	public static class KeywordMatch {
+		// Getter 메서드들
+		private final String matchedKeyword;
         private final String originalMessage;
         private final KeywordType keywordType;
 
@@ -80,12 +84,7 @@ public class KeywordAnalyzer {
             return new KeywordMatch(keyword, message, KeywordType.WARNING);
         }
 
-        // Getter 메서드들
-        public String getMatchedKeyword() { return matchedKeyword; }
-        public String getOriginalMessage() { return originalMessage; }
-        public KeywordType getKeywordType() { return keywordType; }
-
-        public enum KeywordType {
+		public enum KeywordType {
             EMERGENCY, WARNING
         }
     }
