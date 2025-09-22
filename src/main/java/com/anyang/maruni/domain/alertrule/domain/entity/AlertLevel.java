@@ -9,7 +9,7 @@ import lombok.Getter;
  * 숫자가 높을수록 더 긴급한 상황을 의미합니다.
  */
 @Getter
-public enum AlertLevel {
+public enum AlertLevel implements Comparable<AlertLevel> {
     /**
      * 낮음: 정보성 알림
      */

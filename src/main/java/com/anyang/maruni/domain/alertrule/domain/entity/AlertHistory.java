@@ -16,6 +16,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -32,9 +33,16 @@ import lombok.NoArgsConstructor;
  * 중복 알림 방지와 이력 관리를 위해 사용됩니다.
  */
 @Entity
-@Table(name = "alert_history", uniqueConstraints = {
+@Table(name = "alert_history",
+    uniqueConstraints = {
         @UniqueConstraint(columnNames = {"member_id", "alert_rule_id", "alert_date"})
-})
+    },
+    indexes = {
+        @Index(name = "idx_alert_history_member_date", columnList = "member_id, alert_date"),
+        @Index(name = "idx_alert_history_level_date", columnList = "alert_level, alert_date"),
+        @Index(name = "idx_alert_history_notification", columnList = "is_notification_sent, alert_date")
+    }
+)
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
