@@ -53,6 +53,12 @@ public enum ErrorCode implements ErrorType {
 	AI_NETWORK_ERROR("AI502", "네트워크 연결에 실패했습니다. 인터넷 연결을 확인해주세요.", HttpStatus.INTERNAL_SERVER_ERROR.value()),
 	AI_RESPONSE_PARSING_FAILED("AI503", "AI 응답 처리 중 오류가 발생했습니다.", HttpStatus.INTERNAL_SERVER_ERROR.value()),
 
+	// ============ AlertRule Domain ============
+	ALERT_RULE_NOT_FOUND("AR404", "알림 규칙을 찾을 수 없습니다", HttpStatus.NOT_FOUND.value()),
+	ALERT_RULE_ACCESS_DENIED("AR403", "알림 규칙에 접근할 권한이 없습니다", HttpStatus.FORBIDDEN.value()),
+	INVALID_ALERT_CONDITION("AR400", "유효하지 않은 알림 조건입니다", HttpStatus.BAD_REQUEST.value()),
+	ALERT_RULE_CREATION_FAILED("AR500", "알림 규칙 생성에 실패했습니다", HttpStatus.INTERNAL_SERVER_ERROR.value()),
+
 	// ============ Emotion Analysis ============
 	EMOTION_ANALYSIS_FAILED("EM500", "감정 분석에 실패했습니다", HttpStatus.INTERNAL_SERVER_ERROR.value()),
 	EMOTION_KEYWORD_CONFIG_LOAD_FAILED("EM501", "감정 키워드 설정을 불러오는데 실패했습니다", HttpStatus.INTERNAL_SERVER_ERROR.value()),

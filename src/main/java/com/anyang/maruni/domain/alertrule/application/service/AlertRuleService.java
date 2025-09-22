@@ -7,6 +7,7 @@ import com.anyang.maruni.domain.alertrule.application.analyzer.NoResponseAnalyze
 import com.anyang.maruni.domain.alertrule.domain.entity.*;
 import com.anyang.maruni.domain.alertrule.domain.repository.AlertHistoryRepository;
 import com.anyang.maruni.domain.alertrule.domain.repository.AlertRuleRepository;
+import com.anyang.maruni.domain.alertrule.domain.exception.AlertRuleNotFoundException;
 import com.anyang.maruni.domain.conversation.domain.entity.MessageEntity;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
 import com.anyang.maruni.domain.member.domain.repository.MemberRepository;
@@ -360,17 +361,57 @@ public class AlertRuleService {
     }
 
     /**
+     * 알림 규칙 조회 (단일)
+     * @param alertRuleId 알림 규칙 ID
+     * @return 알림 규칙
+     */
+    public AlertRule getAlertRuleById(Long alertRuleId) {
+        return alertRuleRepository.findById(alertRuleId)
+                .orElseThrow(() -> new AlertRuleNotFoundException(alertRuleId));
+    }
+
+    /**
+     * 알림 규칙 수정
+     * @param alertRuleId 알림 규칙 ID
+     * @param ruleName 새로운 규칙 이름
+     * @param ruleDescription 새로운 규칙 설명
+     * @param alertLevel 새로운 알림 레벨
+     * @return 수정된 알림 규칙
+     */
+    @Transactional
+    public AlertRule updateAlertRule(Long alertRuleId, String ruleName, String ruleDescription, AlertLevel alertLevel) {
+        AlertRule alertRule = alertRuleRepository.findById(alertRuleId)
+                .orElseThrow(() -> new AlertRuleNotFoundException(alertRuleId));
+
+        alertRule.updateRule(ruleName, ruleDescription, alertLevel);
+
+        // JPA 더티 체킹으로 자동 업데이트
+        return alertRule;
+    }
+
+    /**
+     * 알림 규칙 삭제
+     * @param alertRuleId 알림 규칙 ID
+     */
+    @Transactional
+    public void deleteAlertRule(Long alertRuleId) {
+        AlertRule alertRule = alertRuleRepository.findById(alertRuleId)
+                .orElseThrow(() -> new AlertRuleNotFoundException(alertRuleId));
+
+        alertRuleRepository.delete(alertRule);
+    }
+
+    /**
      * 알림 규칙 활성화/비활성화
      * @param alertRuleId 알림 규칙 ID
      * @param active 활성화 상태
+     * @return 업데이트된 알림 규칙
      */
     @Transactional
-    public void toggleAlertRule(Long alertRuleId, boolean active) {
-        // 알림 규칙 조회
+    public AlertRule toggleAlertRule(Long alertRuleId, boolean active) {
         AlertRule alertRule = alertRuleRepository.findById(alertRuleId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 알림 규칙: " + alertRuleId));
+                .orElseThrow(() -> new AlertRuleNotFoundException(alertRuleId));
 
-        // 활성화/비활성화 처리
         if (active) {
             alertRule.activate();
         } else {
@@ -378,5 +419,6 @@ public class AlertRuleService {
         }
 
         // JPA 더티 체킹으로 자동 업데이트
+        return alertRule;
     }
 }
