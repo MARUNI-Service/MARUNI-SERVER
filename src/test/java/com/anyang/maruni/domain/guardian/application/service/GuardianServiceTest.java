@@ -1,14 +1,13 @@
 package com.anyang.maruni.domain.guardian.application.service;
 
-import com.anyang.maruni.domain.guardian.application.dto.GuardianRequestDto;
-import com.anyang.maruni.domain.guardian.application.dto.GuardianResponseDto;
-import com.anyang.maruni.domain.guardian.domain.entity.GuardianEntity;
-import com.anyang.maruni.domain.guardian.domain.entity.GuardianRelation;
-import com.anyang.maruni.domain.guardian.domain.entity.NotificationPreference;
-import com.anyang.maruni.domain.guardian.domain.repository.GuardianRepository;
-import com.anyang.maruni.domain.member.application.dto.response.MemberResponse;
-import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
-import com.anyang.maruni.domain.member.domain.repository.MemberRepository;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.BDDMockito.*;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,13 +15,19 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.BDDMockito.*;
+import com.anyang.maruni.domain.guardian.application.dto.GuardianRequestDto;
+import com.anyang.maruni.domain.guardian.application.dto.GuardianResponseDto;
+import com.anyang.maruni.domain.guardian.application.exception.GuardianEmailAlreadyExistsException;
+import com.anyang.maruni.domain.guardian.application.mapper.GuardianMapper;
+import com.anyang.maruni.domain.guardian.application.validator.GuardianValidator;
+import com.anyang.maruni.domain.guardian.domain.entity.GuardianEntity;
+import com.anyang.maruni.domain.guardian.domain.entity.GuardianRelation;
+import com.anyang.maruni.domain.guardian.domain.entity.NotificationPreference;
+import com.anyang.maruni.domain.guardian.domain.repository.GuardianRepository;
+import com.anyang.maruni.domain.guardian.domain.service.GuardianDomainService;
+import com.anyang.maruni.domain.member.application.dto.response.MemberResponse;
+import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
+import com.anyang.maruni.domain.member.domain.repository.MemberRepository;
 
 /**
  * Guardian Service TDD Red 테스트
@@ -42,6 +47,15 @@ class GuardianServiceTest {
     @Mock
     private MemberRepository memberRepository;
 
+    @Mock
+    private GuardianValidator guardianValidator;
+
+    @Mock
+    private GuardianMapper guardianMapper;
+
+    @Mock
+    private GuardianDomainService guardianDomainService;
+
     @InjectMocks
     private GuardianService guardianService;
 
@@ -57,20 +71,20 @@ class GuardianServiceTest {
             .notificationPreference(NotificationPreference.ALL)
             .build();
 
-        // Mock GuardianEntity 사용 (더미 구현으로 인한 null 문제 해결)
         GuardianEntity savedGuardian = mock(GuardianEntity.class);
+        GuardianResponseDto expectedResponse = GuardianResponseDto.builder()
+            .id(1L)
+            .guardianName("김보호자")
+            .guardianEmail("guardian@example.com")
+            .guardianPhone("010-1234-5678")
+            .relation(GuardianRelation.FAMILY)
+            .notificationPreference(NotificationPreference.ALL)
+            .isActive(true)
+            .build();
 
-        // Mock 객체에 대한 getter 반환값 설정
-        given(savedGuardian.getId()).willReturn(1L);
-        given(savedGuardian.getGuardianName()).willReturn("김보호자");
-        given(savedGuardian.getGuardianEmail()).willReturn("guardian@example.com");
-        given(savedGuardian.getGuardianPhone()).willReturn("010-1234-5678");
-        given(savedGuardian.getRelation()).willReturn(GuardianRelation.FAMILY);
-        given(savedGuardian.getNotificationPreference()).willReturn(NotificationPreference.ALL);
-        given(savedGuardian.getIsActive()).willReturn(true);
-
-        given(guardianRepository.save(any(GuardianEntity.class)))
-            .willReturn(savedGuardian);
+        // Mock 설정
+        given(guardianRepository.save(any(GuardianEntity.class))).willReturn(savedGuardian);
+        given(guardianMapper.toResponseDto(savedGuardian)).willReturn(expectedResponse);
 
         // When
         GuardianResponseDto response = guardianService.createGuardian(request);
@@ -79,7 +93,9 @@ class GuardianServiceTest {
         assertThat(response).isNotNull();
         assertThat(response.getGuardianName()).isEqualTo("김보호자");
         assertThat(response.getGuardianEmail()).isEqualTo("guardian@example.com");
+        verify(guardianValidator).validateEmailNotExists("guardian@example.com");
         verify(guardianRepository).save(any(GuardianEntity.class));
+        verify(guardianMapper).toResponseDto(savedGuardian);
     }
 
     @Test
@@ -92,8 +108,6 @@ class GuardianServiceTest {
         MemberEntity member = MemberEntity.createRegularMember(
             "member@example.com", "김회원", "password123"
         );
-
-        // Mock GuardianEntity 사용 (더미 구현으로 인한 null 문제 해결)
         GuardianEntity guardian = mock(GuardianEntity.class);
 
         given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
@@ -105,6 +119,7 @@ class GuardianServiceTest {
         // Then
         verify(memberRepository).findById(memberId);
         verify(guardianRepository).findById(guardianId);
+        verify(guardianDomainService).establishGuardianRelation(member, guardian);
         verify(memberRepository).save(member);
     }
 
@@ -113,8 +128,6 @@ class GuardianServiceTest {
     void getMembersByGuardian_shouldReturnMemberList() {
         // Given
         Long guardianId = 1L;
-
-        // Mock GuardianEntity 사용 (더미 구현으로 인한 null 문제 해결)
         GuardianEntity guardian = mock(GuardianEntity.class);
 
         List<MemberEntity> members = Arrays.asList(
@@ -122,16 +135,23 @@ class GuardianServiceTest {
             MemberEntity.createRegularMember("member2@example.com", "김회원2", "password123")
         );
 
+        List<MemberResponse> expectedResponses = Arrays.asList(
+            MemberResponse.builder().id(1L).memberName("김회원1").build(),
+            MemberResponse.builder().id(2L).memberName("김회원2").build()
+        );
+
         given(guardianRepository.findById(guardianId)).willReturn(Optional.of(guardian));
         given(memberRepository.findByGuardian(guardian)).willReturn(members);
+        given(guardianMapper.toMemberResponseList(members)).willReturn(expectedResponses);
 
         // When
         List<MemberResponse> responses = guardianService.getMembersByGuardian(guardianId);
 
-        // Then - 더미 구현으로 인해 빈 리스트 반환, 테스트 실패 예상
+        // Then
         assertThat(responses).hasSize(2);
         verify(guardianRepository).findById(guardianId);
         verify(memberRepository).findByGuardian(guardian);
+        verify(guardianMapper).toMemberResponseList(members);
     }
 
     @Test
@@ -151,6 +171,33 @@ class GuardianServiceTest {
 
         // Then
         verify(memberRepository).findById(memberId);
+        verify(guardianDomainService).removeGuardianRelation(member);
         verify(memberRepository).save(member);
+    }
+
+    @Test
+    @DisplayName("중복된 보호자 이메일로 생성 시 GuardianEmailAlreadyExistsException 발생")
+    void createGuardian_withDuplicateEmail_shouldThrowGuardianEmailAlreadyExistsException() {
+        // Given
+        String duplicateEmail = "guardian@example.com";
+        GuardianRequestDto request = GuardianRequestDto.builder()
+            .guardianName("김보호자")
+            .guardianEmail(duplicateEmail)
+            .guardianPhone("010-1234-5678")
+            .relation(GuardianRelation.FAMILY)
+            .notificationPreference(NotificationPreference.ALL)
+            .build();
+
+        // GuardianValidator가 예외를 던지도록 설정
+        doThrow(new GuardianEmailAlreadyExistsException())
+            .when(guardianValidator).validateEmailNotExists(duplicateEmail);
+
+        // When & Then
+        assertThatThrownBy(() -> guardianService.createGuardian(request))
+            .isInstanceOf(GuardianEmailAlreadyExistsException.class)
+            .hasMessageContaining("이미 등록된 보호자 이메일입니다");
+
+        verify(guardianValidator).validateEmailNotExists(duplicateEmail);
+        verify(guardianRepository, never()).save(any(GuardianEntity.class));
     }
 }
