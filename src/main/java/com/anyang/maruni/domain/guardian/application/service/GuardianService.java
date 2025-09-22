@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.anyang.maruni.domain.guardian.application.dto.GuardianRequestDto;
 import com.anyang.maruni.domain.guardian.application.dto.GuardianResponseDto;
+import com.anyang.maruni.domain.guardian.application.exception.GuardianEmailAlreadyExistsException;
 import com.anyang.maruni.domain.guardian.application.exception.GuardianNotFoundException;
 import com.anyang.maruni.domain.guardian.application.exception.MemberNotFoundException;
 import com.anyang.maruni.domain.guardian.domain.entity.GuardianEntity;
@@ -119,7 +120,7 @@ public class GuardianService {
     private void validateGuardianEmailNotExists(String email) {
         guardianRepository.findByGuardianEmailAndIsActiveTrue(email)
             .ifPresent(guardian -> {
-                throw new IllegalArgumentException("Guardian with email already exists: " + email);
+                throw new GuardianEmailAlreadyExistsException(email);
             });
     }
 }

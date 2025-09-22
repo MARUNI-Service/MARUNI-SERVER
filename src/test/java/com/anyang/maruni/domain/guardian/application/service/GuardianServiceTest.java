@@ -2,6 +2,7 @@ package com.anyang.maruni.domain.guardian.application.service;
 
 import com.anyang.maruni.domain.guardian.application.dto.GuardianRequestDto;
 import com.anyang.maruni.domain.guardian.application.dto.GuardianResponseDto;
+import com.anyang.maruni.domain.guardian.application.exception.GuardianEmailAlreadyExistsException;
 import com.anyang.maruni.domain.guardian.domain.entity.GuardianEntity;
 import com.anyang.maruni.domain.guardian.domain.entity.GuardianRelation;
 import com.anyang.maruni.domain.guardian.domain.entity.NotificationPreference;
@@ -152,5 +153,32 @@ class GuardianServiceTest {
         // Then
         verify(memberRepository).findById(memberId);
         verify(memberRepository).save(member);
+    }
+
+    @Test
+    @DisplayName("중복된 보호자 이메일로 생성 시 GuardianEmailAlreadyExistsException 발생")
+    void createGuardian_withDuplicateEmail_shouldThrowGuardianEmailAlreadyExistsException() {
+        // Given
+        String duplicateEmail = "guardian@example.com";
+        GuardianRequestDto request = GuardianRequestDto.builder()
+            .guardianName("김보호자")
+            .guardianEmail(duplicateEmail)
+            .guardianPhone("010-1234-5678")
+            .relation(GuardianRelation.FAMILY)
+            .notificationPreference(NotificationPreference.ALL)
+            .build();
+
+        // 이미 존재하는 보호자 설정
+        GuardianEntity existingGuardian = mock(GuardianEntity.class);
+        given(guardianRepository.findByGuardianEmailAndIsActiveTrue(duplicateEmail))
+            .willReturn(Optional.of(existingGuardian));
+
+        // When & Then
+        assertThatThrownBy(() -> guardianService.createGuardian(request))
+            .isInstanceOf(GuardianEmailAlreadyExistsException.class)
+            .hasMessageContaining("이미 등록된 보호자 이메일입니다");
+
+        verify(guardianRepository).findByGuardianEmailAndIsActiveTrue(duplicateEmail);
+        verify(guardianRepository, never()).save(any(GuardianEntity.class));
     }
 }
