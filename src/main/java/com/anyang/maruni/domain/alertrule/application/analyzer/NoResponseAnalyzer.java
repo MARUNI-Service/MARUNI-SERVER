@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import com.anyang.maruni.domain.alertrule.application.config.AlertConfigurationProperties;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertLevel;
+import com.anyang.maruni.domain.alertrule.domain.entity.AlertType;
 import com.anyang.maruni.domain.dailycheck.domain.entity.DailyCheckRecord;
 import com.anyang.maruni.domain.dailycheck.domain.repository.DailyCheckRecordRepository;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
@@ -17,13 +18,29 @@ import lombok.RequiredArgsConstructor;
  * 무응답 패턴 분석기
  *
  * 일정 기간 무응답 상태를 감지하여 위험도를 평가합니다.
+ * Phase 2 리팩토링: AnomalyAnalyzer 구현체
  */
 @Component
 @RequiredArgsConstructor
-public class NoResponseAnalyzer {
+public class NoResponseAnalyzer implements AnomalyAnalyzer {
 
     private final DailyCheckRecordRepository dailyCheckRecordRepository;
     private final AlertConfigurationProperties alertConfig;
+
+    @Override
+    public AlertResult analyze(MemberEntity member, AnalysisContext context) {
+        return analyzeNoResponsePattern(member, context.getAnalysisDays());
+    }
+
+    @Override
+    public AlertType getSupportedType() {
+        return AlertType.NO_RESPONSE;
+    }
+
+    @Override
+    public boolean supports(AlertType alertType) {
+        return AlertType.NO_RESPONSE.equals(alertType);
+    }
 
     /**
      * 회원의 무응답 패턴 분석

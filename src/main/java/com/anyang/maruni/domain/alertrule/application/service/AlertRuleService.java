@@ -1,6 +1,7 @@
 package com.anyang.maruni.domain.alertrule.application.service;
 
 import com.anyang.maruni.domain.alertrule.application.analyzer.AlertResult;
+import com.anyang.maruni.domain.alertrule.application.analyzer.AnalysisContext;
 import com.anyang.maruni.domain.alertrule.application.analyzer.EmotionPatternAnalyzer;
 import com.anyang.maruni.domain.alertrule.application.analyzer.KeywordAnalyzer;
 import com.anyang.maruni.domain.alertrule.application.analyzer.NoResponseAnalyzer;
@@ -36,10 +37,13 @@ public class AlertRuleService {
     private final AlertHistoryRepository alertHistoryRepository;
     private final MemberRepository memberRepository;
     private final NotificationService notificationService;
+    private final AlertAnalysisOrchestrator analysisOrchestrator;
+    private final AlertConfigurationProperties alertConfig;
+
+    // Phase 2 리팩토링: 하위 호환성을 위한 개별 분석기 유지 (향후 제거 예정)
     private final EmotionPatternAnalyzer emotionAnalyzer;
     private final NoResponseAnalyzer noResponseAnalyzer;
     private final KeywordAnalyzer keywordAnalyzer;
-    private final AlertConfigurationProperties alertConfig;
 
     /**
      * 회원 검증 및 조회 공통 메서드
@@ -120,34 +124,63 @@ public class AlertRuleService {
 
     /**
      * 알림 규칙 타입별 이상징후 분석
+     * Phase 2 리팩토링: Strategy Pattern 적용
      * @param member 회원
      * @param rule 알림 규칙
      * @return 분석 결과 (알림 없을 시 null)
      */
     private AlertResult analyzeByRuleType(MemberEntity member, AlertRule rule) {
-        switch (rule.getAlertType()) {
+        AlertType alertType = rule.getAlertType();
+
+        // 키워드 감지는 실시간 처리이므로 종합 분석에서는 제외
+        if (alertType == AlertType.KEYWORD_DETECTION) {
+            return AlertResult.noAlert();
+        }
+
+        // Strategy Pattern을 사용한 분석
+        if (analysisOrchestrator.isSupported(alertType)) {
+            AnalysisContext context = createAnalysisContext(alertType, alertConfig.getAnalysis().getDefaultDays());
+            return analysisOrchestrator.analyzeByType(alertType, member, context);
+        }
+
+        // 지원하지 않는 타입인 경우
+        return AlertResult.noAlert();
+    }
+
+    /**
+     * 알림 타입에 맞는 분석 컨텍스트 생성
+     * @param alertType 알림 타입
+     * @param defaultDays 기본 분석 기간
+     * @return 분석 컨텍스트
+     */
+    private AnalysisContext createAnalysisContext(AlertType alertType, int defaultDays) {
+        switch (alertType) {
             case EMOTION_PATTERN:
-                return emotionAnalyzer.analyzeEmotionPattern(member, alertConfig.getAnalysis().getDefaultDays());
+                return AnalysisContext.forEmotionPattern(defaultDays);
             case NO_RESPONSE:
-                return noResponseAnalyzer.analyzeNoResponsePattern(member, alertConfig.getAnalysis().getDefaultDays());
+                return AnalysisContext.forNoResponse(defaultDays);
             case KEYWORD_DETECTION:
-                // 키워드 감지는 실시간 처리이므로 여기서는 제외
-                return null;
+                // 키워드 분석은 실시간 메시지가 필요하므로 여기서는 빈 컨텍스트
+                return AnalysisContext.builder().build();
             default:
-                return null;
+                return AnalysisContext.builder().analysisDays(defaultDays).build();
         }
     }
 
     /**
      * 특정 메시지에 대한 실시간 키워드 감지
+     * Phase 2 리팩토링: Strategy Pattern 적용
      * @param message 분석할 메시지
      * @param memberId 회원 ID
      * @return 감지 결과
      */
     @Transactional
     public AlertResult detectKeywordAlert(MessageEntity message, Long memberId) {
-        // KeywordAnalyzer를 사용하여 메시지 분석
-        AlertResult keywordResult = keywordAnalyzer.analyzeKeywordRisk(message);
+        MemberEntity member = validateAndGetMember(memberId);
+
+        // Strategy Pattern을 사용한 키워드 분석
+        AnalysisContext context = AnalysisContext.forKeyword(message);
+        AlertResult keywordResult = analysisOrchestrator.analyzeByType(AlertType.KEYWORD_DETECTION, member, context);
 
         // 키워드가 감지된 경우, 즉시 알림 처리 고려할 수 있음
         if (keywordResult.isAlert() && keywordResult.getAlertLevel() == AlertLevel.EMERGENCY) {

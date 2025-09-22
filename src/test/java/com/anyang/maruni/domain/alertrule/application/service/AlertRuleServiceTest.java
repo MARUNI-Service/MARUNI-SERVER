@@ -5,6 +5,7 @@ import com.anyang.maruni.domain.alertrule.application.analyzer.EmotionPatternAna
 import com.anyang.maruni.domain.alertrule.application.analyzer.KeywordAnalyzer;
 import com.anyang.maruni.domain.alertrule.application.analyzer.NoResponseAnalyzer;
 import com.anyang.maruni.domain.alertrule.application.config.AlertConfigurationProperties;
+import com.anyang.maruni.domain.alertrule.application.service.AlertAnalysisOrchestrator;
 import com.anyang.maruni.domain.alertrule.domain.entity.*;
 import com.anyang.maruni.domain.alertrule.domain.repository.AlertHistoryRepository;
 import com.anyang.maruni.domain.alertrule.domain.repository.AlertRuleRepository;
@@ -66,6 +67,9 @@ class AlertRuleServiceTest {
     @Mock
     private AlertConfigurationProperties alertConfig;
 
+    @Mock
+    private AlertAnalysisOrchestrator analysisOrchestrator;
+
     @InjectMocks
     private AlertRuleService alertRuleService;
 
@@ -109,7 +113,10 @@ class AlertRuleServiceTest {
         analysis.setDefaultDays(7);
         given(alertConfig.getAnalysis()).willReturn(analysis);
 
-        given(emotionAnalyzer.analyzeEmotionPattern(testMember, 7))
+        // Strategy Pattern Mock 설정 - AlertAnalysisOrchestrator
+        given(analysisOrchestrator.isSupported(AlertType.EMOTION_PATTERN))
+                .willReturn(true);
+        given(analysisOrchestrator.analyzeByType(eq(AlertType.EMOTION_PATTERN), eq(testMember), any()))
                 .willReturn(emotionAlert);
 
         // When
@@ -121,7 +128,8 @@ class AlertRuleServiceTest {
         assertThat(results.get(0).getAlertLevel()).isEqualTo(AlertLevel.HIGH);
         verify(memberRepository).findById(testMember.getId());
         verify(alertRuleRepository).findActiveRulesWithMemberAndGuardian(testMember.getId());
-        verify(emotionAnalyzer).analyzeEmotionPattern(testMember, 7);
+        verify(analysisOrchestrator).isSupported(AlertType.EMOTION_PATTERN);
+        verify(analysisOrchestrator).analyzeByType(eq(AlertType.EMOTION_PATTERN), eq(testMember), any());
     }
 
     @Test
@@ -131,7 +139,12 @@ class AlertRuleServiceTest {
         AlertResult expectedResult = AlertResult.createAlert(
                 AlertLevel.EMERGENCY, "긴급 키워드 감지: '도와주세요'", null);
 
-        given(keywordAnalyzer.analyzeKeywordRisk(testMessage))
+        // Member 조회 Mock 설정
+        given(memberRepository.findById(testMember.getId()))
+                .willReturn(Optional.of(testMember));
+
+        // Strategy Pattern Mock 설정 - AlertAnalysisOrchestrator
+        given(analysisOrchestrator.analyzeByType(eq(AlertType.KEYWORD_DETECTION), eq(testMember), any()))
                 .willReturn(expectedResult);
 
         // When
@@ -141,7 +154,8 @@ class AlertRuleServiceTest {
         assertThat(actualResult).isNotNull();
         assertThat(actualResult.isAlert()).isTrue();
         assertThat(actualResult.getAlertLevel()).isEqualTo(AlertLevel.EMERGENCY);
-        verify(keywordAnalyzer).analyzeKeywordRisk(testMessage);
+        verify(memberRepository).findById(testMember.getId());
+        verify(analysisOrchestrator).analyzeByType(eq(AlertType.KEYWORD_DETECTION), eq(testMember), any());
     }
 
     @Test

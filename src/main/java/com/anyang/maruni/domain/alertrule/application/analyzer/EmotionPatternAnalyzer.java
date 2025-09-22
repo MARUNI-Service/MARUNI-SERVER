@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import com.anyang.maruni.domain.alertrule.application.config.AlertConfigurationProperties;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertLevel;
+import com.anyang.maruni.domain.alertrule.domain.entity.AlertType;
 import com.anyang.maruni.domain.conversation.domain.entity.EmotionType;
 import com.anyang.maruni.domain.conversation.domain.entity.MessageEntity;
 import com.anyang.maruni.domain.conversation.domain.entity.MessageType;
@@ -21,13 +22,29 @@ import lombok.RequiredArgsConstructor;
  * 감정 패턴 분석기
  *
  * 연속적인 부정적 감정을 감지하여 위험도를 평가합니다.
+ * Phase 2 리팩토링: AnomalyAnalyzer 구현체
  */
 @Component
 @RequiredArgsConstructor
-public class EmotionPatternAnalyzer {
+public class EmotionPatternAnalyzer implements AnomalyAnalyzer {
 
     private final MessageRepository messageRepository;
     private final AlertConfigurationProperties alertConfig;
+
+    @Override
+    public AlertResult analyze(MemberEntity member, AnalysisContext context) {
+        return analyzeEmotionPattern(member, context.getAnalysisDays());
+    }
+
+    @Override
+    public AlertType getSupportedType() {
+        return AlertType.EMOTION_PATTERN;
+    }
+
+    @Override
+    public boolean supports(AlertType alertType) {
+        return AlertType.EMOTION_PATTERN.equals(alertType);
+    }
 
     /**
      * 회원의 감정 패턴 분석

@@ -4,7 +4,9 @@ import org.springframework.stereotype.Component;
 
 import com.anyang.maruni.domain.alertrule.application.config.AlertConfigurationProperties;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertLevel;
+import com.anyang.maruni.domain.alertrule.domain.entity.AlertType;
 import com.anyang.maruni.domain.conversation.domain.entity.MessageEntity;
+import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -13,13 +15,28 @@ import lombok.RequiredArgsConstructor;
  * 키워드 위험도 분석기
  *
  * 메시지 내용에서 위험 키워드를 감지합니다.
- * TDD Red 단계: 더미 구현ter
+ * Phase 2 리팩토링: AnomalyAnalyzer 구현체
  */
 @Component
 @RequiredArgsConstructor
-public class KeywordAnalyzer {
+public class KeywordAnalyzer implements AnomalyAnalyzer {
 
     private final AlertConfigurationProperties alertConfig;
+
+    @Override
+    public AlertResult analyze(MemberEntity member, AnalysisContext context) {
+        return analyzeKeywordRisk(context.getTargetMessage());
+    }
+
+    @Override
+    public AlertType getSupportedType() {
+        return AlertType.KEYWORD_DETECTION;
+    }
+
+    @Override
+    public boolean supports(AlertType alertType) {
+        return AlertType.KEYWORD_DETECTION.equals(alertType);
+    }
 
     /**
      * 메시지의 키워드 위험도 분석

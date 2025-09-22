@@ -58,6 +58,7 @@ public enum ErrorCode implements ErrorType {
 	ALERT_RULE_ACCESS_DENIED("AR403", "알림 규칙에 접근할 권한이 없습니다", HttpStatus.FORBIDDEN.value()),
 	INVALID_ALERT_CONDITION("AR400", "유효하지 않은 알림 조건입니다", HttpStatus.BAD_REQUEST.value()),
 	ALERT_RULE_CREATION_FAILED("AR500", "알림 규칙 생성에 실패했습니다", HttpStatus.INTERNAL_SERVER_ERROR.value()),
+	UNSUPPORTED_ALERT_TYPE("AR401", "지원하지 않는 알림 타입입니다", HttpStatus.BAD_REQUEST.value()),
 
 	// ============ Emotion Analysis ============
 	EMOTION_ANALYSIS_FAILED("EM500", "감정 분석에 실패했습니다", HttpStatus.INTERNAL_SERVER_ERROR.value()),
