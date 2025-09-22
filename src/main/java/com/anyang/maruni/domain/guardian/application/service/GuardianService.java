@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.anyang.maruni.domain.guardian.application.dto.GuardianRequestDto;
 import com.anyang.maruni.domain.guardian.application.dto.GuardianResponseDto;
 import com.anyang.maruni.domain.guardian.application.exception.GuardianNotFoundException;
+import com.anyang.maruni.domain.guardian.application.exception.GuardianNotAssignedException;
 import com.anyang.maruni.domain.guardian.application.mapper.GuardianMapper;
 import com.anyang.maruni.domain.guardian.application.validator.GuardianValidator;
 import com.anyang.maruni.domain.guardian.domain.entity.GuardianEntity;
@@ -92,6 +93,17 @@ public class GuardianService {
         List<MemberEntity> members = memberRepository.findByGuardian(guardian);
 
         return guardianMapper.toMemberResponseList(members);
+    }
+
+    public GuardianResponseDto getGuardianByMemberId(Long memberId) {
+        MemberEntity member = findMemberById(memberId);
+        GuardianEntity guardian = member.getGuardian();
+
+        if (guardian == null) {
+            throw new GuardianNotAssignedException();
+        }
+
+        return guardianMapper.toResponseDto(guardian);
     }
 
     @Transactional
