@@ -9,7 +9,7 @@ import com.anyang.maruni.domain.guardian.application.dto.GuardianRequestDto;
 import com.anyang.maruni.domain.guardian.application.dto.GuardianResponseDto;
 import com.anyang.maruni.domain.guardian.application.exception.GuardianEmailAlreadyExistsException;
 import com.anyang.maruni.domain.guardian.application.exception.GuardianNotFoundException;
-import com.anyang.maruni.domain.guardian.application.exception.MemberNotFoundException;
+import com.anyang.maruni.domain.member.application.exception.MemberNotFoundException;
 import com.anyang.maruni.domain.guardian.domain.entity.GuardianEntity;
 import com.anyang.maruni.domain.guardian.domain.repository.GuardianRepository;
 import com.anyang.maruni.domain.member.application.dto.response.MemberResponse;
