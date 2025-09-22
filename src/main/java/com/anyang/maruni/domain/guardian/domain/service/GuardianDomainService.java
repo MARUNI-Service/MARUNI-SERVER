@@ -1,7 +1,9 @@
 package com.anyang.maruni.domain.guardian.domain.service;
 
+import com.anyang.maruni.domain.guardian.application.exception.GuardianBusinessException;
 import com.anyang.maruni.domain.guardian.domain.entity.GuardianEntity;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
+import com.anyang.maruni.global.response.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -53,19 +55,30 @@ public class GuardianDomainService {
      *
      * @param member 회원
      * @param guardian 보호자
+     * @throws GuardianBusinessException 비즈니스 규칙 위반 시
      */
     @Transactional
     public void establishGuardianRelation(MemberEntity member, GuardianEntity guardian) {
         log.info("보호자-회원 관계 설정 시작. Member ID: {}, Guardian ID: {}",
                 member.getId(), guardian.getId());
 
-        // 기존 보호자가 있다면 로그 남기기
+        // 1. 자기 자신을 보호자로 설정하는지 검증
+        if (member.getId().equals(guardian.getId())) {
+            throw new GuardianBusinessException(ErrorCode.GUARDIAN_SELF_ASSIGNMENT_NOT_ALLOWED);
+        }
+
+        // 2. 보호자가 활성 상태인지 검증
+        if (!guardian.getIsActive()) {
+            throw new GuardianBusinessException(ErrorCode.GUARDIAN_DEACTIVATION_FAILED);
+        }
+
+        // 3. 기존 보호자가 있다면 로그 남기기 (허용하되 경고)
         if (member.getGuardian() != null) {
             log.warn("회원 {}에게 이미 보호자 {}가 설정되어 있습니다. 새로운 보호자 {}로 변경합니다.",
                     member.getId(), member.getGuardian().getId(), guardian.getId());
         }
 
-        // 관계 설정
+        // 4. 관계 설정
         member.assignGuardian(guardian);
 
         log.info("보호자-회원 관계 설정 완료. Member ID: {}, Guardian ID: {}",

@@ -33,6 +33,9 @@ public enum ErrorCode implements ErrorType {
 	GUARDIAN_NOT_FOUND("GU404", "보호자를 찾을 수 없습니다", HttpStatus.NOT_FOUND.value()),
 	GUARDIAN_NOT_ASSIGNED("GU405", "회원에게 보호자가 설정되지 않았습니다", HttpStatus.NOT_FOUND.value()),
 	GUARDIAN_EMAIL_ALREADY_EXISTS("GU409", "이미 등록된 보호자 이메일입니다", HttpStatus.CONFLICT.value()),
+	GUARDIAN_ALREADY_ASSIGNED("GU410", "이미 보호자가 설정된 회원입니다", HttpStatus.CONFLICT.value()),
+	GUARDIAN_DEACTIVATION_FAILED("GU411", "보호자 비활성화에 실패했습니다", HttpStatus.BAD_REQUEST.value()),
+	GUARDIAN_SELF_ASSIGNMENT_NOT_ALLOWED("GU412", "자기 자신을 보호자로 설정할 수 없습니다", HttpStatus.BAD_REQUEST.value()),
 
 	// ============ Conversation Domain ============
 	CONVERSATION_NOT_FOUND("C404", "대화를 찾을 수 없습니다", HttpStatus.NOT_FOUND.value()),
