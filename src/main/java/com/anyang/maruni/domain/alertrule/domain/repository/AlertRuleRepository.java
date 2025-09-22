@@ -118,4 +118,54 @@ public interface AlertRuleRepository extends JpaRepository<AlertRule, Long> {
            "  ELSE 0 " +
            "END DESC, ar.alertType, ar.createdAt DESC")
     List<AlertRule> findActiveRulesByMemberIdOrderedByLevel(@Param("memberId") Long memberId);
+
+    /**
+     * N+1 쿼리 문제 해결을 위한 JOIN FETCH 쿼리
+     * 회원과 보호자 정보를 함께 조회하여 성능 최적화
+     * @param memberId 회원 ID
+     * @return 활성 알림 규칙 목록 (Member, Guardian 포함)
+     */
+    @Query("SELECT ar FROM AlertRule ar " +
+           "JOIN FETCH ar.member m " +
+           "LEFT JOIN FETCH m.guardian " +
+           "WHERE ar.member.id = :memberId AND ar.isActive = true " +
+           "ORDER BY " +
+           "CASE ar.alertLevel " +
+           "  WHEN 'EMERGENCY' THEN 4 " +
+           "  WHEN 'HIGH' THEN 3 " +
+           "  WHEN 'MEDIUM' THEN 2 " +
+           "  WHEN 'LOW' THEN 1 " +
+           "  ELSE 0 " +
+           "END DESC, ar.createdAt DESC")
+    List<AlertRule> findActiveRulesWithMemberAndGuardian(@Param("memberId") Long memberId);
+
+    /**
+     * 특정 알림 규칙을 Member, Guardian과 함께 조회 (N+1 방지)
+     * @param alertRuleId 알림 규칙 ID
+     * @return 알림 규칙 (Member, Guardian 포함)
+     */
+    @Query("SELECT ar FROM AlertRule ar " +
+           "JOIN FETCH ar.member m " +
+           "LEFT JOIN FETCH m.guardian " +
+           "WHERE ar.id = :alertRuleId")
+    Optional<AlertRule> findByIdWithMemberAndGuardian(@Param("alertRuleId") Long alertRuleId);
+
+    /**
+     * 우선순위 기반 정렬과 함께 Member, Guardian을 JOIN FETCH
+     * @param memberId 회원 ID
+     * @return 우선순위 정렬된 활성 알림 규칙 목록
+     */
+    @Query("SELECT ar FROM AlertRule ar " +
+           "JOIN FETCH ar.member m " +
+           "LEFT JOIN FETCH m.guardian " +
+           "WHERE ar.member.id = :memberId AND ar.isActive = true " +
+           "ORDER BY " +
+           "CASE ar.alertLevel " +
+           "  WHEN 'EMERGENCY' THEN 4 " +
+           "  WHEN 'HIGH' THEN 3 " +
+           "  WHEN 'MEDIUM' THEN 2 " +
+           "  WHEN 'LOW' THEN 1 " +
+           "  ELSE 0 " +
+           "END DESC, ar.alertType, ar.createdAt DESC")
+    List<AlertRule> findActiveRulesByMemberIdOrderedByPriority(@Param("memberId") Long memberId);
 }

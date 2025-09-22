@@ -284,12 +284,22 @@ public class AlertRuleService {
     }
 
     /**
-     * 회원의 활성 알림 규칙 조회
+     * 회원의 활성 알림 규칙 조회 (성능 최적화 버전)
+     * N+1 쿼리 문제 해결을 위해 JOIN FETCH 사용
      * @param memberId 회원 ID
-     * @return 활성 알림 규칙 목록
+     * @return 활성 알림 규칙 목록 (Member, Guardian 포함)
      */
     public List<AlertRule> getActiveRulesByMemberId(Long memberId) {
-        return alertRuleRepository.findActiveRulesByMemberId(memberId);
+        return alertRuleRepository.findActiveRulesWithMemberAndGuardian(memberId);
+    }
+
+    /**
+     * 우선순위 기반으로 정렬된 활성 알림 규칙 조회 (성능 최적화)
+     * @param memberId 회원 ID
+     * @return 우선순위 정렬된 활성 알림 규칙 목록
+     */
+    public List<AlertRule> getActiveRulesByMemberIdOrderedByPriority(Long memberId) {
+        return alertRuleRepository.findActiveRulesByMemberIdOrderedByPriority(memberId);
     }
 
     /**
@@ -361,12 +371,13 @@ public class AlertRuleService {
     }
 
     /**
-     * 알림 규칙 조회 (단일)
+     * 알림 규칙 조회 (단일, 성능 최적화 버전)
+     * N+1 쿼리 문제 해결을 위해 JOIN FETCH 사용
      * @param alertRuleId 알림 규칙 ID
-     * @return 알림 규칙
+     * @return 알림 규칙 (Member, Guardian 포함)
      */
     public AlertRule getAlertRuleById(Long alertRuleId) {
-        return alertRuleRepository.findById(alertRuleId)
+        return alertRuleRepository.findByIdWithMemberAndGuardian(alertRuleId)
                 .orElseThrow(() -> new AlertRuleNotFoundException(alertRuleId));
     }
 
