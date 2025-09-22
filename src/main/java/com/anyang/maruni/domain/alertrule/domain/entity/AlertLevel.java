@@ -1,5 +1,7 @@
 package com.anyang.maruni.domain.alertrule.domain.entity;
 
+import java.util.Comparator;
+
 import lombok.Getter;
 
 /**
@@ -9,7 +11,7 @@ import lombok.Getter;
  * 숫자가 높을수록 더 긴급한 상황을 의미합니다.
  */
 @Getter
-public enum AlertLevel implements Comparable<AlertLevel> {
+public enum AlertLevel {
     /**
      * 낮음: 정보성 알림
      */
@@ -52,5 +54,23 @@ public enum AlertLevel implements Comparable<AlertLevel> {
      */
     public boolean isEmergency() {
         return this == EMERGENCY;
+    }
+
+    /**
+     * 우선순위 기반 내림차순 정렬을 위한 비교자
+     * 높은 우선순위(EMERGENCY=4)가 먼저 오도록 정렬
+     * @return 내림차순 비교자
+     */
+    public static Comparator<AlertLevel> descendingComparator() {
+        return (a, b) -> Integer.compare(b.priority, a.priority);
+    }
+
+    /**
+     * 우선순위 기반 오름차순 정렬을 위한 비교자
+     * 낮은 우선순위(LOW=1)가 먼저 오도록 정렬
+     * @return 오름차순 비교자
+     */
+    public static Comparator<AlertLevel> ascendingComparator() {
+        return (a, b) -> Integer.compare(a.priority, b.priority);
     }
 }
