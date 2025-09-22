@@ -8,7 +8,7 @@ import com.anyang.maruni.global.response.error.ErrorCode;
  */
 public class GuardianNotFoundException extends BaseException {
 
-    public GuardianNotFoundException(Long guardianId) {
+    public GuardianNotFoundException() {
         super(ErrorCode.GUARDIAN_NOT_FOUND);
     }
 }

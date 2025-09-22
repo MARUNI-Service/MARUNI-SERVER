@@ -1,5 +1,20 @@
 package com.anyang.maruni.domain.guardian.application.service;
 
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.BDDMockito.*;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 import com.anyang.maruni.domain.guardian.application.dto.GuardianRequestDto;
 import com.anyang.maruni.domain.guardian.application.dto.GuardianResponseDto;
 import com.anyang.maruni.domain.guardian.application.exception.GuardianEmailAlreadyExistsException;
@@ -13,20 +28,6 @@ import com.anyang.maruni.domain.guardian.domain.service.GuardianDomainService;
 import com.anyang.maruni.domain.member.application.dto.response.MemberResponse;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
 import com.anyang.maruni.domain.member.domain.repository.MemberRepository;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.BDDMockito.*;
 
 /**
  * Guardian Service TDD Red 테스트
@@ -188,7 +189,7 @@ class GuardianServiceTest {
             .build();
 
         // GuardianValidator가 예외를 던지도록 설정
-        doThrow(new GuardianEmailAlreadyExistsException(duplicateEmail))
+        doThrow(new GuardianEmailAlreadyExistsException())
             .when(guardianValidator).validateEmailNotExists(duplicateEmail);
 
         // When & Then

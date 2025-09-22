@@ -122,6 +122,6 @@ public class GuardianService {
 
     private GuardianEntity findGuardianById(Long guardianId) {
         return guardianRepository.findById(guardianId)
-            .orElseThrow(() -> new GuardianNotFoundException(guardianId));
+            .orElseThrow(GuardianNotFoundException::new);
     }
 }

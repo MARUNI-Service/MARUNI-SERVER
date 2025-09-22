@@ -11,7 +11,7 @@ import com.anyang.maruni.global.response.error.ErrorCode;
  */
 public class GuardianEmailAlreadyExistsException extends BaseException {
 
-    public GuardianEmailAlreadyExistsException(String email) {
+    public GuardianEmailAlreadyExistsException() {
         super(ErrorCode.GUARDIAN_EMAIL_ALREADY_EXISTS);
     }
 }

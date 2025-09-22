@@ -1,12 +1,12 @@
 package com.anyang.maruni.domain.guardian.application.validator;
 
+import org.springframework.stereotype.Component;
+
 import com.anyang.maruni.domain.guardian.application.exception.GuardianEmailAlreadyExistsException;
 import com.anyang.maruni.domain.guardian.domain.entity.GuardianEntity;
 import com.anyang.maruni.domain.guardian.domain.repository.GuardianRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 
-import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Guardian 도메인 유효성 검증 컴포넌트
@@ -31,7 +31,7 @@ public class GuardianValidator {
     public void validateEmailNotExists(String email) {
         guardianRepository.findByGuardianEmailAndIsActiveTrue(email)
             .ifPresent(guardian -> {
-                throw new GuardianEmailAlreadyExistsException(email);
+                throw new GuardianEmailAlreadyExistsException();
             });
     }
 
