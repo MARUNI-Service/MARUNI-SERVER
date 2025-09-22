@@ -9,10 +9,10 @@ import com.anyang.maruni.global.response.error.ErrorCode;
 public class AlertRuleNotFoundException extends BaseException {
 
     public AlertRuleNotFoundException(Long alertRuleId) {
-        super(ErrorCode.ALERT_RULE_NOT_FOUND, "알림 규칙을 찾을 수 없습니다. ID: " + alertRuleId);
+        super(ErrorCode.ALERT_RULE_NOT_FOUND);
     }
 
-    public AlertRuleNotFoundException(String message) {
-        super(ErrorCode.ALERT_RULE_NOT_FOUND, message);
+    public AlertRuleNotFoundException() {
+        super(ErrorCode.ALERT_RULE_NOT_FOUND);
     }
 }

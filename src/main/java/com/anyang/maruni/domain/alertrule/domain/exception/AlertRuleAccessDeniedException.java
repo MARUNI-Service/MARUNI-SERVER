@@ -9,11 +9,10 @@ import com.anyang.maruni.global.response.error.ErrorCode;
 public class AlertRuleAccessDeniedException extends BaseException {
 
     public AlertRuleAccessDeniedException(Long alertRuleId, Long memberId) {
-        super(ErrorCode.ALERT_RULE_ACCESS_DENIED,
-              String.format("회원 ID %d는 알림 규칙 ID %d에 접근할 권한이 없습니다.", memberId, alertRuleId));
+        super(ErrorCode.ALERT_RULE_ACCESS_DENIED);
     }
 
-    public AlertRuleAccessDeniedException(String message) {
-        super(ErrorCode.ALERT_RULE_ACCESS_DENIED, message);
+    public AlertRuleAccessDeniedException() {
+        super(ErrorCode.ALERT_RULE_ACCESS_DENIED);
     }
 }

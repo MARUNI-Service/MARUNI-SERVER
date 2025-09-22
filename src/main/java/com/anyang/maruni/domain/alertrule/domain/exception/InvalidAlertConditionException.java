@@ -9,11 +9,10 @@ import com.anyang.maruni.global.response.error.ErrorCode;
 public class InvalidAlertConditionException extends BaseException {
 
     public InvalidAlertConditionException(String condition, String reason) {
-        super(ErrorCode.INVALID_ALERT_CONDITION,
-              String.format("유효하지 않은 알림 조건입니다. 조건: %s, 사유: %s", condition, reason));
+        super(ErrorCode.INVALID_ALERT_CONDITION);
     }
 
-    public InvalidAlertConditionException(String message) {
-        super(ErrorCode.INVALID_ALERT_CONDITION, message);
+    public InvalidAlertConditionException() {
+        super(ErrorCode.INVALID_ALERT_CONDITION);
     }
 }

@@ -9,11 +9,10 @@ import com.anyang.maruni.global.response.error.ErrorCode;
 public class AlertRuleCreationFailedException extends BaseException {
 
     public AlertRuleCreationFailedException(String alertType, Throwable cause) {
-        super(ErrorCode.ALERT_RULE_CREATION_FAILED,
-              String.format("알림 규칙 생성에 실패했습니다. 유형: %s", alertType), cause);
+        super(ErrorCode.ALERT_RULE_CREATION_FAILED);
     }
 
-    public AlertRuleCreationFailedException(String message) {
-        super(ErrorCode.ALERT_RULE_CREATION_FAILED, message);
+    public AlertRuleCreationFailedException() {
+        super(ErrorCode.ALERT_RULE_CREATION_FAILED);
     }
 }
