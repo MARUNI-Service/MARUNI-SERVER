@@ -4,6 +4,7 @@ import com.anyang.maruni.domain.alertrule.application.analyzer.AlertResult;
 import com.anyang.maruni.domain.alertrule.application.analyzer.EmotionPatternAnalyzer;
 import com.anyang.maruni.domain.alertrule.application.analyzer.KeywordAnalyzer;
 import com.anyang.maruni.domain.alertrule.application.analyzer.NoResponseAnalyzer;
+import com.anyang.maruni.domain.alertrule.application.config.AlertConfigurationProperties;
 import com.anyang.maruni.domain.alertrule.domain.entity.*;
 import com.anyang.maruni.domain.alertrule.domain.repository.AlertHistoryRepository;
 import com.anyang.maruni.domain.alertrule.domain.repository.AlertRuleRepository;
@@ -62,6 +63,9 @@ class AlertRuleServiceTest {
     @Mock
     private KeywordAnalyzer keywordAnalyzer;
 
+    @Mock
+    private AlertConfigurationProperties alertConfig;
+
     @InjectMocks
     private AlertRuleService alertRuleService;
 
@@ -97,8 +101,14 @@ class AlertRuleServiceTest {
 
         given(memberRepository.findById(testMember.getId()))
                 .willReturn(Optional.of(testMember));
-        given(alertRuleRepository.findActiveRulesByMemberId(testMember.getId()))
+        given(alertRuleRepository.findActiveRulesWithMemberAndGuardian(testMember.getId()))
                 .willReturn(activeRules);
+
+        // AlertConfigurationProperties Mock 설정
+        AlertConfigurationProperties.Analysis analysis = new AlertConfigurationProperties.Analysis();
+        analysis.setDefaultDays(7);
+        given(alertConfig.getAnalysis()).willReturn(analysis);
+
         given(emotionAnalyzer.analyzeEmotionPattern(testMember, 7))
                 .willReturn(emotionAlert);
 
@@ -110,7 +120,7 @@ class AlertRuleServiceTest {
         assertThat(results.get(0).isAlert()).isTrue();
         assertThat(results.get(0).getAlertLevel()).isEqualTo(AlertLevel.HIGH);
         verify(memberRepository).findById(testMember.getId());
-        verify(alertRuleRepository).findActiveRulesByMemberId(testMember.getId());
+        verify(alertRuleRepository).findActiveRulesWithMemberAndGuardian(testMember.getId());
         verify(emotionAnalyzer).analyzeEmotionPattern(testMember, 7);
     }
 
@@ -149,6 +159,12 @@ class AlertRuleServiceTest {
                 .alertMessage("3일 연속 부정감정 감지")
                 .isNotificationSent(false)
                 .build();
+
+        // AlertConfigurationProperties Mock 설정
+        AlertConfigurationProperties.Notification notification = new AlertConfigurationProperties.Notification();
+        notification.setDetectionDetailsJsonTemplate("{\"alertLevel\":\"%s\",\"analysisDetails\":\"%s\"}");
+        notification.setTitleTemplate("[MARUNI 알림] %s 단계 이상징후 감지");
+        given(alertConfig.getNotification()).willReturn(notification);
 
         given(memberRepository.findById(testMember.getId()))
                 .willReturn(Optional.of(testMember));
@@ -203,6 +219,11 @@ class AlertRuleServiceTest {
                 .isNotificationSent(false)
                 .build();
 
+        // AlertConfigurationProperties Mock 설정
+        AlertConfigurationProperties.Notification notification = new AlertConfigurationProperties.Notification();
+        notification.setDetectionDetailsJsonTemplate("{\"alertLevel\":\"%s\",\"analysisDetails\":\"%s\"}");
+        given(alertConfig.getNotification()).willReturn(notification);
+
         given(alertHistoryRepository.save(any(AlertHistory.class)))
                 .willReturn(savedHistory);
 
@@ -221,7 +242,7 @@ class AlertRuleServiceTest {
     void getActiveRulesByMemberId_shouldReturnActiveRules() {
         // Given
         List<AlertRule> expectedRules = Arrays.asList(testRule);
-        given(alertRuleRepository.findActiveRulesByMemberId(testMember.getId()))
+        given(alertRuleRepository.findActiveRulesWithMemberAndGuardian(testMember.getId()))
                 .willReturn(expectedRules);
 
         // When
@@ -229,7 +250,7 @@ class AlertRuleServiceTest {
 
         // Then
         assertThat(actualRules).isEqualTo(expectedRules);
-        verify(alertRuleRepository).findActiveRulesByMemberId(testMember.getId());
+        verify(alertRuleRepository).findActiveRulesWithMemberAndGuardian(testMember.getId());
     }
 
     @Test

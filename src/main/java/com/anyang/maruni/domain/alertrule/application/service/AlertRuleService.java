@@ -84,7 +84,7 @@ public class AlertRuleService {
     @Transactional
     public List<AlertResult> detectAnomalies(Long memberId) {
         MemberEntity member = validateAndGetMember(memberId);
-        List<AlertRule> activeRules = alertRuleRepository.findActiveRulesByMemberId(memberId);
+        List<AlertRule> activeRules = alertRuleRepository.findActiveRulesWithMemberAndGuardian(memberId);
 
         return processAlertRules(member, activeRules);
     }
