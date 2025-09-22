@@ -151,6 +151,18 @@ public interface AlertRuleRepository extends JpaRepository<AlertRule, Long> {
     Optional<AlertRule> findByIdWithMemberAndGuardian(@Param("alertRuleId") Long alertRuleId);
 
     /**
+     * Member, Guardian을 JOIN FETCH하여 조회 (정렬 없음)
+     * Service 계층에서 Java로 정렬 처리
+     * @param memberId 회원 ID
+     * @return 활성 알림 규칙 목록 (정렬 없음)
+     */
+    @Query("SELECT ar FROM AlertRule ar " +
+           "JOIN FETCH ar.member m " +
+           "LEFT JOIN FETCH m.guardian " +
+           "WHERE ar.member.id = :memberId AND ar.isActive = true")
+    List<AlertRule> findActiveRulesWithMemberAndGuardianUnsorted(@Param("memberId") Long memberId);
+
+    /**
      * 우선순위 기반 정렬과 함께 Member, Guardian을 JOIN FETCH
      * @param memberId 회원 ID
      * @return 우선순위 정렬된 활성 알림 규칙 목록

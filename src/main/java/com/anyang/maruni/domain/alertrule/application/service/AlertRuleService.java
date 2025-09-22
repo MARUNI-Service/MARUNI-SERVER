@@ -20,7 +20,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 알림 규칙 서비스
@@ -318,12 +320,28 @@ public class AlertRuleService {
     }
 
     /**
-     * 우선순위 기반으로 정렬된 활성 알림 규칙 조회 (성능 최적화)
+     * 우선순위 기반으로 정렬된 활성 알림 규칙 조회 (JPQL 정렬)
      * @param memberId 회원 ID
      * @return 우선순위 정렬된 활성 알림 규칙 목록
      */
     public List<AlertRule> getActiveRulesByMemberIdOrderedByPriority(Long memberId) {
         return alertRuleRepository.findActiveRulesByMemberIdOrderedByPriority(memberId);
+    }
+
+    /**
+     * 우선순위 기반으로 정렬된 활성 알림 규칙 조회 (Java 정렬)
+     * Phase 2 개선: JPQL 하드코딩 제거, AlertLevel.descendingComparator() 사용
+     * @param memberId 회원 ID
+     * @return 우선순위 정렬된 활성 알림 규칙 목록
+     */
+    public List<AlertRule> getActiveRulesByMemberIdSortedByJava(Long memberId) {
+        List<AlertRule> rules = alertRuleRepository.findActiveRulesWithMemberAndGuardianUnsorted(memberId);
+
+        return rules.stream()
+                .sorted(Comparator.comparing(AlertRule::getAlertLevel, AlertLevel.descendingComparator())
+                    .thenComparing(AlertRule::getAlertType)
+                    .thenComparing(AlertRule::getCreatedAt, Comparator.reverseOrder()))
+                .collect(Collectors.toList());
     }
 
     /**
