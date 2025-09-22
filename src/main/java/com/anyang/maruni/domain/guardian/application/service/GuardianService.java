@@ -7,11 +7,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.anyang.maruni.domain.guardian.application.dto.GuardianRequestDto;
 import com.anyang.maruni.domain.guardian.application.dto.GuardianResponseDto;
-import com.anyang.maruni.domain.guardian.application.exception.GuardianEmailAlreadyExistsException;
 import com.anyang.maruni.domain.guardian.application.exception.GuardianNotFoundException;
-import com.anyang.maruni.domain.member.application.exception.MemberNotFoundException;
+import com.anyang.maruni.domain.guardian.application.mapper.GuardianMapper;
+import com.anyang.maruni.domain.guardian.application.validator.GuardianValidator;
 import com.anyang.maruni.domain.guardian.domain.entity.GuardianEntity;
 import com.anyang.maruni.domain.guardian.domain.repository.GuardianRepository;
+import com.anyang.maruni.domain.guardian.domain.service.GuardianDomainService;
+import com.anyang.maruni.domain.member.application.exception.MemberNotFoundException;
 import com.anyang.maruni.domain.member.application.dto.response.MemberResponse;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
 import com.anyang.maruni.domain.member.domain.repository.MemberRepository;
@@ -19,12 +21,13 @@ import com.anyang.maruni.domain.member.domain.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Guardian Service - 보호자 관리 비즈니스 로직
+ * Guardian Service - 보호자 관리 애플리케이션 서비스
  *
- * 기능:
- * - 보호자 생성 및 관리
- * - 회원-보호자 관계 설정/해제
- * - 보호자별 담당 회원 조회
+ * 리팩토링된 구조: 단일 책임 원칙 적용
+ * - GuardianValidator: 유효성 검증 로직
+ * - GuardianMapper: DTO 변환 로직
+ * - GuardianDomainService: 복잡한 도메인 로직
+ * - GuardianService: 애플리케이션 로직 조율
  */
 @Service
 @RequiredArgsConstructor
@@ -33,12 +36,15 @@ public class GuardianService {
 
     private final GuardianRepository guardianRepository;
     private final MemberRepository memberRepository;
+    private final GuardianValidator guardianValidator;
+    private final GuardianMapper guardianMapper;
+    private final GuardianDomainService guardianDomainService;
 
     // ========== Public Methods ==========
 
     @Transactional
     public GuardianResponseDto createGuardian(GuardianRequestDto request) {
-        validateGuardianEmailNotExists(request.getGuardianEmail());
+        guardianValidator.validateEmailNotExists(request.getGuardianEmail());
 
         GuardianEntity guardian = GuardianEntity.createGuardian(
             request.getGuardianName(),
@@ -49,31 +55,27 @@ public class GuardianService {
         );
 
         GuardianEntity savedGuardian = guardianRepository.save(guardian);
-        return GuardianResponseDto.from(savedGuardian);
+        return guardianMapper.toResponseDto(savedGuardian);
     }
 
     public GuardianResponseDto getGuardianById(Long guardianId) {
         GuardianEntity guardian = findGuardianById(guardianId);
-        return GuardianResponseDto.from(guardian);
+        return guardianMapper.toResponseDto(guardian);
     }
 
     @Transactional
     public GuardianResponseDto updateGuardianInfo(Long guardianId, String name, String phone) {
         GuardianEntity guardian = findGuardianById(guardianId);
         guardian.updateGuardianInfo(name, phone);
-        return GuardianResponseDto.from(guardian);
+        return guardianMapper.toResponseDto(guardian);
     }
 
     @Transactional
     public void deactivateGuardian(Long guardianId) {
         GuardianEntity guardian = findGuardianById(guardianId);
+        List<MemberEntity> connectedMembers = memberRepository.findByGuardian(guardian);
 
-        // 연결된 모든 회원의 보호자 관계 해제
-        List<MemberEntity> members = memberRepository.findByGuardian(guardian);
-        members.forEach(MemberEntity::removeGuardian);
-
-        // 보호자 비활성화
-        guardian.deactivate();
+        guardianDomainService.deactivateGuardianSafely(guardian, connectedMembers);
     }
 
     @Transactional
@@ -81,7 +83,7 @@ public class GuardianService {
         MemberEntity member = findMemberById(memberId);
         GuardianEntity guardian = findGuardianById(guardianId);
 
-        member.assignGuardian(guardian);
+        guardianDomainService.establishGuardianRelation(member, guardian);
         memberRepository.save(member);
     }
 
@@ -89,13 +91,13 @@ public class GuardianService {
         GuardianEntity guardian = findGuardianById(guardianId);
         List<MemberEntity> members = memberRepository.findByGuardian(guardian);
 
-        return convertToMemberResponses(members);
+        return guardianMapper.toMemberResponseList(members);
     }
 
     @Transactional
     public void removeGuardianFromMember(Long memberId) {
         MemberEntity member = findMemberById(memberId);
-        member.removeGuardian();
+        guardianDomainService.removeGuardianRelation(member);
         memberRepository.save(member);
     }
 
@@ -109,18 +111,5 @@ public class GuardianService {
     private GuardianEntity findGuardianById(Long guardianId) {
         return guardianRepository.findById(guardianId)
             .orElseThrow(() -> new GuardianNotFoundException(guardianId));
-    }
-
-    private List<MemberResponse> convertToMemberResponses(List<MemberEntity> members) {
-        return members.stream()
-            .map(MemberResponse::from)
-            .toList();
-    }
-
-    private void validateGuardianEmailNotExists(String email) {
-        guardianRepository.findByGuardianEmailAndIsActiveTrue(email)
-            .ifPresent(guardian -> {
-                throw new GuardianEmailAlreadyExistsException(email);
-            });
     }
 }
