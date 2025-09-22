@@ -1,28 +1,32 @@
 package com.anyang.maruni.domain.alertrule.application.service;
 
-import com.anyang.maruni.domain.alertrule.application.analyzer.AlertResult;
-import com.anyang.maruni.domain.alertrule.application.analyzer.AnalysisContext;
-import com.anyang.maruni.domain.alertrule.application.analyzer.EmotionPatternAnalyzer;
-import com.anyang.maruni.domain.alertrule.application.analyzer.KeywordAnalyzer;
-import com.anyang.maruni.domain.alertrule.application.analyzer.NoResponseAnalyzer;
-import com.anyang.maruni.domain.alertrule.domain.entity.*;
-import com.anyang.maruni.domain.alertrule.domain.repository.AlertHistoryRepository;
-import com.anyang.maruni.domain.alertrule.domain.repository.AlertRuleRepository;
-import com.anyang.maruni.domain.alertrule.domain.exception.AlertRuleNotFoundException;
-import com.anyang.maruni.domain.alertrule.application.config.AlertConfigurationProperties;
-import com.anyang.maruni.domain.conversation.domain.entity.MessageEntity;
-import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
-import com.anyang.maruni.domain.member.domain.repository.MemberRepository;
-import com.anyang.maruni.domain.notification.domain.service.NotificationService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.anyang.maruni.domain.alertrule.application.analyzer.AlertResult;
+import com.anyang.maruni.domain.alertrule.application.analyzer.AnalysisContext;
+import com.anyang.maruni.domain.alertrule.application.config.AlertConfigurationProperties;
+import com.anyang.maruni.domain.alertrule.application.service.AlertAnalysisOrchestrator;
+import com.anyang.maruni.domain.alertrule.domain.entity.AlertCondition;
+import com.anyang.maruni.domain.alertrule.domain.entity.AlertHistory;
+import com.anyang.maruni.domain.alertrule.domain.entity.AlertLevel;
+import com.anyang.maruni.domain.alertrule.domain.entity.AlertRule;
+import com.anyang.maruni.domain.alertrule.domain.entity.AlertType;
+import com.anyang.maruni.domain.alertrule.domain.exception.AlertRuleNotFoundException;
+import com.anyang.maruni.domain.alertrule.domain.repository.AlertHistoryRepository;
+import com.anyang.maruni.domain.alertrule.domain.repository.AlertRuleRepository;
+import com.anyang.maruni.domain.conversation.domain.entity.MessageEntity;
+import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
+import com.anyang.maruni.domain.member.domain.repository.MemberRepository;
+import com.anyang.maruni.domain.notification.domain.service.NotificationService;
+
+import lombok.RequiredArgsConstructor;
 
 /**
  * 알림 규칙 서비스
@@ -42,10 +46,6 @@ public class AlertRuleService {
     private final AlertAnalysisOrchestrator analysisOrchestrator;
     private final AlertConfigurationProperties alertConfig;
 
-    // Phase 2 리팩토링: 하위 호환성을 위한 개별 분석기 유지 (향후 제거 예정)
-    private final EmotionPatternAnalyzer emotionAnalyzer;
-    private final NoResponseAnalyzer noResponseAnalyzer;
-    private final KeywordAnalyzer keywordAnalyzer;
 
     /**
      * 회원 검증 및 조회 공통 메서드
@@ -320,22 +320,13 @@ public class AlertRuleService {
     }
 
     /**
-     * 우선순위 기반으로 정렬된 활성 알림 규칙 조회 (JPQL 정렬)
+     * 우선순위 기반으로 정렬된 활성 알림 규칙 조회
+     * Phase 2 개선: Java 정렬로 JPQL 하드코딩 제거
      * @param memberId 회원 ID
      * @return 우선순위 정렬된 활성 알림 규칙 목록
      */
     public List<AlertRule> getActiveRulesByMemberIdOrderedByPriority(Long memberId) {
-        return alertRuleRepository.findActiveRulesByMemberIdOrderedByPriority(memberId);
-    }
-
-    /**
-     * 우선순위 기반으로 정렬된 활성 알림 규칙 조회 (Java 정렬)
-     * Phase 2 개선: JPQL 하드코딩 제거, AlertLevel.descendingComparator() 사용
-     * @param memberId 회원 ID
-     * @return 우선순위 정렬된 활성 알림 규칙 목록
-     */
-    public List<AlertRule> getActiveRulesByMemberIdSortedByJava(Long memberId) {
-        List<AlertRule> rules = alertRuleRepository.findActiveRulesWithMemberAndGuardianUnsorted(memberId);
+        List<AlertRule> rules = alertRuleRepository.findActiveRulesWithMemberAndGuardian(memberId);
 
         return rules.stream()
                 .sorted(Comparator.comparing(AlertRule::getAlertLevel, AlertLevel.descendingComparator())
