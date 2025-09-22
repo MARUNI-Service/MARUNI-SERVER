@@ -8,6 +8,7 @@ import com.anyang.maruni.domain.alertrule.domain.entity.*;
 import com.anyang.maruni.domain.alertrule.domain.repository.AlertHistoryRepository;
 import com.anyang.maruni.domain.alertrule.domain.repository.AlertRuleRepository;
 import com.anyang.maruni.domain.alertrule.domain.exception.AlertRuleNotFoundException;
+import com.anyang.maruni.domain.alertrule.application.config.AlertConfigurationProperties;
 import com.anyang.maruni.domain.conversation.domain.entity.MessageEntity;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
 import com.anyang.maruni.domain.member.domain.repository.MemberRepository;
@@ -31,17 +32,6 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class AlertRuleService {
 
-    // 분석 기간 설정
-    private static final int DEFAULT_ANALYSIS_DAYS = 7;
-
-    // 알림 메시지 템플릿
-    private static final String GUARDIAN_ALERT_TITLE_TEMPLATE = "[MARUNI 알림] %s 단계 이상징후 감지";
-    private static final String DETECTION_DETAILS_JSON_TEMPLATE = "{\"alertLevel\":\"%s\",\"analysisDetails\":\"%s\"}";
-
-    // 로깅 메시지
-    private static final String NOTIFICATION_FAILURE_LOG = "Guardian notification failed for member: %d";
-    private static final String NOTIFICATION_ERROR_LOG = "Error sending guardian notification: %s";
-
     private final AlertRuleRepository alertRuleRepository;
     private final AlertHistoryRepository alertHistoryRepository;
     private final MemberRepository memberRepository;
@@ -49,6 +39,7 @@ public class AlertRuleService {
     private final EmotionPatternAnalyzer emotionAnalyzer;
     private final NoResponseAnalyzer noResponseAnalyzer;
     private final KeywordAnalyzer keywordAnalyzer;
+    private final AlertConfigurationProperties alertConfig;
 
     /**
      * 회원 검증 및 조회 공통 메서드
@@ -66,7 +57,7 @@ public class AlertRuleService {
      * @return JSON 형태의 상세 정보
      */
     private String createDetectionDetailsJson(AlertResult alertResult) {
-        return String.format(DETECTION_DETAILS_JSON_TEMPLATE,
+        return String.format(alertConfig.getNotification().getDetectionDetailsJsonTemplate(),
                 alertResult.getAlertLevel(), alertResult.getAnalysisDetails());
     }
 
@@ -78,9 +69,9 @@ public class AlertRuleService {
      */
     private void handleNotificationResult(Long memberId, boolean success, String errorMessage) {
         if (!success) {
-            System.err.printf(NOTIFICATION_FAILURE_LOG + "%n", memberId);
+            System.err.printf(alertConfig.getNotification().getNotificationFailureLog() + "%n", memberId);
             if (errorMessage != null) {
-                System.err.printf(NOTIFICATION_ERROR_LOG + "%n", errorMessage);
+                System.err.printf(alertConfig.getNotification().getNotificationErrorLog() + "%n", errorMessage);
             }
         }
     }
@@ -136,9 +127,9 @@ public class AlertRuleService {
     private AlertResult analyzeByRuleType(MemberEntity member, AlertRule rule) {
         switch (rule.getAlertType()) {
             case EMOTION_PATTERN:
-                return emotionAnalyzer.analyzeEmotionPattern(member, DEFAULT_ANALYSIS_DAYS);
+                return emotionAnalyzer.analyzeEmotionPattern(member, alertConfig.getAnalysis().getDefaultDays());
             case NO_RESPONSE:
-                return noResponseAnalyzer.analyzeNoResponsePattern(member, DEFAULT_ANALYSIS_DAYS);
+                return noResponseAnalyzer.analyzeNoResponsePattern(member, alertConfig.getAnalysis().getDefaultDays());
             case KEYWORD_DETECTION:
                 // 키워드 감지는 실시간 처리이므로 여기서는 제외
                 return null;
@@ -244,7 +235,7 @@ public class AlertRuleService {
      * @param memberId 회원 ID (로깅용)
      */
     private void performNotificationSending(MemberEntity member, AlertLevel alertLevel, String alertMessage, Long memberId) {
-        String alertTitle = String.format(GUARDIAN_ALERT_TITLE_TEMPLATE, alertLevel.name());
+        String alertTitle = String.format(alertConfig.getNotification().getTitleTemplate(), alertLevel.name());
 
         try {
             boolean notificationSent = notificationService.sendPushNotification(

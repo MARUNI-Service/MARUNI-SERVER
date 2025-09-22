@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
+import com.anyang.maruni.domain.alertrule.application.config.AlertConfigurationProperties;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertLevel;
 import com.anyang.maruni.domain.conversation.domain.entity.EmotionType;
 import com.anyang.maruni.domain.conversation.domain.entity.MessageEntity;
@@ -25,13 +26,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class EmotionPatternAnalyzer {
 
-    // 위험도 평가 임계값
-    private static final int HIGH_RISK_CONSECUTIVE_DAYS = 3;
-    private static final double HIGH_RISK_NEGATIVE_RATIO = 0.7;
-    private static final int MEDIUM_RISK_CONSECUTIVE_DAYS = 2;
-    private static final double MEDIUM_RISK_NEGATIVE_RATIO = 0.5;
-
     private final MessageRepository messageRepository;
+    private final AlertConfigurationProperties alertConfig;
 
     /**
      * 회원의 감정 패턴 분석
@@ -118,14 +114,16 @@ public class EmotionPatternAnalyzer {
         double negativeRatio = emotionTrend.negativeRatio();
 
         // 고위험: 연속 부정감정 + 부정비율 기준 초과
-        if (consecutiveNegativeDays >= HIGH_RISK_CONSECUTIVE_DAYS && negativeRatio >= HIGH_RISK_NEGATIVE_RATIO) {
+        if (consecutiveNegativeDays >= alertConfig.getEmotion().getHighRiskConsecutiveDays()
+            && negativeRatio >= alertConfig.getEmotion().getHighRiskNegativeRatio()) {
             String message = AnalyzerUtils.createConsecutiveDaysMessage(
                     consecutiveNegativeDays, negativeRatio, "부정감정");
             return AlertResult.createAlert(AlertLevel.HIGH, message, emotionTrend);
         }
 
         // 중위험: 연속 부정감정 + 부정비율 기준 초과
-        if (consecutiveNegativeDays >= MEDIUM_RISK_CONSECUTIVE_DAYS && negativeRatio >= MEDIUM_RISK_NEGATIVE_RATIO) {
+        if (consecutiveNegativeDays >= alertConfig.getEmotion().getMediumRiskConsecutiveDays()
+            && negativeRatio >= alertConfig.getEmotion().getMediumRiskNegativeRatio()) {
             String message = AnalyzerUtils.createConsecutiveDaysMessage(
                     consecutiveNegativeDays, negativeRatio, "부정감정");
             return AlertResult.createAlert(AlertLevel.MEDIUM, message, emotionTrend);

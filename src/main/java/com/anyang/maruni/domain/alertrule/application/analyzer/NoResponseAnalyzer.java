@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Component;
 
+import com.anyang.maruni.domain.alertrule.application.config.AlertConfigurationProperties;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertLevel;
 import com.anyang.maruni.domain.dailycheck.domain.entity.DailyCheckRecord;
 import com.anyang.maruni.domain.dailycheck.domain.repository.DailyCheckRecordRepository;
@@ -21,13 +22,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class NoResponseAnalyzer {
 
-    // 위험도 평가 임계값
-    private static final int HIGH_RISK_CONSECUTIVE_NO_RESPONSE_DAYS = 5;
-    private static final double HIGH_RISK_MIN_RESPONSE_RATE = 0.3;
-    private static final int MEDIUM_RISK_CONSECUTIVE_NO_RESPONSE_DAYS = 3;
-    private static final double MEDIUM_RISK_MIN_RESPONSE_RATE = 0.5;
-
     private final DailyCheckRecordRepository dailyCheckRecordRepository;
+    private final AlertConfigurationProperties alertConfig;
 
     /**
      * 회원의 무응답 패턴 분석
@@ -113,14 +109,16 @@ public class NoResponseAnalyzer {
         double responseRate = responsePattern.responseRate();
 
         // 고위험: 연속 무응답 또는 낮은 응답률
-        if (consecutiveNoResponseDays >= HIGH_RISK_CONSECUTIVE_NO_RESPONSE_DAYS || responseRate < HIGH_RISK_MIN_RESPONSE_RATE) {
+        if (consecutiveNoResponseDays >= alertConfig.getNoResponse().getHighRiskConsecutiveNoResponseDays()
+            || responseRate < alertConfig.getNoResponse().getHighRiskMinResponseRate()) {
             String message = AnalyzerUtils.createConsecutiveDaysMessage(
                     consecutiveNoResponseDays, responseRate, "무응답");
             return AlertResult.createAlert(AlertLevel.HIGH, message, responsePattern);
         }
 
         // 중위험: 연속 무응답 또는 낮은 응답률
-        if (consecutiveNoResponseDays >= MEDIUM_RISK_CONSECUTIVE_NO_RESPONSE_DAYS || responseRate < MEDIUM_RISK_MIN_RESPONSE_RATE) {
+        if (consecutiveNoResponseDays >= alertConfig.getNoResponse().getMediumRiskConsecutiveNoResponseDays()
+            || responseRate < alertConfig.getNoResponse().getMediumRiskMinResponseRate()) {
             String message = AnalyzerUtils.createConsecutiveDaysMessage(
                     consecutiveNoResponseDays, responseRate, "무응답");
             return AlertResult.createAlert(AlertLevel.MEDIUM, message, responsePattern);

@@ -2,10 +2,12 @@ package com.anyang.maruni.domain.alertrule.application.analyzer;
 
 import org.springframework.stereotype.Component;
 
+import com.anyang.maruni.domain.alertrule.application.config.AlertConfigurationProperties;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertLevel;
 import com.anyang.maruni.domain.conversation.domain.entity.MessageEntity;
 
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 /**
  * 키워드 위험도 분석기
@@ -14,21 +16,10 @@ import lombok.Getter;
  * TDD Red 단계: 더미 구현ter
  */
 @Component
+@RequiredArgsConstructor
 public class KeywordAnalyzer {
 
-    /**
-     * 긴급 상황 키워드 목록
-     */
-    private static final String[] EMERGENCY_KEYWORDS = {
-            "도와주세요", "아파요", "숨이", "가슴이", "쓰러짐", "응급실", "119", "병원"
-    };
-
-    /**
-     * 경고 단계 키워드 목록
-     */
-    private static final String[] WARNING_KEYWORDS = {
-            "우울해", "외로워", "죽고싶어", "포기", "희망없어", "의미없어", "힘들어"
-    };
+    private final AlertConfigurationProperties alertConfig;
 
     /**
      * 메시지의 키워드 위험도 분석
@@ -39,7 +30,7 @@ public class KeywordAnalyzer {
         String content = message.getContent().toLowerCase();
 
         // 1. 긴급 키워드 감지 (최우선)
-        for (String emergencyKeyword : EMERGENCY_KEYWORDS) {
+        for (String emergencyKeyword : alertConfig.getKeyword().getEmergency()) {
             if (content.contains(emergencyKeyword.toLowerCase())) {
                 String alertMessage = AnalyzerUtils.createKeywordDetectionMessage(AlertLevel.EMERGENCY, emergencyKeyword);
                 KeywordMatch keywordMatch = KeywordMatch.emergency(emergencyKeyword, message.getContent());
@@ -48,7 +39,7 @@ public class KeywordAnalyzer {
         }
 
         // 2. 경고 키워드 감지
-        for (String warningKeyword : WARNING_KEYWORDS) {
+        for (String warningKeyword : alertConfig.getKeyword().getWarning()) {
             if (content.contains(warningKeyword.toLowerCase())) {
                 String alertMessage = AnalyzerUtils.createKeywordDetectionMessage(AlertLevel.HIGH, warningKeyword);
                 KeywordMatch keywordMatch = KeywordMatch.warning(warningKeyword, message.getContent());
