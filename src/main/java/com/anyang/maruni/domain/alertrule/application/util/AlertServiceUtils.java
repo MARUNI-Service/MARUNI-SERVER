@@ -31,8 +31,8 @@ public class AlertServiceUtils {
      * @return 검증된 회원 엔티티
      */
     public MemberEntity validateAndGetMember(Long memberId) {
-        // TODO: Phase 2에서 구현 예정
-        throw new UnsupportedOperationException("Phase 2에서 구현 예정");
+        return memberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원: " + memberId));
     }
 
     /**
@@ -44,7 +44,7 @@ public class AlertServiceUtils {
      * @return JSON 형태의 상세 정보
      */
     public String createDetectionDetailsJson(AlertResult alertResult) {
-        // TODO: Phase 2에서 구현 예정
-        throw new UnsupportedOperationException("Phase 2에서 구현 예정");
+        return String.format(alertConfig.getNotification().getDetectionDetailsJsonTemplate(),
+                alertResult.getAlertLevel(), alertResult.getAnalysisDetails());
     }
 }

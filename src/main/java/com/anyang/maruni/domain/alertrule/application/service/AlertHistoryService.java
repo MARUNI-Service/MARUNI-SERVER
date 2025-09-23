@@ -11,8 +11,11 @@ import com.anyang.maruni.domain.alertrule.domain.entity.AlertRule;
 import com.anyang.maruni.domain.alertrule.domain.repository.AlertHistoryRepository;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
 import com.anyang.maruni.domain.member.domain.repository.MemberRepository;
+import com.anyang.maruni.domain.alertrule.application.util.AlertServiceUtils;
 
 import lombok.RequiredArgsConstructor;
+
+import java.time.LocalDateTime;
 
 /**
  * 알림 이력 관리 전담 서비스
@@ -27,6 +30,7 @@ public class AlertHistoryService {
 
     private final AlertHistoryRepository alertHistoryRepository;
     private final MemberRepository memberRepository;
+    private final AlertServiceUtils alertServiceUtils;
 
     /**
      * 알림 이력 기록
@@ -38,8 +42,19 @@ public class AlertHistoryService {
      */
     @Transactional
     public AlertHistory recordAlertHistory(AlertRule alertRule, MemberEntity member, AlertResult alertResult) {
-        // TODO: Phase 2에서 구현 예정
-        throw new UnsupportedOperationException("Phase 2에서 구현 예정");
+        // 알림 결과를 JSON 형태로 저장할 상세 정보 구성
+        String detectionDetails = alertServiceUtils.createDetectionDetailsJson(alertResult);
+
+        // AlertHistory 엔티티 생성
+        AlertHistory alertHistory = AlertHistory.createAlert(
+                alertRule,
+                member,
+                alertResult.getMessage(),
+                detectionDetails
+        );
+
+        // 데이터베이스에 저장
+        return alertHistoryRepository.save(alertHistory);
     }
 
     /**
@@ -50,8 +65,9 @@ public class AlertHistoryService {
      * @return 알림 이력 목록
      */
     public List<AlertHistory> getRecentAlertHistory(Long memberId, int days) {
-        // TODO: Phase 2에서 구현 예정
-        throw new UnsupportedOperationException("Phase 2에서 구현 예정");
+        LocalDateTime startDate = LocalDateTime.now().minusDays(days);
+        LocalDateTime endDate = LocalDateTime.now();
+        return alertHistoryRepository.findByMemberIdAndDateRange(memberId, startDate, endDate);
     }
 
     // ========== Private 메서드들 (Phase 2에서 구현) ==========
@@ -60,7 +76,18 @@ public class AlertHistoryService {
      * MVP용 AlertHistory 생성 (AlertRule 없이)
      */
     private AlertHistory createAlertHistoryForMVP(MemberEntity member, AlertResult alertResult) {
-        // TODO: Phase 2에서 기존 AlertRuleService에서 이동 예정
-        throw new UnsupportedOperationException("Phase 2에서 구현 예정");
+        // 알림 결과를 JSON 형태로 저장할 상세 정보 구성
+        String detectionDetails = alertServiceUtils.createDetectionDetailsJson(alertResult);
+
+        // AlertHistory 빌더를 사용하여 직접 생성 (MVP용)
+        return AlertHistory.builder()
+                .alertRule(null) // MVP에서는 AlertRule 없이 생성
+                .member(member)
+                .alertLevel(alertResult.getAlertLevel())
+                .alertMessage(alertResult.getMessage())
+                .detectionDetails(detectionDetails)
+                .alertDate(LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0))
+                .isNotificationSent(false)
+                .build();
     }
 }

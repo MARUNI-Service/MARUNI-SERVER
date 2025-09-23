@@ -10,6 +10,7 @@ import com.anyang.maruni.domain.alertrule.domain.entity.AlertType;
 import com.anyang.maruni.domain.alertrule.domain.repository.AlertRuleRepository;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
 import com.anyang.maruni.domain.member.domain.repository.MemberRepository;
+import com.anyang.maruni.domain.alertrule.domain.exception.AlertRuleNotFoundException;
 
 import lombok.RequiredArgsConstructor;
 
@@ -39,8 +40,8 @@ public class AlertRuleManagementService {
     @Transactional
     public AlertRule createAlertRule(MemberEntity member, AlertType alertType,
                                    AlertLevel alertLevel, AlertCondition condition) {
-        // TODO: Phase 2에서 구현 예정
-        throw new UnsupportedOperationException("Phase 2에서 구현 예정");
+        AlertRule alertRule = createAlertRuleByType(member, alertType, alertLevel, condition);
+        return alertRuleRepository.save(alertRule);
     }
 
     /**
@@ -50,8 +51,8 @@ public class AlertRuleManagementService {
      * @return 알림 규칙 (Member, Guardian 포함)
      */
     public AlertRule getAlertRuleById(Long alertRuleId) {
-        // TODO: Phase 2에서 구현 예정
-        throw new UnsupportedOperationException("Phase 2에서 구현 예정");
+        return alertRuleRepository.findByIdWithMemberAndGuardian(alertRuleId)
+                .orElseThrow(() -> new AlertRuleNotFoundException(alertRuleId));
     }
 
     /**
@@ -66,8 +67,13 @@ public class AlertRuleManagementService {
     @Transactional
     public AlertRule updateAlertRule(Long alertRuleId, String ruleName,
                                    String ruleDescription, AlertLevel alertLevel) {
-        // TODO: Phase 2에서 구현 예정
-        throw new UnsupportedOperationException("Phase 2에서 구현 예정");
+        AlertRule alertRule = alertRuleRepository.findById(alertRuleId)
+                .orElseThrow(() -> new AlertRuleNotFoundException(alertRuleId));
+
+        alertRule.updateRule(ruleName, ruleDescription, alertLevel);
+
+        // JPA 더티 체킹으로 자동 업데이트
+        return alertRule;
     }
 
     /**
@@ -77,8 +83,10 @@ public class AlertRuleManagementService {
      */
     @Transactional
     public void deleteAlertRule(Long alertRuleId) {
-        // TODO: Phase 2에서 구현 예정
-        throw new UnsupportedOperationException("Phase 2에서 구현 예정");
+        AlertRule alertRule = alertRuleRepository.findById(alertRuleId)
+                .orElseThrow(() -> new AlertRuleNotFoundException(alertRuleId));
+
+        alertRuleRepository.delete(alertRule);
     }
 
     /**
@@ -90,8 +98,17 @@ public class AlertRuleManagementService {
      */
     @Transactional
     public AlertRule toggleAlertRule(Long alertRuleId, boolean active) {
-        // TODO: Phase 2에서 구현 예정
-        throw new UnsupportedOperationException("Phase 2에서 구현 예정");
+        AlertRule alertRule = alertRuleRepository.findById(alertRuleId)
+                .orElseThrow(() -> new AlertRuleNotFoundException(alertRuleId));
+
+        if (active) {
+            alertRule.activate();
+        } else {
+            alertRule.deactivate();
+        }
+
+        // JPA 더티 체킹으로 자동 업데이트
+        return alertRule;
     }
 
     // ========== Private 메서드들 (Phase 2에서 구현) ==========
@@ -101,8 +118,16 @@ public class AlertRuleManagementService {
      */
     private AlertRule createAlertRuleByType(MemberEntity member, AlertType alertType,
                                           AlertLevel alertLevel, AlertCondition condition) {
-        // TODO: Phase 2에서 기존 AlertRuleService에서 이동 예정
-        throw new UnsupportedOperationException("Phase 2에서 구현 예정");
+        switch (alertType) {
+            case EMOTION_PATTERN:
+                return createEmotionPatternAlertRule(member, alertLevel, condition);
+            case NO_RESPONSE:
+                return createNoResponseAlertRule(member, alertLevel, condition);
+            case KEYWORD_DETECTION:
+                return createKeywordAlertRule(member, alertLevel, condition);
+            default:
+                throw new IllegalArgumentException("지원하지 않는 알림 유형: " + alertType);
+        }
     }
 
     /**
@@ -110,8 +135,7 @@ public class AlertRuleManagementService {
      */
     private AlertRule createEmotionPatternAlertRule(MemberEntity member,
                                                   AlertLevel alertLevel, AlertCondition condition) {
-        // TODO: Phase 2에서 기존 AlertRuleService에서 이동 예정
-        throw new UnsupportedOperationException("Phase 2에서 구현 예정");
+        return AlertRule.createEmotionPatternRule(member, condition.getConsecutiveDays(), alertLevel);
     }
 
     /**
@@ -119,8 +143,7 @@ public class AlertRuleManagementService {
      */
     private AlertRule createNoResponseAlertRule(MemberEntity member,
                                               AlertLevel alertLevel, AlertCondition condition) {
-        // TODO: Phase 2에서 기존 AlertRuleService에서 이동 예정
-        throw new UnsupportedOperationException("Phase 2에서 구현 예정");
+        return AlertRule.createNoResponseRule(member, condition.getConsecutiveDays(), alertLevel);
     }
 
     /**
@@ -128,7 +151,6 @@ public class AlertRuleManagementService {
      */
     private AlertRule createKeywordAlertRule(MemberEntity member,
                                            AlertLevel alertLevel, AlertCondition condition) {
-        // TODO: Phase 2에서 기존 AlertRuleService에서 이동 예정
-        throw new UnsupportedOperationException("Phase 2에서 구현 예정");
+        return AlertRule.createKeywordRule(member, condition.getKeywords(), alertLevel);
     }
 }

@@ -9,8 +9,13 @@ import com.anyang.maruni.domain.alertrule.domain.entity.AlertLevel;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
 import com.anyang.maruni.domain.member.domain.repository.MemberRepository;
 import com.anyang.maruni.domain.notification.domain.service.NotificationService;
+import com.anyang.maruni.domain.alertrule.application.util.AlertServiceUtils;
+import com.anyang.maruni.domain.alertrule.domain.entity.AlertHistory;
+import com.anyang.maruni.domain.alertrule.domain.repository.AlertHistoryRepository;
 
 import lombok.RequiredArgsConstructor;
+
+import java.time.LocalDateTime;
 
 /**
  * 알림 발송 처리 전담 서비스
@@ -26,6 +31,8 @@ public class AlertNotificationService {
     private final MemberRepository memberRepository;
     private final NotificationService notificationService;
     private final AlertConfigurationProperties alertConfig;
+    private final AlertServiceUtils alertServiceUtils;
+    private final AlertHistoryRepository alertHistoryRepository;
 
     /**
      * 알림 발생 처리
@@ -36,8 +43,36 @@ public class AlertNotificationService {
      */
     @Transactional
     public Long triggerAlert(Long memberId, AlertResult alertResult) {
-        // TODO: Phase 2에서 구현 예정
-        throw new UnsupportedOperationException("Phase 2에서 구현 예정");
+        // 1. 회원 조회
+        MemberEntity member = alertServiceUtils.validateAndGetMember(memberId);
+
+        // 2. AlertHistory 생성 및 저장 (MVP: AlertRule 없이 생성)
+        AlertHistory alertHistory = createAlertHistoryForMVP(member, alertResult);
+        AlertHistory savedHistory = alertHistoryRepository.save(alertHistory);
+
+        // 3. 보호자 알림 발송 트리거
+        sendGuardianNotification(memberId, alertResult.getAlertLevel(), alertResult.getMessage());
+
+        return savedHistory.getId();
+    }
+
+    /**
+     * MVP용 AlertHistory 생성 (AlertRule 없이)
+     */
+    private AlertHistory createAlertHistoryForMVP(MemberEntity member, AlertResult alertResult) {
+        // 알림 결과를 JSON 형태로 저장할 상세 정보 구성
+        String detectionDetails = alertServiceUtils.createDetectionDetailsJson(alertResult);
+
+        // AlertHistory 빌더를 사용하여 직접 생성 (MVP용)
+        return AlertHistory.builder()
+                .alertRule(null) // MVP에서는 AlertRule 없이 생성
+                .member(member)
+                .alertLevel(alertResult.getAlertLevel())
+                .alertMessage(alertResult.getMessage())
+                .detectionDetails(detectionDetails)
+                .alertDate(LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0))
+                .isNotificationSent(false)
+                .build();
     }
 
     /**
@@ -49,8 +84,13 @@ public class AlertNotificationService {
      */
     @Transactional
     public void sendGuardianNotification(Long memberId, AlertLevel alertLevel, String alertMessage) {
-        // TODO: Phase 2에서 구현 예정
-        throw new UnsupportedOperationException("Phase 2에서 구현 예정");
+        MemberEntity member = alertServiceUtils.validateAndGetMember(memberId);
+
+        if (!hasGuardian(member)) {
+            return;
+        }
+
+        performNotificationSending(member, alertLevel, alertMessage, memberId);
     }
 
     // ========== Private 메서드들 (Phase 2에서 구현) ==========
@@ -59,8 +99,7 @@ public class AlertNotificationService {
      * 보호자 존재 여부 확인
      */
     private boolean hasGuardian(MemberEntity member) {
-        // TODO: Phase 2에서 기존 AlertRuleService에서 이동 예정
-        throw new UnsupportedOperationException("Phase 2에서 구현 예정");
+        return member.getGuardian() != null;
     }
 
     /**
@@ -68,16 +107,30 @@ public class AlertNotificationService {
      */
     private void performNotificationSending(MemberEntity member, AlertLevel alertLevel,
                                            String alertMessage, Long memberId) {
-        // TODO: Phase 2에서 기존 AlertRuleService에서 이동 예정
-        throw new UnsupportedOperationException("Phase 2에서 구현 예정");
+        String alertTitle = String.format(alertConfig.getNotification().getTitleTemplate(), alertLevel.name());
+
+        try {
+            boolean notificationSent = notificationService.sendPushNotification(
+                    member.getGuardian().getId(),
+                    alertTitle,
+                    alertMessage
+            );
+
+            handleNotificationResult(memberId, notificationSent, null);
+        } catch (Exception e) {
+            handleNotificationResult(memberId, false, e.getMessage());
+        }
     }
 
     /**
      * 알림 발송 결과 처리 (기존 AlertServiceUtils에서 이동)
      */
     private void handleNotificationResult(Long memberId, boolean success, String errorMessage) {
-        // TODO: Phase 2에서 기존 AlertRuleService에서 이동 예정
-        // 알림 발송 전용 로직이므로 이 서비스의 private 메서드로 배치
-        throw new UnsupportedOperationException("Phase 2에서 구현 예정");
+        if (!success) {
+            System.err.printf(alertConfig.getNotification().getNotificationFailureLog() + "%n", memberId);
+            if (errorMessage != null) {
+                System.err.printf(alertConfig.getNotification().getNotificationErrorLog() + "%n", errorMessage);
+            }
+        }
     }
 }
