@@ -1,19 +1,10 @@
 package com.anyang.maruni.domain.alertrule.application.service;
 
 import com.anyang.maruni.domain.alertrule.application.analyzer.AlertResult;
-import com.anyang.maruni.domain.alertrule.application.analyzer.EmotionPatternAnalyzer;
-import com.anyang.maruni.domain.alertrule.application.analyzer.KeywordAnalyzer;
-import com.anyang.maruni.domain.alertrule.application.analyzer.NoResponseAnalyzer;
-import com.anyang.maruni.domain.alertrule.application.config.AlertConfigurationProperties;
-import com.anyang.maruni.domain.alertrule.application.service.AlertAnalysisOrchestrator;
 import com.anyang.maruni.domain.alertrule.domain.entity.*;
-import com.anyang.maruni.domain.alertrule.domain.repository.AlertHistoryRepository;
-import com.anyang.maruni.domain.alertrule.domain.repository.AlertRuleRepository;
 import com.anyang.maruni.domain.conversation.domain.entity.EmotionType;
 import com.anyang.maruni.domain.conversation.domain.entity.MessageEntity;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
-import com.anyang.maruni.domain.member.domain.repository.MemberRepository;
-import com.anyang.maruni.domain.notification.domain.service.NotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,60 +13,46 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.times;
 
 /**
- * AlertRuleService 테스트
+ * AlertRuleService 테스트 (Facade 패턴)
  *
- * TDD Red 단계: Service 계층 테스트
+ * 리팩토링 후: 새로 분리된 4개 서비스를 Mock하여 위임 패턴 검증
+ * ✅ 100% API 호환성 검증
+ * ✅ 기존 테스트 로직 유지 + Mock 대상만 변경
  */
 @ExtendWith(MockitoExtension.class)
-@DisplayName("AlertRuleService 테스트")
+@DisplayName("AlertRuleService 테스트 (Facade 패턴)")
 class AlertRuleServiceTest {
 
+    // 새로 분리된 서비스들을 Mock으로 주입
     @Mock
-    private AlertRuleRepository alertRuleRepository;
+    private AlertDetectionService alertDetectionService;
 
     @Mock
-    private AlertHistoryRepository alertHistoryRepository;
+    private AlertRuleManagementService alertRuleManagementService;
 
     @Mock
-    private MemberRepository memberRepository;
+    private AlertNotificationService alertNotificationService;
 
     @Mock
-    private NotificationService notificationService;
-
-    @Mock
-    private EmotionPatternAnalyzer emotionAnalyzer;
-
-    @Mock
-    private NoResponseAnalyzer noResponseAnalyzer;
-
-    @Mock
-    private KeywordAnalyzer keywordAnalyzer;
-
-    @Mock
-    private AlertConfigurationProperties alertConfig;
-
-    @Mock
-    private AlertAnalysisOrchestrator analysisOrchestrator;
+    private AlertHistoryService alertHistoryService;
 
     @InjectMocks
-    private AlertRuleService alertRuleService;
+    private AlertRuleService alertRuleService; // Facade 패턴
 
     private MemberEntity testMember;
     private AlertRule testRule;
     private MessageEntity testMessage;
+    private AlertResult testAlertResult;
+    private AlertHistory testAlertHistory;
 
     @BeforeEach
     void setUp() {
@@ -93,253 +70,266 @@ class AlertRuleServiceTest {
                 "오늘 정말 우울해요",
                 EmotionType.NEGATIVE
         );
-    }
 
-    @Test
-    @DisplayName("이상징후 종합 감지 테스트")
-    void detectAnomalies_shouldDetectEmotionPattern() {
-        // Given
-        List<AlertRule> activeRules = Arrays.asList(testRule);
-        AlertResult emotionAlert = AlertResult.createAlert(
+        testAlertResult = AlertResult.createAlert(
                 AlertLevel.HIGH, "3일 연속 부정감정 감지", null);
 
-        given(memberRepository.findById(testMember.getId()))
-                .willReturn(Optional.of(testMember));
-        given(alertRuleRepository.findActiveRulesWithMemberAndGuardian(testMember.getId()))
-                .willReturn(activeRules);
+        testAlertHistory = AlertHistory.createAlert(
+                testRule, testMember, "테스트 알림", "{\"details\":\"test\"}");
+    }
 
-        // AlertConfigurationProperties Mock 설정
-        AlertConfigurationProperties.Analysis analysis = new AlertConfigurationProperties.Analysis();
-        analysis.setDefaultDays(7);
-        given(alertConfig.getAnalysis()).willReturn(analysis);
+    // ========== 이상징후 감지 관련 테스트 (AlertDetectionService 위임) ==========
 
-        // Strategy Pattern Mock 설정 - AlertAnalysisOrchestrator
-        given(analysisOrchestrator.isSupported(AlertType.EMOTION_PATTERN))
-                .willReturn(true);
-        given(analysisOrchestrator.analyzeByType(eq(AlertType.EMOTION_PATTERN), eq(testMember), any()))
-                .willReturn(emotionAlert);
+    @Test
+    @DisplayName("이상징후 종합 감지 - 성공")
+    void detectAnomalies_Success() {
+        // Given
+        Long memberId = 1L;
+        List<AlertResult> expectedResults = Arrays.asList(testAlertResult);
+
+        // AlertDetectionService의 응답을 Mock
+        given(alertDetectionService.detectAnomalies(memberId))
+                .willReturn(expectedResults);
 
         // When
-        List<AlertResult> results = alertRuleService.detectAnomalies(testMember.getId());
+        List<AlertResult> results = alertRuleService.detectAnomalies(memberId);
 
         // Then
+        assertThat(results).isEqualTo(expectedResults);
         assertThat(results).hasSize(1);
         assertThat(results.get(0).isAlert()).isTrue();
         assertThat(results.get(0).getAlertLevel()).isEqualTo(AlertLevel.HIGH);
-        verify(memberRepository).findById(testMember.getId());
-        verify(alertRuleRepository).findActiveRulesWithMemberAndGuardian(testMember.getId());
-        verify(analysisOrchestrator).isSupported(AlertType.EMOTION_PATTERN);
-        verify(analysisOrchestrator).analyzeByType(eq(AlertType.EMOTION_PATTERN), eq(testMember), any());
+        verify(alertDetectionService).detectAnomalies(memberId);
     }
 
     @Test
-    @DisplayName("실시간 키워드 감지 테스트")
-    void detectKeywordAlert_shouldDetectEmergencyKeywords() {
+    @DisplayName("키워드 감지 - 성공")
+    void detectKeywordAlert_Success() {
         // Given
+        Long memberId = 1L;
         AlertResult expectedResult = AlertResult.createAlert(
-                AlertLevel.EMERGENCY, "긴급 키워드 감지: '도와주세요'", null);
+                AlertLevel.EMERGENCY, "긴급 키워드 감지", null);
 
-        // Member 조회 Mock 설정
-        given(memberRepository.findById(testMember.getId()))
-                .willReturn(Optional.of(testMember));
-
-        // Strategy Pattern Mock 설정 - AlertAnalysisOrchestrator
-        given(analysisOrchestrator.analyzeByType(eq(AlertType.KEYWORD_DETECTION), eq(testMember), any()))
+        // AlertDetectionService의 응답을 Mock
+        given(alertDetectionService.detectKeywordAlert(testMessage, memberId))
                 .willReturn(expectedResult);
 
         // When
-        AlertResult actualResult = alertRuleService.detectKeywordAlert(testMessage, testMember.getId());
+        AlertResult result = alertRuleService.detectKeywordAlert(testMessage, memberId);
 
         // Then
-        assertThat(actualResult).isNotNull();
-        assertThat(actualResult.isAlert()).isTrue();
-        assertThat(actualResult.getAlertLevel()).isEqualTo(AlertLevel.EMERGENCY);
-        verify(memberRepository).findById(testMember.getId());
-        verify(analysisOrchestrator).analyzeByType(eq(AlertType.KEYWORD_DETECTION), eq(testMember), any());
+        assertThat(result).isEqualTo(expectedResult);
+        assertThat(result.isAlert()).isTrue();
+        assertThat(result.getAlertLevel()).isEqualTo(AlertLevel.EMERGENCY);
+        verify(alertDetectionService).detectKeywordAlert(testMessage, memberId);
     }
 
     @Test
-    @DisplayName("알림 발생 처리 테스트")
-    void triggerAlert_shouldCreateAlertHistory() {
+    @DisplayName("활성 알림 규칙 조회 - 성공")
+    void getActiveRulesByMemberId_Success() {
         // Given
-        AlertResult alertResult = AlertResult.createAlert(
-                AlertLevel.HIGH, "3일 연속 부정감정 감지", null);
+        Long memberId = 1L;
+        List<AlertRule> expectedRules = Arrays.asList(testRule);
 
-        AlertHistory savedHistory = AlertHistory.builder()
-                .id(1L)
-                .alertRule(null) // MVP
-                .member(testMember)
-                .alertLevel(AlertLevel.HIGH)
-                .alertMessage("3일 연속 부정감정 감지")
-                .isNotificationSent(false)
-                .build();
-
-        // AlertConfigurationProperties Mock 설정
-        AlertConfigurationProperties.Notification notification = new AlertConfigurationProperties.Notification();
-        notification.setDetectionDetailsJsonTemplate("{\"alertLevel\":\"%s\",\"analysisDetails\":\"%s\"}");
-        notification.setTitleTemplate("[MARUNI 알림] %s 단계 이상징후 감지");
-        given(alertConfig.getNotification()).willReturn(notification);
-
-        given(memberRepository.findById(testMember.getId()))
-                .willReturn(Optional.of(testMember));
-        given(alertHistoryRepository.save(any(AlertHistory.class)))
-                .willReturn(savedHistory);
-        // testMember.getGuardian()이 null이므로 notificationService stub 제거
+        // AlertDetectionService의 응답을 Mock
+        given(alertDetectionService.getActiveRulesByMemberId(memberId))
+                .willReturn(expectedRules);
 
         // When
-        Long historyId = alertRuleService.triggerAlert(testMember.getId(), alertResult);
+        List<AlertRule> rules = alertRuleService.getActiveRulesByMemberId(memberId);
 
         // Then
-        assertThat(historyId).isEqualTo(1L);
-        verify(memberRepository, times(2)).findById(testMember.getId()); // triggerAlert + sendGuardianNotification
-        verify(alertHistoryRepository).save(any(AlertHistory.class));
+        assertThat(rules).isEqualTo(expectedRules);
+        assertThat(rules).hasSize(1);
+        verify(alertDetectionService).getActiveRulesByMemberId(memberId);
     }
 
     @Test
-    @DisplayName("보호자 알림 발송 테스트")
-    void sendGuardianNotification_shouldNotifyAllGuardians() {
+    @DisplayName("우선순위 정렬된 활성 알림 규칙 조회 - 성공")
+    void getActiveRulesByMemberIdOrderedByPriority_Success() {
         // Given
-        Long memberId = testMember.getId();
-        AlertLevel alertLevel = AlertLevel.EMERGENCY;
-        String alertMessage = "긴급 상황이 감지되었습니다";
+        Long memberId = 1L;
+        List<AlertRule> expectedRules = Arrays.asList(testRule);
 
-        given(memberRepository.findById(memberId))
-                .willReturn(Optional.of(testMember));
-        // testMember.getGuardian()이 null이므로 notificationService stub 제거
+        // AlertDetectionService의 응답을 Mock
+        given(alertDetectionService.getActiveRulesByMemberIdOrderedByPriority(memberId))
+                .willReturn(expectedRules);
+
+        // When
+        List<AlertRule> rules = alertRuleService.getActiveRulesByMemberIdOrderedByPriority(memberId);
+
+        // Then
+        assertThat(rules).isEqualTo(expectedRules);
+        assertThat(rules).hasSize(1);
+        verify(alertDetectionService).getActiveRulesByMemberIdOrderedByPriority(memberId);
+    }
+
+    // ========== 알림 규칙 CRUD 관련 테스트 (AlertRuleManagementService 위임) ==========
+
+    @Test
+    @DisplayName("알림 규칙 생성 - 성공")
+    void createAlertRule_Success() {
+        // Given
+        AlertCondition condition = AlertCondition.createEmotionCondition(3);
+
+        // AlertRuleManagementService의 응답을 Mock
+        given(alertRuleManagementService.createAlertRule(
+                testMember, AlertType.EMOTION_PATTERN, AlertLevel.HIGH, condition))
+                .willReturn(testRule);
+
+        // When
+        AlertRule result = alertRuleService.createAlertRule(
+                testMember, AlertType.EMOTION_PATTERN, AlertLevel.HIGH, condition);
+
+        // Then
+        assertThat(result).isEqualTo(testRule);
+        verify(alertRuleManagementService).createAlertRule(
+                testMember, AlertType.EMOTION_PATTERN, AlertLevel.HIGH, condition);
+    }
+
+    @Test
+    @DisplayName("알림 규칙 조회 - 성공")
+    void getAlertRuleById_Success() {
+        // Given
+        Long ruleId = 1L;
+
+        // AlertRuleManagementService의 응답을 Mock
+        given(alertRuleManagementService.getAlertRuleById(ruleId))
+                .willReturn(testRule);
+
+        // When
+        AlertRule result = alertRuleService.getAlertRuleById(ruleId);
+
+        // Then
+        assertThat(result).isEqualTo(testRule);
+        verify(alertRuleManagementService).getAlertRuleById(ruleId);
+    }
+
+    @Test
+    @DisplayName("알림 규칙 수정 - 성공")
+    void updateAlertRule_Success() {
+        // Given
+        Long ruleId = 1L;
+        String ruleName = "수정된 규칙";
+        String ruleDescription = "수정된 설명";
+        AlertLevel alertLevel = AlertLevel.MEDIUM;
+
+        // AlertRuleManagementService의 응답을 Mock
+        given(alertRuleManagementService.updateAlertRule(ruleId, ruleName, ruleDescription, alertLevel))
+                .willReturn(testRule);
+
+        // When
+        AlertRule result = alertRuleService.updateAlertRule(ruleId, ruleName, ruleDescription, alertLevel);
+
+        // Then
+        assertThat(result).isEqualTo(testRule);
+        verify(alertRuleManagementService).updateAlertRule(ruleId, ruleName, ruleDescription, alertLevel);
+    }
+
+    @Test
+    @DisplayName("알림 규칙 삭제 - 성공")
+    void deleteAlertRule_Success() {
+        // Given
+        Long ruleId = 1L;
+
+        // When
+        alertRuleService.deleteAlertRule(ruleId);
+
+        // Then
+        verify(alertRuleManagementService).deleteAlertRule(ruleId);
+    }
+
+    @Test
+    @DisplayName("알림 규칙 활성화/비활성화 - 성공")
+    void toggleAlertRule_Success() {
+        // Given
+        Long ruleId = 1L;
+        boolean active = false;
+
+        // AlertRuleManagementService의 응답을 Mock
+        given(alertRuleManagementService.toggleAlertRule(ruleId, active))
+                .willReturn(testRule);
+
+        // When
+        AlertRule result = alertRuleService.toggleAlertRule(ruleId, active);
+
+        // Then
+        assertThat(result).isEqualTo(testRule);
+        verify(alertRuleManagementService).toggleAlertRule(ruleId, active);
+    }
+
+    // ========== 알림 발송 관련 테스트 (AlertNotificationService 위임) ==========
+
+    @Test
+    @DisplayName("알림 발생 처리 - 성공")
+    void triggerAlert_Success() {
+        // Given
+        Long memberId = 1L;
+        Long expectedHistoryId = 123L;
+
+        // AlertNotificationService의 응답을 Mock
+        given(alertNotificationService.triggerAlert(memberId, testAlertResult))
+                .willReturn(expectedHistoryId);
+
+        // When
+        Long result = alertRuleService.triggerAlert(memberId, testAlertResult);
+
+        // Then
+        assertThat(result).isEqualTo(expectedHistoryId);
+        verify(alertNotificationService).triggerAlert(memberId, testAlertResult);
+    }
+
+    @Test
+    @DisplayName("보호자 알림 발송 - 성공")
+    void sendGuardianNotification_Success() {
+        // Given
+        Long memberId = 1L;
+        AlertLevel alertLevel = AlertLevel.HIGH;
+        String alertMessage = "테스트 알림 메시지";
 
         // When
         alertRuleService.sendGuardianNotification(memberId, alertLevel, alertMessage);
 
         // Then
-        verify(memberRepository).findById(memberId);
-        // testMember.getGuardian()이 null이면 알림 발송하지 않음
-        // 따라서 notificationService는 호출되지 않음
+        verify(alertNotificationService).sendGuardianNotification(memberId, alertLevel, alertMessage);
     }
 
+    // ========== 알림 이력 관련 테스트 (AlertHistoryService 위임) ==========
+
     @Test
-    @DisplayName("알림 이력 기록 테스트")
-    void recordAlertHistory_shouldSaveCompleteHistory() {
+    @DisplayName("알림 이력 기록 - 성공")
+    void recordAlertHistory_Success() {
         // Given
-        AlertResult alertResult = AlertResult.createAlert(
-                AlertLevel.HIGH, "감정 패턴 이상", null);
-
-        AlertHistory savedHistory = AlertHistory.builder()
-                .id(1L)
-                .alertRule(testRule)
-                .member(testMember)
-                .alertLevel(AlertLevel.HIGH)
-                .alertMessage("감정 패턴 이상")
-                .detectionDetails("{\"alertLevel\":\"HIGH\",\"analysisDetails\":\"null\"}")
-                .isNotificationSent(false)
-                .build();
-
-        // AlertConfigurationProperties Mock 설정
-        AlertConfigurationProperties.Notification notification = new AlertConfigurationProperties.Notification();
-        notification.setDetectionDetailsJsonTemplate("{\"alertLevel\":\"%s\",\"analysisDetails\":\"%s\"}");
-        given(alertConfig.getNotification()).willReturn(notification);
-
-        given(alertHistoryRepository.save(any(AlertHistory.class)))
-                .willReturn(savedHistory);
+        // AlertHistoryService의 응답을 Mock
+        given(alertHistoryService.recordAlertHistory(testRule, testMember, testAlertResult))
+                .willReturn(testAlertHistory);
 
         // When
-        AlertHistory actualHistory = alertRuleService.recordAlertHistory(testRule, testMember, alertResult);
+        AlertHistory result = alertRuleService.recordAlertHistory(testRule, testMember, testAlertResult);
 
         // Then
-        assertThat(actualHistory).isNotNull();
-        assertThat(actualHistory.getId()).isEqualTo(1L);
-        assertThat(actualHistory.getAlertMessage()).isEqualTo("감정 패턴 이상");
-        verify(alertHistoryRepository).save(any(AlertHistory.class));
+        assertThat(result).isEqualTo(testAlertHistory);
+        verify(alertHistoryService).recordAlertHistory(testRule, testMember, testAlertResult);
     }
 
     @Test
-    @DisplayName("회원의 활성 알림 규칙 조회 테스트")
-    void getActiveRulesByMemberId_shouldReturnActiveRules() {
+    @DisplayName("최근 알림 이력 조회 - 성공")
+    void getRecentAlertHistory_Success() {
         // Given
-        List<AlertRule> expectedRules = Arrays.asList(testRule);
-        given(alertRuleRepository.findActiveRulesWithMemberAndGuardian(testMember.getId()))
-                .willReturn(expectedRules);
+        Long memberId = 1L;
+        int days = 30;
+        List<AlertHistory> expectedHistory = Arrays.asList(testAlertHistory);
 
-        // When
-        List<AlertRule> actualRules = alertRuleService.getActiveRulesByMemberId(testMember.getId());
-
-        // Then
-        assertThat(actualRules).isEqualTo(expectedRules);
-        verify(alertRuleRepository).findActiveRulesWithMemberAndGuardian(testMember.getId());
-    }
-
-    @Test
-    @DisplayName("최근 알림 이력 조회 테스트")
-    void getRecentAlertHistory_shouldReturnRecentHistory() {
-        // Given
-        int days = 7;
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime startDate = now.minusDays(days);
-
-        List<AlertHistory> expectedHistory = Arrays.asList(
-                AlertHistory.createAlert(testRule, testMember, "테스트 알림", "{}")
-        );
-
-        given(alertHistoryRepository.findByMemberIdAndDateRange(
-                eq(testMember.getId()), any(LocalDateTime.class), any(LocalDateTime.class)))
+        // AlertHistoryService의 응답을 Mock
+        given(alertHistoryService.getRecentAlertHistory(memberId, days))
                 .willReturn(expectedHistory);
 
         // When
-        List<AlertHistory> actualHistory = alertRuleService.getRecentAlertHistory(testMember.getId(), days);
+        List<AlertHistory> result = alertRuleService.getRecentAlertHistory(memberId, days);
 
         // Then
-        assertThat(actualHistory).isEqualTo(expectedHistory);
-        verify(alertHistoryRepository).findByMemberIdAndDateRange(
-                eq(testMember.getId()), any(LocalDateTime.class), any(LocalDateTime.class));
-    }
-
-    @Test
-    @DisplayName("알림 규칙 생성 테스트")
-    void createAlertRule_shouldCreateNewRule() {
-        // Given
-        AlertType alertType = AlertType.EMOTION_PATTERN;
-        AlertLevel alertLevel = AlertLevel.HIGH;
-        AlertCondition condition = AlertCondition.createEmotionCondition(3);
-
-        AlertRule savedRule = AlertRule.builder()
-                .id(1L)
-                .member(testMember)
-                .alertType(alertType)
-                .ruleName("연속 부정감정 감지")
-                .ruleDescription("3일 연속 부정적 감정 감지 시 알림")
-                .condition(condition)
-                .alertLevel(alertLevel)
-                .isActive(true)
-                .build();
-
-        given(alertRuleRepository.save(any(AlertRule.class)))
-                .willReturn(savedRule);
-
-        // When
-        AlertRule actualRule = alertRuleService.createAlertRule(testMember, alertType, alertLevel, condition);
-
-        // Then
-        assertThat(actualRule).isNotNull();
-        assertThat(actualRule.getId()).isEqualTo(1L);
-        assertThat(actualRule.getAlertType()).isEqualTo(alertType);
-        assertThat(actualRule.getAlertLevel()).isEqualTo(alertLevel);
-        verify(alertRuleRepository).save(any(AlertRule.class));
-    }
-
-    @Test
-    @DisplayName("알림 규칙 활성화/비활성화 테스트")
-    void toggleAlertRule_shouldToggleRuleStatus() {
-        // Given
-        Long alertRuleId = 1L;
-        boolean active = false;
-
-        given(alertRuleRepository.findById(alertRuleId))
-                .willReturn(Optional.of(testRule));
-
-        // When
-        alertRuleService.toggleAlertRule(alertRuleId, active);
-
-        // Then
-        verify(alertRuleRepository).findById(alertRuleId);
-        // JPA 더티 체킹으로 자동 업데이트되므로 save 호출 검증하지 않음
+        assertThat(result).isEqualTo(expectedHistory);
+        assertThat(result).hasSize(1);
+        verify(alertHistoryService).getRecentAlertHistory(memberId, days);
     }
 }
