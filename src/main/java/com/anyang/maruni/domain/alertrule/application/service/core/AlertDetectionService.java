@@ -94,7 +94,7 @@ public class AlertDetectionService {
      * @return 우선순위 정렬된 활성 알림 규칙 목록
      */
     public List<AlertRule> getActiveRulesByMemberIdOrderedByPriority(Long memberId) {
-        List<AlertRule> rules = alertRuleRepository.findActiveRulesWithMemberAndGuardian(memberId);
+        List<AlertRule> rules = getActiveRulesByMemberId(memberId); // 중복 호출 제거
 
         return rules.stream()
                 .sorted(Comparator.comparing(AlertRule::getAlertLevel, AlertLevel.descendingComparator())
@@ -152,6 +152,8 @@ public class AlertDetectionService {
 
     /**
      * 알림 타입에 맞는 분석 컨텍스트 생성
+     *
+     * 주의: KEYWORD_DETECTION은 이미 139행에서 필터링되므로 여기에 도달하지 않음
      */
     private AnalysisContext createAnalysisContext(AlertType alertType, int defaultDays) {
         switch (alertType) {
@@ -159,9 +161,6 @@ public class AlertDetectionService {
                 return AnalysisContext.forEmotionPattern(defaultDays);
             case NO_RESPONSE:
                 return AnalysisContext.forNoResponse(defaultDays);
-            case KEYWORD_DETECTION:
-                // 키워드 분석은 실시간 메시지가 필요하므로 여기서는 빈 컨텍스트
-                return AnalysisContext.builder().build();
             default:
                 return AnalysisContext.builder().analysisDays(defaultDays).build();
         }

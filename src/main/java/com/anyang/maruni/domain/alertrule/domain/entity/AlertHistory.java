@@ -123,15 +123,8 @@ public class AlertHistory extends BaseTimeEntity {
     public static AlertHistory createAlert(
             AlertRule alertRule, MemberEntity member,
             String alertMessage, String detectionDetails) {
-        return AlertHistory.builder()
-                .alertRule(alertRule)
-                .member(member)
-                .alertLevel(alertRule.getAlertLevel())
-                .alertMessage(alertMessage)
-                .detectionDetails(detectionDetails)
-                .alertDate(LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0)) // 일자 기준으로 중복 방지
-                .isNotificationSent(false)
-                .build();
+        LocalDateTime alertDate = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0); // 일자 기준으로 중복 방지
+        return createAlertWithLevelAndDate(alertRule, member, alertRule.getAlertLevel(), alertMessage, detectionDetails, alertDate);
     }
 
     /**
@@ -145,15 +138,7 @@ public class AlertHistory extends BaseTimeEntity {
     public static AlertHistory createEmergencyAlert(
             AlertRule alertRule, MemberEntity member,
             String alertMessage, String detectionDetails) {
-        return AlertHistory.builder()
-                .alertRule(alertRule)
-                .member(member)
-                .alertLevel(AlertLevel.EMERGENCY)
-                .alertMessage(alertMessage)
-                .detectionDetails(detectionDetails)
-                .alertDate(LocalDateTime.now()) // 긴급상황은 실시간으로 기록
-                .isNotificationSent(false)
-                .build();
+        return createAlertWithLevelAndDate(alertRule, member, AlertLevel.EMERGENCY, alertMessage, detectionDetails, LocalDateTime.now()); // 긴급상황은 실시간으로 기록
     }
 
     /**
@@ -169,10 +154,26 @@ public class AlertHistory extends BaseTimeEntity {
             AlertRule alertRule, MemberEntity member,
             String alertMessage, String detectionDetails,
             LocalDateTime alertDate) {
+        return createAlertWithLevelAndDate(alertRule, member, alertRule.getAlertLevel(), alertMessage, detectionDetails, alertDate);
+    }
+
+    /**
+     * 공통 알림 이력 생성 헬퍼 메서드 (중복 제거용)
+     * @param alertRule 알림 규칙
+     * @param member 대상 회원
+     * @param alertLevel 알림 레벨
+     * @param alertMessage 알림 메시지
+     * @param detectionDetails 감지 상세 정보
+     * @param alertDate 알림 날짜
+     * @return AlertHistory
+     */
+    private static AlertHistory createAlertWithLevelAndDate(
+            AlertRule alertRule, MemberEntity member, AlertLevel alertLevel,
+            String alertMessage, String detectionDetails, LocalDateTime alertDate) {
         return AlertHistory.builder()
                 .alertRule(alertRule)
                 .member(member)
-                .alertLevel(alertRule.getAlertLevel())
+                .alertLevel(alertLevel)
                 .alertMessage(alertMessage)
                 .detectionDetails(detectionDetails)
                 .alertDate(alertDate)
