@@ -1,11 +1,11 @@
-package com.anyang.maruni.domain.alertrule.application.service;
+package com.anyang.maruni.domain.alertrule.application.service.core;
 
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.anyang.maruni.domain.alertrule.application.analyzer.AlertResult;
+import com.anyang.maruni.domain.alertrule.application.analyzer.vo.AlertResult;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertCondition;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertHistory;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertLevel;

@@ -1,9 +1,11 @@
 package com.anyang.maruni.domain.alertrule.application.service;
 
-import com.anyang.maruni.domain.alertrule.application.analyzer.AlertResult;
-import com.anyang.maruni.domain.alertrule.application.analyzer.AnalysisContext;
+import com.anyang.maruni.domain.alertrule.application.analyzer.vo.AlertResult;
+import com.anyang.maruni.domain.alertrule.application.analyzer.vo.AnalysisContext;
 import com.anyang.maruni.domain.alertrule.application.config.AlertConfigurationProperties;
-import com.anyang.maruni.domain.alertrule.application.util.AlertServiceUtils;
+import com.anyang.maruni.domain.alertrule.application.service.core.AlertDetectionService;
+import com.anyang.maruni.domain.alertrule.application.service.orchestrator.AlertAnalysisOrchestrator;
+import com.anyang.maruni.domain.alertrule.application.service.util.AlertServiceUtils;
 import com.anyang.maruni.domain.alertrule.domain.entity.*;
 import com.anyang.maruni.domain.alertrule.domain.repository.AlertRuleRepository;
 import com.anyang.maruni.domain.conversation.domain.entity.EmotionType;
@@ -22,7 +24,6 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;

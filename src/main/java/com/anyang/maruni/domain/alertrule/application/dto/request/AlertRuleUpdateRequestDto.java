@@ -1,4 +1,4 @@
-package com.anyang.maruni.domain.alertrule.application.dto;
+package com.anyang.maruni.domain.alertrule.application.dto.request;
 
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertLevel;
 import jakarta.validation.Valid;

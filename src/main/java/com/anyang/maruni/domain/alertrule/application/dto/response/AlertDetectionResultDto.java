@@ -1,6 +1,6 @@
-package com.anyang.maruni.domain.alertrule.application.dto;
+package com.anyang.maruni.domain.alertrule.application.dto.response;
 
-import com.anyang.maruni.domain.alertrule.application.analyzer.AlertResult;
+import com.anyang.maruni.domain.alertrule.application.analyzer.vo.AlertResult;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

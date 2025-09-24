@@ -1,6 +1,11 @@
 package com.anyang.maruni.domain.alertrule.application.service;
 
-import com.anyang.maruni.domain.alertrule.application.analyzer.AlertResult;
+import com.anyang.maruni.domain.alertrule.application.analyzer.vo.AlertResult;
+import com.anyang.maruni.domain.alertrule.application.service.core.AlertDetectionService;
+import com.anyang.maruni.domain.alertrule.application.service.core.AlertHistoryService;
+import com.anyang.maruni.domain.alertrule.application.service.core.AlertNotificationService;
+import com.anyang.maruni.domain.alertrule.application.service.core.AlertRuleManagementService;
+import com.anyang.maruni.domain.alertrule.application.service.core.AlertRuleService;
 import com.anyang.maruni.domain.alertrule.domain.entity.*;
 import com.anyang.maruni.domain.conversation.domain.entity.EmotionType;
 import com.anyang.maruni.domain.conversation.domain.entity.MessageEntity;
@@ -17,7 +22,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 

@@ -1,8 +1,8 @@
-package com.anyang.maruni.domain.alertrule.application.util;
+package com.anyang.maruni.domain.alertrule.application.service.util;
 
 import org.springframework.stereotype.Component;
 
-import com.anyang.maruni.domain.alertrule.application.analyzer.AlertResult;
+import com.anyang.maruni.domain.alertrule.application.analyzer.vo.AlertResult;
 import com.anyang.maruni.domain.alertrule.application.config.AlertConfigurationProperties;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
 import com.anyang.maruni.domain.member.domain.repository.MemberRepository;

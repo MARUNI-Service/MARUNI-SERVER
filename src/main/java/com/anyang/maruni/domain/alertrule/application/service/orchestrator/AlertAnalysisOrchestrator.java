@@ -1,4 +1,4 @@
-package com.anyang.maruni.domain.alertrule.application.service;
+package com.anyang.maruni.domain.alertrule.application.service.orchestrator;
 
 import java.util.List;
 import java.util.Map;
@@ -7,9 +7,9 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.anyang.maruni.domain.alertrule.application.analyzer.AlertResult;
-import com.anyang.maruni.domain.alertrule.application.analyzer.AnalysisContext;
-import com.anyang.maruni.domain.alertrule.application.analyzer.AnomalyAnalyzer;
+import com.anyang.maruni.domain.alertrule.application.analyzer.vo.AlertResult;
+import com.anyang.maruni.domain.alertrule.application.analyzer.vo.AnalysisContext;
+import com.anyang.maruni.domain.alertrule.application.analyzer.strategy.AnomalyAnalyzer;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertType;
 import com.anyang.maruni.domain.alertrule.domain.exception.UnsupportedAlertTypeException;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;

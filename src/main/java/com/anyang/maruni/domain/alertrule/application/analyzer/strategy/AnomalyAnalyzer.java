@@ -1,5 +1,7 @@
-package com.anyang.maruni.domain.alertrule.application.analyzer;
+package com.anyang.maruni.domain.alertrule.application.analyzer.strategy;
 
+import com.anyang.maruni.domain.alertrule.application.analyzer.vo.AlertResult;
+import com.anyang.maruni.domain.alertrule.application.analyzer.vo.AnalysisContext;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertType;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
 

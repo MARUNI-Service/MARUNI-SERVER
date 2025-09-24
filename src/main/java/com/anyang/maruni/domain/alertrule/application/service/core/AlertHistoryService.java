@@ -1,17 +1,17 @@
-package com.anyang.maruni.domain.alertrule.application.service;
+package com.anyang.maruni.domain.alertrule.application.service.core;
 
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.anyang.maruni.domain.alertrule.application.analyzer.AlertResult;
+import com.anyang.maruni.domain.alertrule.application.analyzer.vo.AlertResult;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertHistory;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertRule;
 import com.anyang.maruni.domain.alertrule.domain.repository.AlertHistoryRepository;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
 import com.anyang.maruni.domain.member.domain.repository.MemberRepository;
-import com.anyang.maruni.domain.alertrule.application.util.AlertServiceUtils;
+import com.anyang.maruni.domain.alertrule.application.service.util.AlertServiceUtils;
 
 import lombok.RequiredArgsConstructor;
 

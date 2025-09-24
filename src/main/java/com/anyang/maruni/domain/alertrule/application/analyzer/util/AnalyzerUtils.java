@@ -1,4 +1,4 @@
-package com.anyang.maruni.domain.alertrule.application.analyzer;
+package com.anyang.maruni.domain.alertrule.application.analyzer.util;
 
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertLevel;
 

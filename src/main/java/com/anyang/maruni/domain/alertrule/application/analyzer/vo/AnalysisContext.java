@@ -1,4 +1,4 @@
-package com.anyang.maruni.domain.alertrule.application.analyzer;
+package com.anyang.maruni.domain.alertrule.application.analyzer.vo;
 
 import com.anyang.maruni.domain.conversation.domain.entity.MessageEntity;
 import lombok.AllArgsConstructor;

@@ -1,4 +1,4 @@
-package com.anyang.maruni.domain.alertrule.application.service;
+package com.anyang.maruni.domain.alertrule.application.service.core;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

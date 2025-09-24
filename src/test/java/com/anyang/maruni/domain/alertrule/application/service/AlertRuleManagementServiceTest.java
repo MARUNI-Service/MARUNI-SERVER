@@ -1,5 +1,6 @@
 package com.anyang.maruni.domain.alertrule.application.service;
 
+import com.anyang.maruni.domain.alertrule.application.service.core.AlertRuleManagementService;
 import com.anyang.maruni.domain.alertrule.domain.entity.*;
 import com.anyang.maruni.domain.alertrule.domain.repository.AlertRuleRepository;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;

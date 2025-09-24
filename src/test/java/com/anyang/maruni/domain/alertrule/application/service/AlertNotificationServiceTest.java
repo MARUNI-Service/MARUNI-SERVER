@@ -1,8 +1,9 @@
 package com.anyang.maruni.domain.alertrule.application.service;
 
-import com.anyang.maruni.domain.alertrule.application.analyzer.AlertResult;
+import com.anyang.maruni.domain.alertrule.application.analyzer.vo.AlertResult;
 import com.anyang.maruni.domain.alertrule.application.config.AlertConfigurationProperties;
-import com.anyang.maruni.domain.alertrule.application.util.AlertServiceUtils;
+import com.anyang.maruni.domain.alertrule.application.service.core.AlertNotificationService;
+import com.anyang.maruni.domain.alertrule.application.service.util.AlertServiceUtils;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertHistory;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertLevel;
 import com.anyang.maruni.domain.alertrule.domain.repository.AlertHistoryRepository;
