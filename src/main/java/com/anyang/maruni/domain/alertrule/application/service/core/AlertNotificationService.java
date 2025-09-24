@@ -1,21 +1,20 @@
 package com.anyang.maruni.domain.alertrule.application.service.core;
 
+import java.time.LocalDateTime;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.anyang.maruni.domain.alertrule.application.analyzer.vo.AlertResult;
 import com.anyang.maruni.domain.alertrule.application.config.AlertConfigurationProperties;
-import com.anyang.maruni.domain.alertrule.domain.entity.AlertLevel;
-import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
-import com.anyang.maruni.domain.member.domain.repository.MemberRepository;
-import com.anyang.maruni.domain.notification.domain.service.NotificationService;
 import com.anyang.maruni.domain.alertrule.application.service.util.AlertServiceUtils;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertHistory;
+import com.anyang.maruni.domain.alertrule.domain.entity.AlertLevel;
 import com.anyang.maruni.domain.alertrule.domain.repository.AlertHistoryRepository;
+import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
+import com.anyang.maruni.domain.notification.domain.service.NotificationService;
 
 import lombok.RequiredArgsConstructor;
-
-import java.time.LocalDateTime;
 
 /**
  * 알림 발송 처리 전담 서비스
@@ -28,7 +27,6 @@ import java.time.LocalDateTime;
 @Transactional(readOnly = true)
 public class AlertNotificationService {
 
-    private final MemberRepository memberRepository;
     private final NotificationService notificationService;
     private final AlertConfigurationProperties alertConfig;
     private final AlertServiceUtils alertServiceUtils;

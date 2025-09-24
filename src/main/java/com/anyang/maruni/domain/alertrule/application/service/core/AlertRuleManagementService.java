@@ -7,10 +7,9 @@ import com.anyang.maruni.domain.alertrule.domain.entity.AlertCondition;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertLevel;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertRule;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertType;
+import com.anyang.maruni.domain.alertrule.domain.exception.AlertRuleNotFoundException;
 import com.anyang.maruni.domain.alertrule.domain.repository.AlertRuleRepository;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
-import com.anyang.maruni.domain.member.domain.repository.MemberRepository;
-import com.anyang.maruni.domain.alertrule.domain.exception.AlertRuleNotFoundException;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,7 +25,6 @@ import lombok.RequiredArgsConstructor;
 public class AlertRuleManagementService {
 
     private final AlertRuleRepository alertRuleRepository;
-    private final MemberRepository memberRepository;
 
     /**
      * 알림 규칙 생성

@@ -15,12 +15,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.anyang.maruni.domain.alertrule.application.dto.request.AlertConditionDto;
+import com.anyang.maruni.domain.alertrule.application.dto.request.AlertRuleCreateRequestDto;
+import com.anyang.maruni.domain.alertrule.application.dto.request.AlertRuleUpdateRequestDto;
 import com.anyang.maruni.domain.alertrule.application.dto.response.AlertDetectionResultDto;
 import com.anyang.maruni.domain.alertrule.application.dto.response.AlertHistoryResponseDto;
-import com.anyang.maruni.domain.alertrule.application.dto.request.AlertRuleCreateRequestDto;
 import com.anyang.maruni.domain.alertrule.application.dto.response.AlertRuleResponseDto;
-import com.anyang.maruni.domain.alertrule.application.dto.request.AlertRuleUpdateRequestDto;
 import com.anyang.maruni.domain.alertrule.application.service.core.AlertRuleService;
+import com.anyang.maruni.domain.alertrule.domain.entity.AlertCondition;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertRule;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
 import com.anyang.maruni.global.response.annotation.AutoApiResponse;
@@ -193,9 +194,9 @@ public class AlertRuleController {
      * AlertConditionDto를 실제 AlertCondition 엔티티로 변환하는 헬퍼 메서드
      * (실제 구현에서는 더 정교한 변환 로직이 필요)
      */
-    private com.anyang.maruni.domain.alertrule.domain.entity.AlertCondition convertToAlertCondition(AlertConditionDto dto) {
+    private AlertCondition convertToAlertCondition(AlertConditionDto dto) {
         // 간소화된 변환 로직 - 실제로는 AlertCondition.builder() 등을 사용
-        return com.anyang.maruni.domain.alertrule.domain.entity.AlertCondition.builder()
+        return AlertCondition.builder()
                 .consecutiveDays(dto.getConsecutiveDays())
                 .thresholdCount(dto.getThresholdCount())
                 .keywords(dto.getKeywords())

@@ -1,21 +1,19 @@
 package com.anyang.maruni.domain.alertrule.application.service.core;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.anyang.maruni.domain.alertrule.application.analyzer.vo.AlertResult;
+import com.anyang.maruni.domain.alertrule.application.service.util.AlertServiceUtils;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertHistory;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertRule;
 import com.anyang.maruni.domain.alertrule.domain.repository.AlertHistoryRepository;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
-import com.anyang.maruni.domain.member.domain.repository.MemberRepository;
-import com.anyang.maruni.domain.alertrule.application.service.util.AlertServiceUtils;
 
 import lombok.RequiredArgsConstructor;
-
-import java.time.LocalDateTime;
 
 /**
  * 알림 이력 관리 전담 서비스
@@ -29,7 +27,6 @@ import java.time.LocalDateTime;
 public class AlertHistoryService {
 
     private final AlertHistoryRepository alertHistoryRepository;
-    private final MemberRepository memberRepository;
     private final AlertServiceUtils alertServiceUtils;
 
     /**
