@@ -1,7 +1,6 @@
 package com.anyang.maruni.domain.alertrule.domain.entity;
 
 import static java.time.Duration.*;
-import static java.time.LocalTime.*;
 
 import java.time.LocalDateTime;
 
@@ -221,6 +220,6 @@ public class AlertHistory extends BaseTimeEntity {
      * 알림 발생 후 경과 시간(분) 계산
      */
     public long getMinutesElapsed() {
-        return between(getCreatedAt(), now()).toMinutes();
+        return between(getCreatedAt(), LocalDateTime.now()).toMinutes();
     }
 }
