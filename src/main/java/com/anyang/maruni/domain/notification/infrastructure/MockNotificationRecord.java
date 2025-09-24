@@ -1,6 +1,9 @@
 package com.anyang.maruni.domain.notification.infrastructure;
 
+import java.time.LocalDateTime;
+
 import com.anyang.maruni.domain.notification.domain.service.NotificationChannelType;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -27,8 +30,8 @@ public class MockNotificationRecord {
     /**
      * 발송 시간을 사람이 읽을 수 있는 형태로 반환
      */
-    public java.time.LocalDateTime getSentDateTime() {
-        return java.time.LocalDateTime.ofInstant(
+    public LocalDateTime getSentDateTime() {
+        return LocalDateTime.ofInstant(
                 java.time.Instant.ofEpochMilli(timestamp),
                 java.time.ZoneId.systemDefault()
         );
