@@ -23,7 +23,7 @@ public final class AnalyzerUtils {
      */
     public static String createConsecutiveDaysMessage(int consecutiveDays, double ratio, String patternType) {
         return String.format("%d일 연속 %s 감지 (%s비율: %.1f%%)",
-                consecutiveDays, patternType, patternType, ratio * 100);
+                consecutiveDays, patternType, patternType.equals("무응답") ? "응답" : patternType, ratio * 100);
     }
 
     /**

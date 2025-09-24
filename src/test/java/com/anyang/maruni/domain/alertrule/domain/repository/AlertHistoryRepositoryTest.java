@@ -113,7 +113,7 @@ class AlertHistoryRepositoryTest {
 
         // When
         Page<AlertHistory> emergencyPage = alertHistoryRepository
-                .findByMemberIdAndMinAlertLevel(testMember.getId(), AlertLevel.EMERGENCY, PageRequest.of(0, 10));
+                .findByMemberIdAndAlertLevel(testMember.getId(), AlertLevel.EMERGENCY, PageRequest.of(0, 10));
 
         // Then
         assertThat(emergencyPage.getContent()).hasSize(1);

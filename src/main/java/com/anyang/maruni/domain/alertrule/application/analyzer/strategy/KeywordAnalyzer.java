@@ -1,10 +1,12 @@
 package com.anyang.maruni.domain.alertrule.application.analyzer.strategy;
 
+import java.util.List;
+
 import org.springframework.stereotype.Component;
 
+import com.anyang.maruni.domain.alertrule.application.analyzer.util.AnalyzerUtils;
 import com.anyang.maruni.domain.alertrule.application.analyzer.vo.AlertResult;
 import com.anyang.maruni.domain.alertrule.application.analyzer.vo.AnalysisContext;
-import com.anyang.maruni.domain.alertrule.application.analyzer.util.AnalyzerUtils;
 import com.anyang.maruni.domain.alertrule.application.config.AlertConfigurationProperties;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertLevel;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertType;
@@ -50,24 +52,42 @@ public class KeywordAnalyzer implements AnomalyAnalyzer {
         String content = message.getContent().toLowerCase();
 
         // 1. 긴급 키워드 감지 (최우선)
-        for (String emergencyKeyword : alertConfig.getKeyword().getEmergency()) {
-            if (content.contains(emergencyKeyword.toLowerCase())) {
-                String alertMessage = AnalyzerUtils.createKeywordDetectionMessage(AlertLevel.EMERGENCY, emergencyKeyword);
-                KeywordMatch keywordMatch = KeywordMatch.emergency(emergencyKeyword, message.getContent());
-                return AlertResult.createAlert(AlertLevel.EMERGENCY, alertMessage, keywordMatch);
-            }
+        AlertResult emergencyResult = checkKeywords(content, message.getContent(),
+                alertConfig.getKeyword().getEmergency(), AlertLevel.EMERGENCY);
+        if (emergencyResult.isAlert()) {
+            return emergencyResult;
         }
 
         // 2. 경고 키워드 감지
-        for (String warningKeyword : alertConfig.getKeyword().getWarning()) {
-            if (content.contains(warningKeyword.toLowerCase())) {
-                String alertMessage = AnalyzerUtils.createKeywordDetectionMessage(AlertLevel.HIGH, warningKeyword);
-                KeywordMatch keywordMatch = KeywordMatch.warning(warningKeyword, message.getContent());
-                return AlertResult.createAlert(AlertLevel.HIGH, alertMessage, keywordMatch);
-            }
+        AlertResult warningResult = checkKeywords(content, message.getContent(),
+                alertConfig.getKeyword().getWarning(), AlertLevel.HIGH);
+        if (warningResult.isAlert()) {
+            return warningResult;
         }
 
         // 3. 위험 키워드 없음
+        return AlertResult.noAlert();
+    }
+
+    /**
+     * 키워드 목록에서 매칭되는 키워드 검사
+     * @param contentLowerCase 소문자로 변환된 메시지 내용
+     * @param originalContent 원본 메시지 내용
+     * @param keywords 검사할 키워드 목록
+     * @param alertLevel 알림 레벨
+     * @return 키워드 분석 결과
+     */
+    private AlertResult checkKeywords(String contentLowerCase, String originalContent,
+                                    List<String> keywords, AlertLevel alertLevel) {
+        for (String keyword : keywords) {
+            if (contentLowerCase.contains(keyword.toLowerCase())) {
+                String alertMessage = AnalyzerUtils.createKeywordDetectionMessage(alertLevel, keyword);
+                KeywordMatch keywordMatch = alertLevel == AlertLevel.EMERGENCY ?
+                        KeywordMatch.emergency(keyword, originalContent) :
+                        KeywordMatch.warning(keyword, originalContent);
+                return AlertResult.createAlert(alertLevel, alertMessage, keywordMatch);
+            }
+        }
         return AlertResult.noAlert();
     }
 
