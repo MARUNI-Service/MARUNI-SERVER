@@ -14,13 +14,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.anyang.maruni.domain.alertrule.application.dto.AlertConditionDto;
-import com.anyang.maruni.domain.alertrule.application.dto.AlertDetectionResultDto;
-import com.anyang.maruni.domain.alertrule.application.dto.AlertHistoryResponseDto;
-import com.anyang.maruni.domain.alertrule.application.dto.AlertRuleCreateRequestDto;
-import com.anyang.maruni.domain.alertrule.application.dto.AlertRuleResponseDto;
-import com.anyang.maruni.domain.alertrule.application.dto.AlertRuleUpdateRequestDto;
-import com.anyang.maruni.domain.alertrule.application.service.AlertRuleService;
+import com.anyang.maruni.domain.alertrule.application.dto.request.AlertConditionDto;
+import com.anyang.maruni.domain.alertrule.application.dto.request.AlertRuleCreateRequestDto;
+import com.anyang.maruni.domain.alertrule.application.dto.request.AlertRuleUpdateRequestDto;
+import com.anyang.maruni.domain.alertrule.application.dto.response.AlertDetectionResultDto;
+import com.anyang.maruni.domain.alertrule.application.dto.response.AlertHistoryResponseDto;
+import com.anyang.maruni.domain.alertrule.application.dto.response.AlertRuleResponseDto;
+import com.anyang.maruni.domain.alertrule.application.service.core.AlertRuleService;
+import com.anyang.maruni.domain.alertrule.domain.entity.AlertCondition;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertRule;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
 import com.anyang.maruni.global.response.annotation.AutoApiResponse;
@@ -92,12 +93,14 @@ public class AlertRuleController {
             @PathVariable Long id,
             @Parameter(hidden = true) @AuthenticationPrincipal MemberEntity member) {
 
-        // 실제로는 alertRuleService에 getAlertRuleById 메서드가 필요하지만
-        // 현재 구현되지 않았으므로 간소화된 응답
-        return AlertRuleResponseDto.builder()
-                .id(id)
-                .memberId(member.getId())
-                .build();
+        AlertRule alertRule = alertRuleService.getAlertRuleById(id);
+
+        // TODO: 추후 권한 검증 로직 추가 (현재 회원이 해당 알림 규칙의 소유자인지 확인)
+        // if (!alertRule.getMember().getId().equals(member.getId())) {
+        //     throw new AlertRuleAccessDeniedException(id, member.getId());
+        // }
+
+        return AlertRuleResponseDto.from(alertRule);
     }
 
     /**
@@ -111,16 +114,16 @@ public class AlertRuleController {
             @Valid @RequestBody AlertRuleUpdateRequestDto request,
             @Parameter(hidden = true) @AuthenticationPrincipal MemberEntity member) {
 
-        // 실제로는 alertRuleService에 updateAlertRule 메서드가 필요하지만
-        // 현재 구현되지 않았으므로 간소화된 응답
-        return AlertRuleResponseDto.builder()
-                .id(id)
-                .memberId(member.getId())
-                .alertLevel(request.getAlertLevel())
-                .ruleName(request.getRuleName())
-                .description(request.getDescription())
-                .active(request.getActive())
-                .build();
+        // TODO: 추후 권한 검증 로직 추가
+
+        AlertRule updatedAlertRule = alertRuleService.updateAlertRule(
+                id,
+                request.getRuleName(),
+                request.getDescription(),
+                request.getAlertLevel()
+        );
+
+        return AlertRuleResponseDto.from(updatedAlertRule);
     }
 
     /**
@@ -133,8 +136,9 @@ public class AlertRuleController {
             @PathVariable Long id,
             @Parameter(hidden = true) @AuthenticationPrincipal MemberEntity member) {
 
-        // 실제로는 alertRuleService에 deleteAlertRule 메서드가 필요하지만
-        // 현재 구현되지 않았으므로 빈 구현
+        // TODO: 추후 권한 검증 로직 추가
+
+        alertRuleService.deleteAlertRule(id);
     }
 
     /**
@@ -148,14 +152,11 @@ public class AlertRuleController {
             @RequestParam boolean active,
             @Parameter(hidden = true) @AuthenticationPrincipal MemberEntity member) {
 
-        alertRuleService.toggleAlertRule(id, active);
+        // TODO: 추후 권한 검증 로직 추가
 
-        // 실제로는 업데이트된 알림 규칙을 반환해야 하지만 간소화된 응답
-        return AlertRuleResponseDto.builder()
-                .id(id)
-                .memberId(member.getId())
-                .active(active)
-                .build();
+        AlertRule updatedAlertRule = alertRuleService.toggleAlertRule(id, active);
+
+        return AlertRuleResponseDto.from(updatedAlertRule);
     }
 
     /**
@@ -193,9 +194,9 @@ public class AlertRuleController {
      * AlertConditionDto를 실제 AlertCondition 엔티티로 변환하는 헬퍼 메서드
      * (실제 구현에서는 더 정교한 변환 로직이 필요)
      */
-    private com.anyang.maruni.domain.alertrule.domain.entity.AlertCondition convertToAlertCondition(AlertConditionDto dto) {
+    private AlertCondition convertToAlertCondition(AlertConditionDto dto) {
         // 간소화된 변환 로직 - 실제로는 AlertCondition.builder() 등을 사용
-        return com.anyang.maruni.domain.alertrule.domain.entity.AlertCondition.builder()
+        return AlertCondition.builder()
                 .consecutiveDays(dto.getConsecutiveDays())
                 .thresholdCount(dto.getThresholdCount())
                 .keywords(dto.getKeywords())

@@ -1,5 +1,6 @@
-package com.anyang.maruni.domain.alertrule.application.dto;
+package com.anyang.maruni.domain.alertrule.application.dto.response;
 
+import com.anyang.maruni.domain.alertrule.application.dto.request.AlertConditionDto;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertLevel;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertRule;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertType;

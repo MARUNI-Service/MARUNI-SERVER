@@ -60,6 +60,46 @@ maruni:
       provider: "firebase"
       project-id: ${FIREBASE_PROJECT_ID:maruni-project}
 
+  # AlertRule 도메인 설정 (Phase 1 리팩토링)
+  alert:
+    analysis:
+      default-days: 7
+    emotion:
+      high-risk-consecutive-days: 3
+      high-risk-negative-ratio: 0.7
+      medium-risk-consecutive-days: 2
+      medium-risk-negative-ratio: 0.5
+    keyword:
+      emergency:
+        - "도와주세요"
+        - "아파요"
+        - "숨이"
+        - "가슴이"
+        - "쓰러짐"
+        - "응급실"
+        - "119"
+        - "병원"
+        - "죽겠어"
+      warning:
+        - "우울해"
+        - "외로워"
+        - "죽고싶어"
+        - "포기"
+        - "희망없어"
+        - "의미없어"
+        - "괴로워"
+        - "힘들어"
+    notification:
+      title-template: "[MARUNI 알림] %s 단계 이상징후 감지"
+      detection-details-json-template: "{\"alertLevel\":\"%s\",\"analysisDetails\":\"%s\"}"
+      notification-failure-log: "Guardian notification failed for member: %d"
+      notification-error-log: "Error sending guardian notification: %s"
+    no-response:
+      high-risk-consecutive-no-response-days: 2
+      high-risk-min-response-rate: 0.3
+      medium-risk-consecutive-no-response-days: 1
+      medium-risk-min-response-rate: 0.5
+
   encryption:
     algorithm: "AES/GCM/NoPadding"
     key: ${ENCRYPTION_KEY:default_encryption_key_32_bytes}

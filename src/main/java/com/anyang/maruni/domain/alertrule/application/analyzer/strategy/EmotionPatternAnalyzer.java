@@ -1,4 +1,4 @@
-package com.anyang.maruni.domain.alertrule.application.analyzer;
+package com.anyang.maruni.domain.alertrule.application.analyzer.strategy;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -7,7 +7,12 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
+import com.anyang.maruni.domain.alertrule.application.analyzer.vo.AlertResult;
+import com.anyang.maruni.domain.alertrule.application.analyzer.vo.AnalysisContext;
+import com.anyang.maruni.domain.alertrule.application.analyzer.util.AnalyzerUtils;
+import com.anyang.maruni.domain.alertrule.application.config.AlertConfigurationProperties;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertLevel;
+import com.anyang.maruni.domain.alertrule.domain.entity.AlertType;
 import com.anyang.maruni.domain.conversation.domain.entity.EmotionType;
 import com.anyang.maruni.domain.conversation.domain.entity.MessageEntity;
 import com.anyang.maruni.domain.conversation.domain.entity.MessageType;
@@ -20,18 +25,29 @@ import lombok.RequiredArgsConstructor;
  * 감정 패턴 분석기
  *
  * 연속적인 부정적 감정을 감지하여 위험도를 평가합니다.
+ * Phase 2 리팩토링: AnomalyAnalyzer 구현체
  */
 @Component
 @RequiredArgsConstructor
-public class EmotionPatternAnalyzer {
-
-    // 위험도 평가 임계값
-    private static final int HIGH_RISK_CONSECUTIVE_DAYS = 3;
-    private static final double HIGH_RISK_NEGATIVE_RATIO = 0.7;
-    private static final int MEDIUM_RISK_CONSECUTIVE_DAYS = 2;
-    private static final double MEDIUM_RISK_NEGATIVE_RATIO = 0.5;
+public class EmotionPatternAnalyzer implements AnomalyAnalyzer {
 
     private final MessageRepository messageRepository;
+    private final AlertConfigurationProperties alertConfig;
+
+    @Override
+    public AlertResult analyze(MemberEntity member, AnalysisContext context) {
+        return analyzeEmotionPattern(member, context.getAnalysisDays());
+    }
+
+    @Override
+    public AlertType getSupportedType() {
+        return AlertType.EMOTION_PATTERN;
+    }
+
+    @Override
+    public boolean supports(AlertType alertType) {
+        return AlertType.EMOTION_PATTERN.equals(alertType);
+    }
 
     /**
      * 회원의 감정 패턴 분석
@@ -118,14 +134,16 @@ public class EmotionPatternAnalyzer {
         double negativeRatio = emotionTrend.negativeRatio();
 
         // 고위험: 연속 부정감정 + 부정비율 기준 초과
-        if (consecutiveNegativeDays >= HIGH_RISK_CONSECUTIVE_DAYS && negativeRatio >= HIGH_RISK_NEGATIVE_RATIO) {
+        if (consecutiveNegativeDays >= alertConfig.getEmotion().getHighRiskConsecutiveDays()
+            && negativeRatio >= alertConfig.getEmotion().getHighRiskNegativeRatio()) {
             String message = AnalyzerUtils.createConsecutiveDaysMessage(
                     consecutiveNegativeDays, negativeRatio, "부정감정");
             return AlertResult.createAlert(AlertLevel.HIGH, message, emotionTrend);
         }
 
         // 중위험: 연속 부정감정 + 부정비율 기준 초과
-        if (consecutiveNegativeDays >= MEDIUM_RISK_CONSECUTIVE_DAYS && negativeRatio >= MEDIUM_RISK_NEGATIVE_RATIO) {
+        if (consecutiveNegativeDays >= alertConfig.getEmotion().getMediumRiskConsecutiveDays()
+            && negativeRatio >= alertConfig.getEmotion().getMediumRiskNegativeRatio()) {
             String message = AnalyzerUtils.createConsecutiveDaysMessage(
                     consecutiveNegativeDays, negativeRatio, "부정감정");
             return AlertResult.createAlert(AlertLevel.MEDIUM, message, emotionTrend);
