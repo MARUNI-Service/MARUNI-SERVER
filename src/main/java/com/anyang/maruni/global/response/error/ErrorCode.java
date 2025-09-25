@@ -77,6 +77,13 @@ public enum ErrorCode implements ErrorType {
 	NOTIFICATION_SERVICE_UNAVAILABLE("N503", "알림 서비스를 사용할 수 없습니다", HttpStatus.SERVICE_UNAVAILABLE.value()),
 	FIREBASE_CONFIG_ERROR("N504", "Firebase 설정 오류입니다", HttpStatus.INTERNAL_SERVER_ERROR.value()),
 
+	// Phase 1 Week 4-5: Stability Enhancement errors
+	FIREBASE_INVALID_TOKEN("N401", "Firebase 토큰이 유효하지 않습니다", HttpStatus.BAD_REQUEST.value()),
+	PUSH_TOKEN_NOT_FOUND("N405", "푸시 토큰을 찾을 수 없습니다", HttpStatus.NOT_FOUND.value()),
+	TEMPLATE_VARIABLE_MISSING("N402", "템플릿 변수가 누락되었습니다", HttpStatus.BAD_REQUEST.value()),
+	NOTIFICATION_HISTORY_SAVE_FAILED("N505", "알림 이력 저장에 실패했습니다", HttpStatus.INTERNAL_SERVER_ERROR.value()),
+	NOTIFICATION_FALLBACK_FAILED("N506", "모든 알림 서비스가 실패했습니다", HttpStatus.INTERNAL_SERVER_ERROR.value()),
+
 	// ============ Server Errors ============
 	ENCRYPTION_ERROR("S500", "암호화 처리 중 오류가 발생했습니다", HttpStatus.INTERNAL_SERVER_ERROR.value()),
 	INTERNAL_SERVER_ERROR("S501", "내부 서버 오류가 발생했습니다", HttpStatus.INTERNAL_SERVER_ERROR.value());
