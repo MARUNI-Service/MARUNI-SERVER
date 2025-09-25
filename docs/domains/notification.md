@@ -1,10 +1,19 @@
-# Notification 도메인 구현 가이드라인 (2025-09-26 리팩토링 완성)
+# Notification 도메인 구현 가이드 (2025-09-26 리팩토링 완성)
 
-## 🎉 완성 상태 요약
+## 🎯 도메인 개요
 
-**Notification 도메인은 Phase 2 MVP 완성 후 대규모 리팩토링을 통해 상용 서비스 수준으로 완전히 진화했습니다.**
+**Notification 도메인**은 MARUNI 프로젝트의 통합 알림 시스템으로, **푸시 알림, SMS, 이메일 등 다양한 채널을 통해 안정적인 알림 서비스를 제공**하는 도메인입니다.
 
-### 🏆 완성 지표
+### 핵심 기능
+- **Firebase FCM 연동**: 실시간 푸시 알림 서비스
+- **3중 안전망 시스템**: Retry + History + Fallback 자동화
+- **다중 채널 지원**: 푸시/SMS/이메일 확장 가능한 구조
+- **알림 이력 관리**: 모든 발송 기록 영속화 및 통계 제공
+
+## 🏆 완성 현황
+
+**Phase 2 MVP 완성 후 대규모 리팩토링을 통해 상용 서비스 수준으로 완전히 진화했습니다.**
+
 - ✅ **Firebase FCM 실제 연동**: 상용 푸시 알림 서비스 완성
 - ✅ **안정성 강화 시스템**: Fallback + Retry + History 3중 안전망 구축
 - ✅ **알림 이력 영속화**: NotificationHistory Entity + Repository 완성
@@ -13,9 +22,9 @@
 - ✅ **통계 및 모니터링**: 재시도 통계, 발송 통계 지원
 - ✅ **Firebase 래퍼 인터페이스**: 테스트 가능한 구조 완성
 
-## 📐 아키텍처 구조 (리팩토링 후)
+## 📐 DDD 아키텍처 구조
 
-### DDD 패키지 구조
+### 패키지 구조
 ```
 com.anyang.maruni.domain.notification/
 ├── domain/                          # Domain Layer
@@ -55,19 +64,29 @@ com.anyang.maruni.domain.notification/
         └── MockNotificationRecord.java          ✅ Mock 발송 기록 VO
 ```
 
-### 의존성 역전 원칙 완전 적용
-```java
-// Domain Layer: 인터페이스 정의 (NotificationService, PushTokenService 등)
-// Infrastructure Layer: 구현체 제공 (Firebase, Mock, Decorators)
-// Application Layer: 인터페이스만 의존성 주입 받음
-// Configuration: 설정에 따라 적절한 구현체 조합하여 빈 생성
+### 아키텍처 특징
+
+#### 데코레이터 패턴 기반 안정성 강화
 ```
+┌─────────────────────────────────────────┐
+│ StabilityEnhancedNotificationService    │
+│ ├── RetryableNotificationService        │  ← 재시도 기능
+│ │   ├── NotificationHistoryDecorator    │  ← 이력 자동 저장
+│ │   │   ├── FallbackNotificationService │  ← 장애 복구
+│ │   │   │   ├── Primary: FirebaseService│  ← 실제 Firebase
+│ │   │   │   └── Fallback: MockService   │  ← 백업 서비스
+└─────────────────────────────────────────┘
+```
+
+#### DDD 의존성 역전 구조
+- **Domain Layer**: 인터페이스 정의 (NotificationService, PushTokenService)
+- **Infrastructure Layer**: 구현체 제공 (Firebase, Mock, Decorators)
+- **Application Layer**: 인터페이스만 의존성 주입
+- **Configuration**: 설정 기반 구현체 조합
 
 ## 🔔 핵심 기능 구현
 
 ### 1. NotificationService 인터페이스 (Domain Layer)
-
-#### 핵심 알림 서비스 인터페이스 (완전 구현)
 ```java
 /**
  * 알림 발송 도메인 서비스 인터페이스
@@ -102,8 +121,6 @@ public interface NotificationService {
 ```
 
 ### 2. PushTokenService 인터페이스 (Domain Layer)
-
-#### 푸시 토큰 조회 서비스 (관심사 분리)
 ```java
 /**
  * 푸시 토큰 조회 도메인 서비스 인터페이스
@@ -131,8 +148,6 @@ public interface PushTokenService {
 ```
 
 ### 3. NotificationHistory Entity (Domain Layer)
-
-#### 알림 이력 영속화 엔티티 (완전 구현)
 ```java
 /**
  * 알림 발송 이력 엔티티
@@ -199,8 +214,6 @@ public class NotificationHistory extends BaseTimeEntity {
 ```
 
 ### 4. NotificationStatistics VO (Domain Layer)
-
-#### 알림 통계 정보 Value Object
 ```java
 /**
  * 알림 통계 정보 Value Object
@@ -242,8 +255,6 @@ public class NotificationStatistics {
 ```
 
 ### 5. FirebasePushNotificationService (Infrastructure Layer)
-
-#### Firebase FCM 실제 구현체 (상용 서비스)
 ```java
 /**
  * Firebase FCM 푸시 알림 서비스 (리팩토링)
@@ -297,11 +308,11 @@ public class FirebasePushNotificationService implements NotificationService {
 }
 ```
 
-## 🛡️ 안정성 강화 시스템 (3중 안전망)
+## 🛡️ 안정성 강화 시스템
 
-### 1. 데코레이터 패턴 적용
+### 3중 안전망 구조
 
-#### NotificationHistoryDecorator (이력 자동 저장)
+#### 1. NotificationHistoryDecorator (이력 자동 저장)
 ```java
 /**
  * 알림 발송 이력을 자동으로 저장하는 데코레이터
@@ -335,7 +346,7 @@ public class NotificationHistoryDecorator implements NotificationService {
 }
 ```
 
-#### RetryableNotificationService (재시도 기능)
+#### 2. RetryableNotificationService (재시도 기능)
 ```java
 /**
  * 재시도 기능을 제공하는 알림 서비스
@@ -398,7 +409,7 @@ public class RetryableNotificationService {
 }
 ```
 
-#### FallbackNotificationService (장애 복구)
+#### 3. FallbackNotificationService (장애 복구)
 ```java
 /**
  * Primary 서비스 실패 시 Fallback 서비스로 자동 전환
@@ -436,7 +447,7 @@ public class FallbackNotificationService implements NotificationService {
 }
 ```
 
-### 2. 안정성 강화 통합 설정
+### 통합 설정
 
 #### StabilityEnhancedNotificationConfig
 ```java
@@ -560,9 +571,7 @@ spring:
     active: dev                      # dev: Mock 서비스, prod: Firebase 서비스
 ```
 
-### 2. 서비스 조합 전략
-
-#### 환경별 서비스 구성
+### 환경별 서비스 구성
 ```
 📊 개발 환경 (dev 프로파일):
 ┌─────────────────────────────────────────┐
@@ -591,9 +600,7 @@ spring:
 └─────────────────────────────────────────┘
 ```
 
-### 3. 의존성 주입 및 테스트
-
-#### 서비스 의존성 주입
+### 의존성 주입 패턴
 ```java
 // 다른 도메인 서비스에서 사용
 @Service @RequiredArgsConstructor
@@ -617,11 +624,9 @@ public class SomeApplicationService {
 }
 ```
 
-## 🧪 테스트 지원 기능
+## 🧪 테스트 전략
 
-### 1. 단위 테스트 패턴
-
-#### 안정성 강화 서비스 테스트
+### 단위 테스트 패턴
 ```java
 @ExtendWith(MockitoExtension.class)
 class NotificationServiceTest {
@@ -675,9 +680,7 @@ class NotificationServiceTest {
 }
 ```
 
-### 2. 통합 테스트 패턴
-
-#### Firebase 래퍼 모킹 테스트
+### 통합 테스트 패턴
 ```java
 @SpringBootTest
 @TestPropertySource(properties = {
@@ -719,9 +722,7 @@ class NotificationIntegrationTest {
 }
 ```
 
-### 3. Mock 서비스 테스트 지원
-
-#### MockPushNotificationService 활용
+### Mock 서비스 활용
 ```java
 @Test
 void shouldTrackMockNotificationHistory() {
@@ -748,11 +749,11 @@ void shouldTrackMockNotificationHistory() {
 }
 ```
 
-## 📈 실제 운영 지표 및 모니터링
+## 📈 운영 모니터링
 
-### 1. 안정성 강화 시스템 성과
+### 성능 지표
 
-#### 재시도 통계 (RetryStatistics)
+#### 재시도 통계
 ```java
 // 재시도 시스템 통계 조회
 RetryableNotificationService.RetryStatistics stats =
@@ -771,29 +772,27 @@ System.out.println("평균 시도 횟수: " + stats.getAverageAttemptsPerSuccess
 - ✅ **이력 저장 성공률**: 100% (모든 시도가 DB에 기록됨)
 - ✅ **응답 시간**: 평균 500ms (Firebase) / 즉시 (Mock Fallback)
 
-### 2. 로그 출력 패턴
+### 로그 패턴
 
-#### Firebase 성공 시
+#### 정상 발송
 ```
 🚀 [FirebaseMessaging] Push notification sent successfully - memberId: 1, messageId: projects/maruni-app/messages/0:abc123...
 ```
 
-#### Mock Fallback 전환 시
+#### Fallback 전환
 ```
 ❌ [FirebaseMessaging] Firebase messaging error - memberId: 1, errorCode: UNAVAILABLE
 🔄 Primary service failed for member 1, switching to fallback
 🔔 [MOCK] Push notification sent - memberId: 1, title: 안부 메시지, message: 오늘 하루 어떻게 지내세요?
 ```
 
-#### 재시도 성공 시
+#### 재시도 성공
 ```
 ⚠️ Notification failed on attempt 1 for member 1
 ✅ Notification sent successfully on attempt 2 for member 1
 ```
 
-### 3. 알림 이력 통계 (NotificationStatistics)
-
-#### 데이터베이스 기반 통계 조회
+### 통계 조회
 ```java
 // 특정 회원의 알림 통계
 NotificationStatistics memberStats =
@@ -807,203 +806,30 @@ NotificationStatistics systemStats =
     historyService.getOverallStatistics();
 ```
 
-## 🔮 확장 방향
-
-### 1. 추가 알림 채널 구현 (Phase 3 계획)
-
-#### SMS 알림 서비스
-```java
-// 향후 구현 예정 - SMS 채널
-@Service
-public class SmsNotificationService implements NotificationService {
-
-    @Override
-    public boolean sendPushNotification(Long memberId, String title, String message) {
-        // SMS API 연동 (예: Twilio, 문자나라 등)
-        return sendSmsMessage(getMemberPhoneNumber(memberId), title + ": " + message);
-    }
-
-    @Override
-    public NotificationChannelType getChannelType() {
-        return NotificationChannelType.SMS;
-    }
-}
-```
-
-#### 이메일 알림 서비스
-```java
-// 향후 구현 예정 - EMAIL 채널
-@Service
-public class EmailNotificationService implements NotificationService {
-
-    @Override
-    public boolean sendPushNotification(Long memberId, String title, String message) {
-        // Spring Mail 또는 SendGrid 연동
-        return sendEmailMessage(getMemberEmail(memberId), title, message);
-    }
-
-    @Override
-    public NotificationChannelType getChannelType() {
-        return NotificationChannelType.EMAIL;
-    }
-}
-```
-
-### 2. 다중 채널 동시 발송 시스템
-
-#### MultiChannelNotificationService
-```java
-// 향후 확장 - 여러 채널 동시 발송
-@Service
-public class MultiChannelNotificationService {
-
-    private final List<NotificationService> notificationServices;
-
-    public MultiChannelResult sendToAllChannels(Long memberId, String title, String message) {
-        Map<NotificationChannelType, Boolean> results = new HashMap<>();
-
-        notificationServices.parallelStream()
-            .forEach(service -> {
-                boolean success = service.sendPushNotification(memberId, title, message);
-                results.put(service.getChannelType(), success);
-            });
-
-        return MultiChannelResult.of(results);
-    }
-}
-```
-
-### 3. 실시간 알림 상태 추적
-
-#### WebSocket 기반 실시간 알림
-```java
-// Phase 3 확장 - 실시간 알림 상태 업데이트
-@Component
-public class RealTimeNotificationTracker {
-
-    @EventListener
-    public void handleNotificationSent(NotificationSentEvent event) {
-        // WebSocket으로 관리자 대시보드에 실시간 전송
-        webSocketService.sendToAdmins("/topic/notifications", event);
-    }
-}
-```
-
-### 4. AI 기반 알림 최적화
-
-#### 개인화된 알림 시간 추천
-```java
-// Phase 3+ 확장 - AI 기반 최적 알림 시간 예측
-@Service
-public class PersonalizedNotificationScheduler {
-
-    public LocalTime getOptimalNotificationTime(Long memberId) {
-        // 회원의 앱 사용 패턴 분석하여 최적 시간 추천
-        return aiRecommendationService.predictOptimalTime(getMemberUsagePattern(memberId));
-    }
-}
-```
 
 ## 🎯 Claude Code 작업 가이드
 
-### 1. 리팩토링 완료 상태 인식
+### 아키텍처 이해
 
-#### ⚠️ **중요: 대규모 리팩토링 완료**
+#### 완성된 구조
 - **기본 MVP → 상용 서비스 수준**: Firebase FCM 실제 연동 + 3중 안전망
 - **Simple Mock → 복잡한 데코레이터 패턴**: 확장성과 안정성 대폭 향상
 - **단순 인터페이스 → 완전한 DDD 구조**: Entity, Repository, Service, Config 완비
 - **테스트용 → 운영 준비**: 실제 Firebase + 통계 + 모니터링 시스템
 
-### 2. 기존 패턴 준수 (필수)
+### 확장 시 주의사항
 
-#### 데코레이터 패턴 확장 시
-```java
-// ✅ 올바른 패턴 - 기존 데코레이터 구조 준수
-@Component
-@RequiredArgsConstructor @Slf4j
-public class NewNotificationDecorator implements NotificationService {
+#### 데코레이터 패턴 준수
+- **위임 구조 유지**: 모든 데코레이터는 delegate 패턴으로 구현
+- **예외 처리 일관성**: NotificationException으로 통일
+- **로깅 패턴 유지**: 이모지 + 서비스명 패턴 준수
 
-    private final NotificationService delegate; // 위임 대상
-    private final SomeAdditionalService additionalService;
+#### 새 알림 서비스 구현
+- **래퍼 인터페이스 필수**: 외부 API 직접 호출 금지
+- **기존 구조 준수**: Firebase 서비스와 동일한 패턴 적용
+- **설정 기반 활성화**: @ConditionalOnProperty로 환경별 제어
 
-    @Override
-    public boolean sendPushNotification(Long memberId, String title, String message) {
-        // 전처리
-        preProcess(memberId, title, message);
-
-        try {
-            // 위임 실행
-            boolean result = delegate.sendPushNotification(memberId, title, message);
-
-            // 후처리
-            postProcess(memberId, title, message, result);
-
-            return result;
-        } catch (Exception e) {
-            handleException(memberId, title, message, e);
-            throw e;
-        }
-    }
-
-    // 다른 메서드들도 동일한 위임 패턴으로 구현
-    @Override
-    public boolean isAvailable() {
-        return delegate.isAvailable();
-    }
-}
-```
-
-#### 새로운 알림 서비스 구현 시
-```java
-// ✅ 올바른 패턴 - 기존 Firebase 서비스 구조 준수
-@Service
-@ConditionalOnProperty("notification.sms.enabled")
-@RequiredArgsConstructor @Slf4j
-public class SmsNotificationService implements NotificationService {
-
-    private final SmsApiWrapper smsApiWrapper;      // 외부 API 래퍼 (테스트 가능)
-    private final MemberContactService contactService; // 연락처 조회 서비스
-    private final SmsProperties smsProperties;      // 설정 Properties
-
-    @Override
-    public boolean sendPushNotification(Long memberId, String title, String message) {
-        try {
-            // 1. 연락처 조회 (Firebase의 푸시 토큰 조회와 동일한 패턴)
-            String phoneNumber = contactService.getPhoneNumberByMemberId(memberId);
-
-            // 2. SMS 메시지 구성 (Firebase의 Message 구성과 동일한 패턴)
-            SmsMessage smsMessage = buildSmsMessage(phoneNumber, title, message);
-
-            // 3. SMS 발송 (Firebase의 메시지 발송과 동일한 패턴)
-            String messageId = smsApiWrapper.sendMessage(smsMessage);
-
-            log.info("📱 [{}] SMS notification sent successfully - memberId: {}, messageId: {}",
-                    smsApiWrapper.getServiceName(), memberId, messageId);
-
-            return true;
-
-        } catch (SmsApiException e) {
-            log.error("❌ [{}] SMS API error - memberId: {}, errorCode: {}, message: {}",
-                    smsApiWrapper.getServiceName(), memberId, e.getErrorCode(), e.getMessage());
-            throw new NotificationException(ErrorCode.SMS_SEND_FAILED, e);
-
-        } catch (Exception e) {
-            log.error("❌ [{}] Unexpected error - memberId: {}, error: {}",
-                    smsApiWrapper.getServiceName(), memberId, e.getMessage());
-            throw new NotificationException(ErrorCode.NOTIFICATION_SEND_FAILED, e);
-        }
-    }
-
-    @Override
-    public NotificationChannelType getChannelType() {
-        return NotificationChannelType.SMS; // 기존 Enum 활용
-    }
-}
-```
-
-### 3. 설정 통합 주의사항
-
-#### StabilityEnhancedNotificationConfig 수정 시
+### 설정 변경 시 주의사항
 ```java
 // ⚠️ 주의: 기존 설정 구조를 파괴하지 말고 확장만 할 것
 @Configuration
@@ -1024,9 +850,7 @@ public class StabilityEnhancedNotificationConfig {
 }
 ```
 
-### 4. 테스트 작성 패턴 (필수 준수)
-
-#### Firebase 래퍼 모킹 패턴 준수
+### 테스트 패턴 준수
 ```java
 @ExtendWith(MockitoExtension.class)
 class NewNotificationServiceTest {
@@ -1064,19 +888,14 @@ class NewNotificationServiceTest {
 }
 ```
 
-### 5. 문서 업데이트 가이드
-
-#### 새로운 기능 추가 시 문서 업데이트 필수 사항
+### 문서 업데이트 필수사항
 1. **DDD 패키지 구조도**: 새로운 클래스 추가 반영
 2. **핵심 기능 구현**: 새 서비스 코드 예시 추가
 3. **안정성 강화 시스템**: 데코레이터 추가 시 계층도 업데이트
 4. **설정 및 운영**: application.yml 설정 예시 추가
 5. **테스트 지원**: 새로운 테스트 패턴 문서화
-6. **확장 방향**: 구현 완료된 기능은 확장 방향에서 제거
 
-### 6. 절대 금지사항
-
-#### ❌ **하지 말아야 할 것들**
+### 금지사항 ❌
 ```java
 // ❌ 기존 안정성 강화 설정 무시하고 새로운 @Primary 빈 생성
 @Bean
@@ -1102,11 +921,13 @@ public boolean sendPushNotification(Long memberId, String title, String message)
 }
 ```
 
-#### ✅ **반드시 해야 할 것들**
+### 필수사항 ✅
 1. **기존 설정 구조 유지**: StabilityEnhanced 설정에 통합
 2. **데코레이터 패턴 준수**: delegate 위임 구조 유지
 3. **예외 처리 일관성**: NotificationException 변환 필수
 4. **로그 패턴 일관성**: 기존 이모지 + 서비스명 패턴 유지
 5. **테스트 래퍼 모킹**: 외부 API 직접 호출 금지, 래퍼 인터페이스 필수
 
-**Notification 도메인은 MARUNI의 핵심 인프라로 대규모 리팩토링을 통해 상용 서비스 수준으로 완전히 진화했습니다. Firebase FCM 실제 연동, 3중 안전망(Retry + History + Fallback), 데코레이터 패턴 적용으로 확장성과 안정성을 모두 확보했습니다.** 🚀
+---
+
+**Notification 도메인은 MARUNI의 핵심 인프라로서 Firebase FCM 실제 연동, 3중 안전망 시스템, 데코레이터 패턴을 통해 확장성과 안정성을 모두 확보한 상용 서비스 수준의 알림 시스템입니다.** 🚀
