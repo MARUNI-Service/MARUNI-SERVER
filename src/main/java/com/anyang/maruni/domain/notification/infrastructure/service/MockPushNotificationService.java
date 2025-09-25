@@ -1,8 +1,11 @@
-package com.anyang.maruni.domain.notification.infrastructure;
+package com.anyang.maruni.domain.notification.infrastructure.service;
 
-import com.anyang.maruni.domain.notification.domain.service.NotificationChannelType;
+import com.anyang.maruni.domain.notification.domain.vo.NotificationChannelType;
 import com.anyang.maruni.domain.notification.domain.service.NotificationService;
+import com.anyang.maruni.domain.notification.infrastructure.vo.MockNotificationRecord;
+
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +20,7 @@ import java.util.List;
  * 테스트를 위한 발송 이력을 저장합니다.
  */
 @Service
+@Qualifier("originalNotificationService")
 @Profile("dev") // 개발 환경에서만 활성화
 @Slf4j
 public class MockPushNotificationService implements NotificationService {

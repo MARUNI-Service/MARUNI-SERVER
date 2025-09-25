@@ -1,8 +1,8 @@
-package com.anyang.maruni.domain.notification.infrastructure;
+package com.anyang.maruni.domain.notification.infrastructure.vo;
 
 import java.time.LocalDateTime;
 
-import com.anyang.maruni.domain.notification.domain.service.NotificationChannelType;
+import com.anyang.maruni.domain.notification.domain.vo.NotificationChannelType;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
