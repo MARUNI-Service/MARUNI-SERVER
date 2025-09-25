@@ -1,12 +1,12 @@
 package com.anyang.maruni.domain.notification.infrastructure;
 
 import com.anyang.maruni.domain.notification.domain.entity.NotificationHistory;
-import com.anyang.maruni.domain.notification.domain.vo.NotificationChannelType;
 import com.anyang.maruni.domain.notification.domain.service.NotificationHistoryService;
 import com.anyang.maruni.domain.notification.domain.service.NotificationService;
+import com.anyang.maruni.domain.notification.domain.vo.NotificationChannelType;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 
 /**
  * 알림 서비스 이력 저장 데코레이터
@@ -17,7 +17,6 @@ import org.springframework.stereotype.Component;
  * 이를 통해 어떤 NotificationService 구현체든 이력 저장 기능을
  * 투명하게 추가할 수 있습니다.
  */
-@Component
 @RequiredArgsConstructor
 @Slf4j
 public class NotificationHistoryDecorator implements NotificationService {
