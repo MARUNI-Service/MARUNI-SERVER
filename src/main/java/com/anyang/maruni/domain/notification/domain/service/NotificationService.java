@@ -1,5 +1,7 @@
 package com.anyang.maruni.domain.notification.domain.service;
 
+import com.anyang.maruni.domain.notification.domain.vo.NotificationChannelType;
+
 /**
  * 알림 발송 도메인 서비스 인터페이스
  *

@@ -2,9 +2,9 @@ package com.anyang.maruni.domain.notification.infrastructure;
 
 import com.anyang.maruni.domain.notification.domain.entity.NotificationHistory;
 import com.anyang.maruni.domain.notification.domain.repository.NotificationHistoryRepository;
-import com.anyang.maruni.domain.notification.domain.service.NotificationChannelType;
+import com.anyang.maruni.domain.notification.domain.vo.NotificationChannelType;
 import com.anyang.maruni.domain.notification.domain.service.NotificationHistoryService;
-import com.anyang.maruni.domain.notification.domain.service.NotificationStatistics;
+import com.anyang.maruni.domain.notification.domain.vo.NotificationStatistics;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

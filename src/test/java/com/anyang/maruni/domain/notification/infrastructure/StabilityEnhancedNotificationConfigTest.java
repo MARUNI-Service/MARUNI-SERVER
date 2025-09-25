@@ -1,6 +1,6 @@
 package com.anyang.maruni.domain.notification.infrastructure;
 
-import com.anyang.maruni.domain.notification.domain.service.NotificationChannelType;
+import com.anyang.maruni.domain.notification.domain.vo.NotificationChannelType;
 import com.anyang.maruni.domain.notification.domain.service.NotificationHistoryService;
 import com.anyang.maruni.domain.notification.domain.service.NotificationService;
 import org.junit.jupiter.api.BeforeEach;

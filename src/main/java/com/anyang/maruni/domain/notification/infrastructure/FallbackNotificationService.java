@@ -1,14 +1,16 @@
 package com.anyang.maruni.domain.notification.infrastructure;
 
-import com.anyang.maruni.domain.notification.domain.service.NotificationChannelType;
-import com.anyang.maruni.domain.notification.domain.service.NotificationService;
-import com.anyang.maruni.global.exception.NotificationException;
-import com.anyang.maruni.global.response.error.ErrorCode;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
+
+import com.anyang.maruni.domain.notification.domain.service.NotificationService;
+import com.anyang.maruni.domain.notification.domain.vo.NotificationChannelType;
+import com.anyang.maruni.global.exception.NotificationException;
+import com.anyang.maruni.global.response.error.ErrorCode;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Fallback 알림 서비스

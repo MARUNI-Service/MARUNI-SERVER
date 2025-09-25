@@ -1,6 +1,6 @@
 package com.anyang.maruni.domain.notification.domain.entity;
 
-import com.anyang.maruni.domain.notification.domain.service.NotificationChannelType;
+import com.anyang.maruni.domain.notification.domain.vo.NotificationChannelType;
 import com.anyang.maruni.global.entity.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

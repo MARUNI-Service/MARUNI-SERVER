@@ -1,4 +1,4 @@
-package com.anyang.maruni.domain.notification.domain.service;
+package com.anyang.maruni.domain.notification.domain.vo;
 
 /**
  * 알림 채널 타입

@@ -1,7 +1,7 @@
 package com.anyang.maruni.domain.notification.domain.repository;
 
 import com.anyang.maruni.domain.notification.domain.entity.NotificationHistory;
-import com.anyang.maruni.domain.notification.domain.service.NotificationChannelType;
+import com.anyang.maruni.domain.notification.domain.vo.NotificationChannelType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

@@ -1,4 +1,4 @@
-package com.anyang.maruni.domain.notification.domain.service;
+package com.anyang.maruni.domain.notification.domain.vo;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

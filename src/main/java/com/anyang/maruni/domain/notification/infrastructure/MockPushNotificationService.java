@@ -1,6 +1,6 @@
 package com.anyang.maruni.domain.notification.infrastructure;
 
-import com.anyang.maruni.domain.notification.domain.service.NotificationChannelType;
+import com.anyang.maruni.domain.notification.domain.vo.NotificationChannelType;
 import com.anyang.maruni.domain.notification.domain.service.NotificationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;

@@ -135,7 +135,7 @@ public class StabilityEnhancedNotificationConfig {
         }
 
         @Override
-        public com.anyang.maruni.domain.notification.domain.service.NotificationChannelType getChannelType() {
+        public com.anyang.maruni.domain.notification.domain.vo.NotificationChannelType getChannelType() {
             return retryableService.getChannelType();
         }
 

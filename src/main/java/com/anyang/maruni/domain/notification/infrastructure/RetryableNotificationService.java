@@ -1,6 +1,6 @@
 package com.anyang.maruni.domain.notification.infrastructure;
 
-import com.anyang.maruni.domain.notification.domain.service.NotificationChannelType;
+import com.anyang.maruni.domain.notification.domain.vo.NotificationChannelType;
 import com.anyang.maruni.domain.notification.domain.service.NotificationService;
 import com.anyang.maruni.global.exception.NotificationException;
 import com.anyang.maruni.global.response.error.ErrorCode;

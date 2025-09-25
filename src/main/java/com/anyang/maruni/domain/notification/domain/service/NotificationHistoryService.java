@@ -1,6 +1,8 @@
 package com.anyang.maruni.domain.notification.domain.service;
 
 import com.anyang.maruni.domain.notification.domain.entity.NotificationHistory;
+import com.anyang.maruni.domain.notification.domain.vo.NotificationChannelType;
+import com.anyang.maruni.domain.notification.domain.vo.NotificationStatistics;
 
 import java.time.LocalDateTime;
 import java.util.List;

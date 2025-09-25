@@ -1,4 +1,4 @@
-package com.anyang.maruni.domain.notification.domain.service;
+package com.anyang.maruni.domain.notification.domain.vo;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

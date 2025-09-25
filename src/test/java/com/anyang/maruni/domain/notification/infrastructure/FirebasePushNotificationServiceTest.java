@@ -1,7 +1,7 @@
 package com.anyang.maruni.domain.notification.infrastructure;
 
 import com.anyang.maruni.domain.notification.domain.exception.NotificationException;
-import com.anyang.maruni.domain.notification.domain.service.NotificationChannelType;
+import com.anyang.maruni.domain.notification.domain.vo.NotificationChannelType;
 import com.anyang.maruni.domain.notification.domain.service.PushTokenService;
 import com.anyang.maruni.global.config.properties.FirebaseProperties;
 import com.anyang.maruni.global.response.error.ErrorCode;
