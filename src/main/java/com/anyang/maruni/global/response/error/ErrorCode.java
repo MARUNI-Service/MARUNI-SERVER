@@ -68,6 +68,15 @@ public enum ErrorCode implements ErrorType {
 	// ============ Rate Limiting ============
 	TOO_MANY_REQUESTS("R429", "너무 많은 요청입니다. 잠시 후 다시 시도해주세요.", HttpStatus.TOO_MANY_REQUESTS.value()),
 
+	// ============ Notification Domain ============
+	FIREBASE_CONNECTION_FAILED("N500", "Firebase 연결에 실패했습니다", HttpStatus.INTERNAL_SERVER_ERROR.value()),
+	PUSH_TOKEN_INVALID("N400", "유효하지 않은 푸시 토큰입니다", HttpStatus.BAD_REQUEST.value()),
+	NOTIFICATION_SEND_FAILED("N501", "알림 발송에 실패했습니다", HttpStatus.INTERNAL_SERVER_ERROR.value()),
+	TEMPLATE_NOT_FOUND("N404", "알림 템플릿을 찾을 수 없습니다", HttpStatus.NOT_FOUND.value()),
+	FIREBASE_SEND_FAILED("N502", "Firebase 메시지 발송에 실패했습니다", HttpStatus.INTERNAL_SERVER_ERROR.value()),
+	NOTIFICATION_SERVICE_UNAVAILABLE("N503", "알림 서비스를 사용할 수 없습니다", HttpStatus.SERVICE_UNAVAILABLE.value()),
+	FIREBASE_CONFIG_ERROR("N504", "Firebase 설정 오류입니다", HttpStatus.INTERNAL_SERVER_ERROR.value()),
+
 	// ============ Server Errors ============
 	ENCRYPTION_ERROR("S500", "암호화 처리 중 오류가 발생했습니다", HttpStatus.INTERNAL_SERVER_ERROR.value()),
 	INTERNAL_SERVER_ERROR("S501", "내부 서버 오류가 발생했습니다", HttpStatus.INTERNAL_SERVER_ERROR.value());
