@@ -1,4 +1,4 @@
-package com.anyang.maruni.domain.notification.infrastructure;
+package com.anyang.maruni.domain.notification.infrastructure.vo;
 
 import java.time.LocalDateTime;
 

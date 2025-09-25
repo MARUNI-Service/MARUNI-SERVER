@@ -1,4 +1,4 @@
-package com.anyang.maruni.domain.notification.infrastructure;
+package com.anyang.maruni.domain.notification.infrastructure.service;
 
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
 import com.anyang.maruni.domain.member.domain.repository.MemberRepository;

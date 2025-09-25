@@ -4,6 +4,8 @@ import com.anyang.maruni.domain.notification.domain.entity.NotificationHistory;
 import com.anyang.maruni.domain.notification.domain.repository.NotificationHistoryRepository;
 import com.anyang.maruni.domain.notification.domain.vo.NotificationChannelType;
 import com.anyang.maruni.domain.notification.domain.vo.NotificationStatistics;
+import com.anyang.maruni.domain.notification.infrastructure.service.NotificationHistoryServiceImpl;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

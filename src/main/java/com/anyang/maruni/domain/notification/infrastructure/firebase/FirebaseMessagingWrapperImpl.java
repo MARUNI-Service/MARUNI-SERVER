@@ -1,4 +1,4 @@
-package com.anyang.maruni.domain.notification.infrastructure;
+package com.anyang.maruni.domain.notification.infrastructure.firebase;
 
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.messaging.FirebaseMessaging;

@@ -1,7 +1,9 @@
-package com.anyang.maruni.domain.notification.infrastructure;
+package com.anyang.maruni.domain.notification.infrastructure.config;
 
 import com.anyang.maruni.domain.notification.domain.service.NotificationHistoryService;
 import com.anyang.maruni.domain.notification.domain.service.NotificationService;
+import com.anyang.maruni.domain.notification.infrastructure.decorator.NotificationHistoryDecorator;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

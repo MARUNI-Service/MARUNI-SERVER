@@ -1,4 +1,4 @@
-package com.anyang.maruni.domain.notification.infrastructure;
+package com.anyang.maruni.domain.notification.infrastructure.decorator;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

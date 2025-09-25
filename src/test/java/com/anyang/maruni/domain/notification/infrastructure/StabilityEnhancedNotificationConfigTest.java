@@ -3,6 +3,10 @@ package com.anyang.maruni.domain.notification.infrastructure;
 import com.anyang.maruni.domain.notification.domain.vo.NotificationChannelType;
 import com.anyang.maruni.domain.notification.domain.service.NotificationHistoryService;
 import com.anyang.maruni.domain.notification.domain.service.NotificationService;
+import com.anyang.maruni.domain.notification.infrastructure.config.StabilityEnhancedNotificationConfig;
+import com.anyang.maruni.domain.notification.infrastructure.decorator.FallbackNotificationService;
+import com.anyang.maruni.domain.notification.infrastructure.decorator.NotificationHistoryDecorator;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

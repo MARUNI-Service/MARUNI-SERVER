@@ -1,9 +1,10 @@
-package com.anyang.maruni.domain.notification.infrastructure;
+package com.anyang.maruni.domain.notification.infrastructure.service;
 
 import com.anyang.maruni.domain.notification.domain.exception.NotificationException;
 import com.anyang.maruni.domain.notification.domain.vo.NotificationChannelType;
 import com.anyang.maruni.domain.notification.domain.service.NotificationService;
 import com.anyang.maruni.domain.notification.domain.service.PushTokenService;
+import com.anyang.maruni.domain.notification.infrastructure.firebase.FirebaseMessagingWrapper;
 import com.anyang.maruni.global.config.properties.FirebaseProperties;
 import com.anyang.maruni.global.response.error.ErrorCode;
 import com.google.firebase.messaging.FirebaseMessagingException;

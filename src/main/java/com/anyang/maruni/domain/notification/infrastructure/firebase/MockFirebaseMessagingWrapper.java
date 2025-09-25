@@ -1,4 +1,4 @@
-package com.anyang.maruni.domain.notification.infrastructure;
+package com.anyang.maruni.domain.notification.infrastructure.firebase;
 
 import com.google.firebase.messaging.Message;
 import lombok.extern.slf4j.Slf4j;

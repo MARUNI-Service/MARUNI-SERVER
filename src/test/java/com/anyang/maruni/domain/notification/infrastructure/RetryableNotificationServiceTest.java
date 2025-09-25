@@ -2,6 +2,8 @@ package com.anyang.maruni.domain.notification.infrastructure;
 
 import com.anyang.maruni.domain.notification.domain.vo.NotificationChannelType;
 import com.anyang.maruni.domain.notification.domain.service.NotificationService;
+import com.anyang.maruni.domain.notification.infrastructure.config.NotificationRetryConfig;
+import com.anyang.maruni.domain.notification.infrastructure.decorator.RetryableNotificationService;
 import com.anyang.maruni.global.exception.NotificationException;
 import com.anyang.maruni.global.response.error.ErrorCode;
 import org.junit.jupiter.api.BeforeEach;

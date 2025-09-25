@@ -1,4 +1,4 @@
-package com.anyang.maruni.domain.notification.infrastructure;
+package com.anyang.maruni.domain.notification.infrastructure.service;
 
 import com.anyang.maruni.domain.notification.domain.entity.NotificationHistory;
 import com.anyang.maruni.domain.notification.domain.repository.NotificationHistoryRepository;
