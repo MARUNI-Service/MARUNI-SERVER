@@ -5,6 +5,7 @@ import com.anyang.maruni.domain.guardian.application.dto.GuardianResponseDto;
 import com.anyang.maruni.domain.guardian.application.dto.GuardianUpdateRequestDto;
 import com.anyang.maruni.domain.guardian.application.service.GuardianService;
 import com.anyang.maruni.domain.member.application.dto.response.MemberResponse;
+import com.anyang.maruni.domain.member.infrastructure.security.CustomUserDetails;
 import com.anyang.maruni.global.response.annotation.AutoApiResponse;
 import com.anyang.maruni.global.response.annotation.SuccessCodeAnnotation;
 import com.anyang.maruni.global.response.success.SuccessCode;
@@ -13,6 +14,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -71,24 +73,34 @@ public class GuardianController {
         guardianService.deactivateGuardian(guardianId);
     }
 
-    @PostMapping("/{guardianId}/members/{memberId}")
-    @Operation(summary = "회원에게 보호자 할당", description = "특정 회원에게 보호자를 할당합니다.")
+    @PostMapping("/{guardianId}/assign")
+    @Operation(summary = "현재 회원에게 보호자 할당", description = "인증된 현재 회원에게 보호자를 할당합니다.")
     @SuccessCodeAnnotation(SuccessCode.SUCCESS)
     public void assignGuardianToMember(
         @Parameter(description = "보호자 ID", example = "1")
         @PathVariable Long guardianId,
-        @Parameter(description = "회원 ID", example = "1")
-        @PathVariable Long memberId) {
+        Authentication authentication) {
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        Long memberId = userDetails.getMemberId();
         guardianService.assignGuardianToMember(memberId, guardianId);
     }
 
-    @DeleteMapping("/members/{memberId}/guardian")
-    @Operation(summary = "회원의 보호자 관계 해제", description = "특정 회원의 보호자 관계를 해제합니다.")
+    @DeleteMapping("/remove-guardian")
+    @Operation(summary = "현재 회원의 보호자 관계 해제", description = "인증된 현재 회원의 보호자 관계를 해제합니다.")
     @SuccessCodeAnnotation(SuccessCode.SUCCESS)
-    public void removeGuardianFromMember(
-        @Parameter(description = "회원 ID", example = "1")
-        @PathVariable Long memberId) {
+    public void removeGuardianFromMember(Authentication authentication) {
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        Long memberId = userDetails.getMemberId();
         guardianService.removeGuardianFromMember(memberId);
+    }
+
+    @GetMapping("/my-guardian")
+    @Operation(summary = "현재 회원의 보호자 조회", description = "인증된 현재 회원의 보호자 정보를 조회합니다.")
+    @SuccessCodeAnnotation(SuccessCode.SUCCESS)
+    public GuardianResponseDto getMyGuardian(Authentication authentication) {
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        Long memberId = userDetails.getMemberId();
+        return guardianService.getGuardianByMemberId(memberId);
     }
 
     @GetMapping("/{guardianId}/members")

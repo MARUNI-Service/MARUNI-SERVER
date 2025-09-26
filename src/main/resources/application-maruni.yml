@@ -1,0 +1,76 @@
+# MARUNI 도메인 비즈니스 설정 파일
+# Spring Boot Profile: maruni
+
+# Phase 2 MVP 스케줄링 & 푸시 알림 설정
+maruni:
+  scheduling:
+    daily-check:
+      cron: "0 0 9 * * *" # 매일 오전 9시
+      batch-size: 50
+      timeout-seconds: 30
+    retry:
+      cron: "0 */5 * * * *" # 5분마다
+      max-retries: 3
+      delay-minutes: 5
+
+  notification:
+    push:
+      enabled: true # MVP에서는 푸시 알림만 활성화
+      provider: "firebase"
+      project-id: ${FIREBASE_PROJECT_ID:maruni-project}
+    # Phase 1 Week 4-5: 안정성 강화 시스템 설정
+    stability:
+      enabled: ${NOTIFICATION_STABILITY_ENABLED:true}  # 기본값: true (전체 안정성 시스템 활성화)
+    fallback:
+      enabled: ${NOTIFICATION_FALLBACK_ENABLED:true}   # 기본값: true (Fallback 시스템 활성화)
+    history:
+      enabled: ${NOTIFICATION_HISTORY_ENABLED:true}    # 기본값: true (History 시스템 활성화)
+    retry:
+      enabled: ${NOTIFICATION_RETRY_ENABLED:true}      # 기본값: true (Retry 시스템 활성화)
+      max-attempts: ${NOTIFICATION_RETRY_MAX_ATTEMPTS:3}        # 최대 재시도 횟수
+      initial-delay-ms: ${NOTIFICATION_RETRY_INITIAL_DELAY:1000} # 초기 지연시간 (1초)
+      multiplier: ${NOTIFICATION_RETRY_MULTIPLIER:2.0}          # 백오프 배수 (지수적 증가)
+
+  # AlertRule 도메인 설정 (Phase 1 리팩토링)
+  alert:
+    analysis:
+      default-days: 7
+    emotion:
+      high-risk-consecutive-days: 3
+      high-risk-negative-ratio: 0.7
+      medium-risk-consecutive-days: 2
+      medium-risk-negative-ratio: 0.5
+    keyword:
+      emergency:
+        - "도와주세요"
+        - "아파요"
+        - "숨이"
+        - "가슴이"
+        - "쓰러짐"
+        - "응급실"
+        - "119"
+        - "병원"
+        - "죽겠어"
+      warning:
+        - "우울해"
+        - "외로워"
+        - "죽고싶어"
+        - "포기"
+        - "희망없어"
+        - "의미없어"
+        - "괴로워"
+        - "힘들어"
+    notification:
+      title-template: "[MARUNI 알림] %s 단계 이상징후 감지"
+      detection-details-json-template: "{\"alertLevel\":\"%s\",\"analysisDetails\":\"%s\"}"
+      notification-failure-log: "Guardian notification failed for member: %d"
+      notification-error-log: "Error sending guardian notification: %s"
+    no-response:
+      high-risk-consecutive-no-response-days: 2
+      high-risk-min-response-rate: 0.3
+      medium-risk-consecutive-no-response-days: 1
+      medium-risk-min-response-rate: 0.5
+
+  encryption:
+    algorithm: "AES/GCM/NoPadding"
+    key: ${ENCRYPTION_KEY:default_encryption_key_32_bytes}

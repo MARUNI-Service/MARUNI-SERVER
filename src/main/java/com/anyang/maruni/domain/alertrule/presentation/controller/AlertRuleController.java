@@ -14,21 +14,27 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.anyang.maruni.domain.alertrule.application.dto.AlertConditionDto;
-import com.anyang.maruni.domain.alertrule.application.dto.AlertDetectionResultDto;
-import com.anyang.maruni.domain.alertrule.application.dto.AlertHistoryResponseDto;
-import com.anyang.maruni.domain.alertrule.application.dto.AlertRuleCreateRequestDto;
-import com.anyang.maruni.domain.alertrule.application.dto.AlertRuleResponseDto;
-import com.anyang.maruni.domain.alertrule.application.dto.AlertRuleUpdateRequestDto;
-import com.anyang.maruni.domain.alertrule.application.service.AlertRuleService;
+import com.anyang.maruni.domain.alertrule.application.dto.request.AlertConditionDto;
+import com.anyang.maruni.domain.alertrule.application.dto.request.AlertRuleCreateRequestDto;
+import com.anyang.maruni.domain.alertrule.application.dto.request.AlertRuleUpdateRequestDto;
+import com.anyang.maruni.domain.alertrule.application.dto.response.AlertDetectionResultDto;
+import com.anyang.maruni.domain.alertrule.application.dto.response.AlertHistoryResponseDto;
+import com.anyang.maruni.domain.alertrule.application.dto.response.AlertRuleResponseDto;
+import com.anyang.maruni.domain.alertrule.application.service.core.AlertRuleService;
+import com.anyang.maruni.domain.alertrule.domain.entity.AlertCondition;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertRule;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
 import com.anyang.maruni.global.response.annotation.AutoApiResponse;
 import com.anyang.maruni.global.response.annotation.SuccessCodeAnnotation;
 import com.anyang.maruni.global.response.success.SuccessCode;
+import com.anyang.maruni.global.swagger.CustomExceptionDescription;
+import com.anyang.maruni.global.swagger.SwaggerResponseDescription;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -40,19 +46,26 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/alert-rules")
 @RequiredArgsConstructor
 @AutoApiResponse
-@Tag(name = "AlertRule API", description = "이상징후 감지 알림 규칙 관리 API")
+@Tag(name = "알림 규칙 관리 API", description = "이상징후 감지 알림 규칙 관리 API")
 public class AlertRuleController {
 
     private final AlertRuleService alertRuleService;
 
-    /**
-     * 알림 규칙 생성
-     */
+    @Operation(
+        summary = "알림 규칙 생성",
+        description = "새로운 이상징후 감지 알림 규칙을 생성합니다."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "알림 규칙 생성 성공"),
+        @ApiResponse(responseCode = "400", description = "입력값 유효성 실패", content = @Content),
+        @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content),
+        @ApiResponse(responseCode = "404", description = "회원이 존재하지 않음", content = @Content)
+    })
     @PostMapping
-    @Operation(summary = "알림 규칙 생성", description = "새로운 이상징후 감지 알림 규칙을 생성합니다.")
+    @CustomExceptionDescription(SwaggerResponseDescription.COMMON_ERROR)
     @SuccessCodeAnnotation(SuccessCode.SUCCESS)
     public AlertRuleResponseDto createAlertRule(
-            @AuthenticationPrincipal MemberEntity member,
+            @Parameter(hidden = true) @AuthenticationPrincipal MemberEntity member,
             @Valid @RequestBody AlertRuleCreateRequestDto request) {
 
         // DTO를 AlertCondition 엔티티로 변환 (간소화된 버전)
@@ -66,14 +79,20 @@ public class AlertRuleController {
         return AlertRuleResponseDto.from(alertRule);
     }
 
-    /**
-     * 알림 규칙 목록 조회
-     */
+    @Operation(
+        summary = "알림 규칙 목록 조회",
+        description = "현재 회원의 모든 알림 규칙 목록을 조회합니다."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "알림 규칙 목록 조회 성공"),
+        @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content),
+        @ApiResponse(responseCode = "404", description = "회원이 존재하지 않음", content = @Content)
+    })
     @GetMapping
-    @Operation(summary = "알림 규칙 목록 조회", description = "현재 회원의 모든 알림 규칙 목록을 조회합니다.")
+    @CustomExceptionDescription(SwaggerResponseDescription.COMMON_ERROR)
     @SuccessCodeAnnotation(SuccessCode.SUCCESS)
     public List<AlertRuleResponseDto> getAlertRules(
-            @AuthenticationPrincipal MemberEntity member) {
+            @Parameter(hidden = true) @AuthenticationPrincipal MemberEntity member) {
 
         List<AlertRule> alertRules = alertRuleService.getActiveRulesByMemberId(member.getId());
 
@@ -82,91 +101,126 @@ public class AlertRuleController {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * 알림 규칙 상세 조회
-     */
+    @Operation(
+        summary = "알림 규칙 상세 조회",
+        description = "특정 알림 규칙의 상세 정보를 조회합니다."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "알림 규칙 상세 조회 성공"),
+        @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content),
+        @ApiResponse(responseCode = "403", description = "접근 권한 없음", content = @Content),
+        @ApiResponse(responseCode = "404", description = "알림 규칙을 찾을 수 없음", content = @Content)
+    })
     @GetMapping("/{id}")
-    @Operation(summary = "알림 규칙 상세 조회", description = "특정 알림 규칙의 상세 정보를 조회합니다.")
+    @CustomExceptionDescription(SwaggerResponseDescription.COMMON_ERROR)
     @SuccessCodeAnnotation(SuccessCode.SUCCESS)
     public AlertRuleResponseDto getAlertRule(
             @PathVariable Long id,
             @Parameter(hidden = true) @AuthenticationPrincipal MemberEntity member) {
 
-        // 실제로는 alertRuleService에 getAlertRuleById 메서드가 필요하지만
-        // 현재 구현되지 않았으므로 간소화된 응답
-        return AlertRuleResponseDto.builder()
-                .id(id)
-                .memberId(member.getId())
-                .build();
+        AlertRule alertRule = alertRuleService.getAlertRuleById(id);
+
+        // TODO: 추후 권한 검증 로직 추가 (현재 회원이 해당 알림 규칙의 소유자인지 확인)
+        // if (!alertRule.getMember().getId().equals(member.getId())) {
+        //     throw new AlertRuleAccessDeniedException(id, member.getId());
+        // }
+
+        return AlertRuleResponseDto.from(alertRule);
     }
 
-    /**
-     * 알림 규칙 수정
-     */
+    @Operation(
+        summary = "알림 규칙 수정",
+        description = "기존 알림 규칙의 설정을 수정합니다."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "알림 규칙 수정 성공"),
+        @ApiResponse(responseCode = "400", description = "입력값 유효성 실패", content = @Content),
+        @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content),
+        @ApiResponse(responseCode = "403", description = "접근 권한 없음", content = @Content),
+        @ApiResponse(responseCode = "404", description = "알림 규칙을 찾을 수 없음", content = @Content)
+    })
     @PutMapping("/{id}")
-    @Operation(summary = "알림 규칙 수정", description = "기존 알림 규칙의 설정을 수정합니다.")
+    @CustomExceptionDescription(SwaggerResponseDescription.COMMON_ERROR)
     @SuccessCodeAnnotation(SuccessCode.SUCCESS)
     public AlertRuleResponseDto updateAlertRule(
             @PathVariable Long id,
             @Valid @RequestBody AlertRuleUpdateRequestDto request,
             @Parameter(hidden = true) @AuthenticationPrincipal MemberEntity member) {
 
-        // 실제로는 alertRuleService에 updateAlertRule 메서드가 필요하지만
-        // 현재 구현되지 않았으므로 간소화된 응답
-        return AlertRuleResponseDto.builder()
-                .id(id)
-                .memberId(member.getId())
-                .alertLevel(request.getAlertLevel())
-                .ruleName(request.getRuleName())
-                .description(request.getDescription())
-                .active(request.getActive())
-                .build();
+        // TODO: 추후 권한 검증 로직 추가
+
+        AlertRule updatedAlertRule = alertRuleService.updateAlertRule(
+                id,
+                request.getRuleName(),
+                request.getDescription(),
+                request.getAlertLevel()
+        );
+
+        return AlertRuleResponseDto.from(updatedAlertRule);
     }
 
-    /**
-     * 알림 규칙 삭제
-     */
+    @Operation(
+        summary = "알림 규칙 삭제",
+        description = "알림 규칙을 삭제합니다."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "알림 규칙 삭제 성공"),
+        @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content),
+        @ApiResponse(responseCode = "403", description = "접근 권한 없음", content = @Content),
+        @ApiResponse(responseCode = "404", description = "알림 규칙을 찾을 수 없음", content = @Content)
+    })
     @DeleteMapping("/{id}")
-    @Operation(summary = "알림 규칙 삭제", description = "알림 규칙을 삭제합니다.")
+    @CustomExceptionDescription(SwaggerResponseDescription.COMMON_ERROR)
     @SuccessCodeAnnotation(SuccessCode.SUCCESS)
     public void deleteAlertRule(
             @PathVariable Long id,
             @Parameter(hidden = true) @AuthenticationPrincipal MemberEntity member) {
 
-        // 실제로는 alertRuleService에 deleteAlertRule 메서드가 필요하지만
-        // 현재 구현되지 않았으므로 빈 구현
+        // TODO: 추후 권한 검증 로직 추가
+
+        alertRuleService.deleteAlertRule(id);
     }
 
-    /**
-     * 알림 규칙 활성화/비활성화 토글
-     */
+    @Operation(
+        summary = "알림 규칙 활성화/비활성화",
+        description = "알림 규칙의 활성화 상태를 토글합니다."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "알림 규칙 상태 변경 성공"),
+        @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content),
+        @ApiResponse(responseCode = "403", description = "접근 권한 없음", content = @Content),
+        @ApiResponse(responseCode = "404", description = "알림 규칙을 찾을 수 없음", content = @Content)
+    })
     @PostMapping("/{id}/toggle")
-    @Operation(summary = "알림 규칙 활성화/비활성화", description = "알림 규칙의 활성화 상태를 토글합니다.")
+    @CustomExceptionDescription(SwaggerResponseDescription.COMMON_ERROR)
     @SuccessCodeAnnotation(SuccessCode.SUCCESS)
     public AlertRuleResponseDto toggleAlertRule(
             @PathVariable Long id,
             @RequestParam boolean active,
             @Parameter(hidden = true) @AuthenticationPrincipal MemberEntity member) {
 
-        alertRuleService.toggleAlertRule(id, active);
+        // TODO: 추후 권한 검증 로직 추가
 
-        // 실제로는 업데이트된 알림 규칙을 반환해야 하지만 간소화된 응답
-        return AlertRuleResponseDto.builder()
-                .id(id)
-                .memberId(member.getId())
-                .active(active)
-                .build();
+        AlertRule updatedAlertRule = alertRuleService.toggleAlertRule(id, active);
+
+        return AlertRuleResponseDto.from(updatedAlertRule);
     }
 
-    /**
-     * 알림 이력 조회
-     */
+    @Operation(
+        summary = "알림 이력 조회",
+        description = "회원의 이상징후 감지 이력을 조회합니다."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "알림 이력 조회 성공"),
+        @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content),
+        @ApiResponse(responseCode = "404", description = "회원이 존재하지 않음", content = @Content)
+    })
     @GetMapping("/history")
-    @Operation(summary = "알림 이력 조회", description = "회원의 이상징후 감지 이력을 조회합니다.")
+    @CustomExceptionDescription(SwaggerResponseDescription.COMMON_ERROR)
     @SuccessCodeAnnotation(SuccessCode.SUCCESS)
     public List<AlertHistoryResponseDto> getAlertHistory(
             @RequestParam(defaultValue = "30") int days,
-            @AuthenticationPrincipal MemberEntity member) {
+            @Parameter(hidden = true) @AuthenticationPrincipal MemberEntity member) {
 
         return alertRuleService.getRecentAlertHistory(member.getId(), days)
                 .stream()
@@ -174,14 +228,20 @@ public class AlertRuleController {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * 수동 이상징후 감지 실행
-     */
+    @Operation(
+        summary = "수동 이상징후 감지",
+        description = "회원에 대해 수동으로 이상징후 감지를 실행합니다."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "이상징후 감지 실행 성공"),
+        @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content),
+        @ApiResponse(responseCode = "404", description = "회원이 존재하지 않음", content = @Content)
+    })
     @PostMapping("/detect")
-    @Operation(summary = "수동 이상징후 감지", description = "회원에 대해 수동으로 이상징후 감지를 실행합니다.")
+    @CustomExceptionDescription(SwaggerResponseDescription.COMMON_ERROR)
     @SuccessCodeAnnotation(SuccessCode.SUCCESS)
     public AlertDetectionResultDto detectAnomalies(
-            @AuthenticationPrincipal MemberEntity member) {
+            @Parameter(hidden = true) @AuthenticationPrincipal MemberEntity member) {
 
         return AlertDetectionResultDto.from(
                 member.getId(),
@@ -193,9 +253,9 @@ public class AlertRuleController {
      * AlertConditionDto를 실제 AlertCondition 엔티티로 변환하는 헬퍼 메서드
      * (실제 구현에서는 더 정교한 변환 로직이 필요)
      */
-    private com.anyang.maruni.domain.alertrule.domain.entity.AlertCondition convertToAlertCondition(AlertConditionDto dto) {
+    private AlertCondition convertToAlertCondition(AlertConditionDto dto) {
         // 간소화된 변환 로직 - 실제로는 AlertCondition.builder() 등을 사용
-        return com.anyang.maruni.domain.alertrule.domain.entity.AlertCondition.builder()
+        return AlertCondition.builder()
                 .consecutiveDays(dto.getConsecutiveDays())
                 .thresholdCount(dto.getThresholdCount())
                 .keywords(dto.getKeywords())

@@ -24,7 +24,8 @@ com.anyang.maruni.domain.guardian/
 │   ├── service/                   # Application Service
 │   │   └── GuardianService.java        ✅ 완성 (TDD 완료)
 │   └── exception/                 # Custom Exception
-│       └── GuardianNotFoundException.java ✅ 완성
+│       ├── GuardianNotFoundException.java ✅ 완성
+│       └── MemberNotFoundException.java ✅ 완성
 ├── domain/                        # Domain Layer
 │   ├── entity/                    # Domain Entity
 │   │   ├── GuardianEntity.java         ✅ 완성
@@ -328,10 +329,18 @@ switch (guardian.getNotificationPreference()) {
 
 ### Custom Exception
 ```java
+
 // GuardianNotFoundException
-public class GuardianNotFoundException extends RuntimeException {
+public class GuardianNotFoundException extends BaseException {
     public GuardianNotFoundException(Long guardianId) {
-        super("Guardian not found with id: " + guardianId);
+        super(ErrorCode.GUARDIAN_NOT_FOUND);
+    }
+}
+
+// MemberNotFoundException (Guardian 컨텍스트)
+public class MemberNotFoundException extends BaseException {
+    public MemberNotFoundException(Long memberId) {
+        super(ErrorCode.MEMBER_NOT_FOUND);
     }
 }
 
@@ -339,6 +348,11 @@ public class GuardianNotFoundException extends RuntimeException {
 private GuardianEntity findGuardianById(Long guardianId) {
     return guardianRepository.findById(guardianId)
         .orElseThrow(() -> new GuardianNotFoundException(guardianId));
+}
+
+private MemberEntity findMemberById(Long memberId) {
+    return memberRepository.findById(memberId)
+        .orElseThrow(() -> new MemberNotFoundException(memberId));
 }
 ```
 
@@ -350,6 +364,13 @@ private void validateGuardianEmailNotExists(String email) {
         .ifPresent(guardian -> {
             throw new IllegalArgumentException("Guardian with email already exists: " + email);
         });
+}
+
+// Helper 메서드들
+private List<MemberResponse> convertToMemberResponses(List<MemberEntity> members) {
+    return members.stream()
+        .map(MemberResponse::from)
+        .toList();
 }
 ```
 

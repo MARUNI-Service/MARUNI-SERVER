@@ -10,6 +10,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.context.annotation.Import;
+
+import com.anyang.maruni.global.config.JpaConfig;
 
 import java.util.List;
 import java.util.Optional;
@@ -25,6 +28,7 @@ import static org.assertj.core.api.Assertions.*;
  * - Guardian-Member 관계 쿼리
  */
 @DataJpaTest
+@Import(JpaConfig.class)
 @DisplayName("Guardian Repository 테스트")
 class GuardianRepositoryTest {
 
