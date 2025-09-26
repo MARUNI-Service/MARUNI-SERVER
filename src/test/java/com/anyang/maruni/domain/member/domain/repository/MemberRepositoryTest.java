@@ -11,13 +11,16 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
+import com.anyang.maruni.global.config.JpaConfig;
 import com.anyang.maruni.global.oauth2.domain.entity.SocialType;
 
 @DataJpaTest
 @ActiveProfiles("test")
+@Import(JpaConfig.class)
 @DisplayName("MemberRepository 데이터 접근 테스트")
 class MemberRepositoryTest {
 

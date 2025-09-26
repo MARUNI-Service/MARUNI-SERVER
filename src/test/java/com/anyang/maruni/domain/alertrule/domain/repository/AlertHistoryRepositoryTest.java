@@ -10,9 +10,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.TestPropertySource;
+
+import com.anyang.maruni.global.config.JpaConfig;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -25,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * TDD Red 단계: 알림 이력 Repository 테스트
  */
 @DataJpaTest
+@Import(JpaConfig.class)
 @DisplayName("AlertHistoryRepository 테스트")
 class AlertHistoryRepositoryTest {
 
@@ -113,7 +117,7 @@ class AlertHistoryRepositoryTest {
 
         // When
         Page<AlertHistory> emergencyPage = alertHistoryRepository
-                .findByMemberIdAndMinAlertLevel(testMember.getId(), AlertLevel.EMERGENCY, PageRequest.of(0, 10));
+                .findByMemberIdAndAlertLevel(testMember.getId(), AlertLevel.EMERGENCY, PageRequest.of(0, 10));
 
         // Then
         assertThat(emergencyPage.getContent()).hasSize(1);

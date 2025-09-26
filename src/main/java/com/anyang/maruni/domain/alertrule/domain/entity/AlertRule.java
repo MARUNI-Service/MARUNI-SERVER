@@ -18,7 +18,11 @@ import java.util.List;
  * 각 회원별로 다양한 감지 규칙을 설정할 수 있습니다.
  */
 @Entity
-@Table(name = "alert_rule")
+@Table(name = "alert_rule", indexes = {
+    @Index(name = "idx_alert_rule_member_type_active", columnList = "member_id, alert_type, is_active"),
+    @Index(name = "idx_alert_rule_level_active", columnList = "alert_level, is_active"),
+    @Index(name = "idx_alert_rule_member_active", columnList = "member_id, is_active")
+})
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor

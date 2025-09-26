@@ -56,6 +56,10 @@ public class MemberEntity extends BaseTimeEntity {
 	@JoinColumn(name = "guardian_id")
 	private GuardianEntity guardian;
 
+	// 푸시 알림 토큰 (Firebase FCM 토큰)
+	@Column(name = "push_token", length = 1000)
+	private String pushToken;
+
 	public static MemberEntity createRegularMember(String email, String name, String password) {
 		return MemberEntity.builder()
 			.memberEmail(email)
@@ -91,5 +95,18 @@ public class MemberEntity extends BaseTimeEntity {
 
 	public void removeGuardian() {
 		this.guardian = null;
+	}
+
+	// 푸시 토큰 관리 메서드
+	public void updatePushToken(String pushToken) {
+		this.pushToken = pushToken;
+	}
+
+	public void removePushToken() {
+		this.pushToken = null;
+	}
+
+	public boolean hasPushToken() {
+		return this.pushToken != null && !this.pushToken.trim().isEmpty();
 	}
 }

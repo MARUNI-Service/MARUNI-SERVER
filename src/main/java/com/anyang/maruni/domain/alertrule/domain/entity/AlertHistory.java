@@ -1,7 +1,6 @@
 package com.anyang.maruni.domain.alertrule.domain.entity;
 
 import static java.time.Duration.*;
-import static java.time.LocalTime.*;
 
 import java.time.LocalDateTime;
 
@@ -16,6 +15,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -32,9 +32,16 @@ import lombok.NoArgsConstructor;
  * 중복 알림 방지와 이력 관리를 위해 사용됩니다.
  */
 @Entity
-@Table(name = "alert_history", uniqueConstraints = {
+@Table(name = "alert_history",
+    uniqueConstraints = {
         @UniqueConstraint(columnNames = {"member_id", "alert_rule_id", "alert_date"})
-})
+    },
+    indexes = {
+        @Index(name = "idx_alert_history_member_date", columnList = "member_id, alert_date"),
+        @Index(name = "idx_alert_history_level_date", columnList = "alert_level, alert_date"),
+        @Index(name = "idx_alert_history_notification", columnList = "is_notification_sent, alert_date")
+    }
+)
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
@@ -116,15 +123,8 @@ public class AlertHistory extends BaseTimeEntity {
     public static AlertHistory createAlert(
             AlertRule alertRule, MemberEntity member,
             String alertMessage, String detectionDetails) {
-        return AlertHistory.builder()
-                .alertRule(alertRule)
-                .member(member)
-                .alertLevel(alertRule.getAlertLevel())
-                .alertMessage(alertMessage)
-                .detectionDetails(detectionDetails)
-                .alertDate(LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0)) // 일자 기준으로 중복 방지
-                .isNotificationSent(false)
-                .build();
+        LocalDateTime alertDate = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0); // 일자 기준으로 중복 방지
+        return createAlertWithLevelAndDate(alertRule, member, alertRule.getAlertLevel(), alertMessage, detectionDetails, alertDate);
     }
 
     /**
@@ -138,15 +138,7 @@ public class AlertHistory extends BaseTimeEntity {
     public static AlertHistory createEmergencyAlert(
             AlertRule alertRule, MemberEntity member,
             String alertMessage, String detectionDetails) {
-        return AlertHistory.builder()
-                .alertRule(alertRule)
-                .member(member)
-                .alertLevel(AlertLevel.EMERGENCY)
-                .alertMessage(alertMessage)
-                .detectionDetails(detectionDetails)
-                .alertDate(LocalDateTime.now()) // 긴급상황은 실시간으로 기록
-                .isNotificationSent(false)
-                .build();
+        return createAlertWithLevelAndDate(alertRule, member, AlertLevel.EMERGENCY, alertMessage, detectionDetails, LocalDateTime.now()); // 긴급상황은 실시간으로 기록
     }
 
     /**
@@ -162,10 +154,26 @@ public class AlertHistory extends BaseTimeEntity {
             AlertRule alertRule, MemberEntity member,
             String alertMessage, String detectionDetails,
             LocalDateTime alertDate) {
+        return createAlertWithLevelAndDate(alertRule, member, alertRule.getAlertLevel(), alertMessage, detectionDetails, alertDate);
+    }
+
+    /**
+     * 공통 알림 이력 생성 헬퍼 메서드 (중복 제거용)
+     * @param alertRule 알림 규칙
+     * @param member 대상 회원
+     * @param alertLevel 알림 레벨
+     * @param alertMessage 알림 메시지
+     * @param detectionDetails 감지 상세 정보
+     * @param alertDate 알림 날짜
+     * @return AlertHistory
+     */
+    private static AlertHistory createAlertWithLevelAndDate(
+            AlertRule alertRule, MemberEntity member, AlertLevel alertLevel,
+            String alertMessage, String detectionDetails, LocalDateTime alertDate) {
         return AlertHistory.builder()
                 .alertRule(alertRule)
                 .member(member)
-                .alertLevel(alertRule.getAlertLevel())
+                .alertLevel(alertLevel)
                 .alertMessage(alertMessage)
                 .detectionDetails(detectionDetails)
                 .alertDate(alertDate)
@@ -213,6 +221,6 @@ public class AlertHistory extends BaseTimeEntity {
      * 알림 발생 후 경과 시간(분) 계산
      */
     public long getMinutesElapsed() {
-        return between(getCreatedAt(), now()).toMinutes();
+        return between(getCreatedAt(), LocalDateTime.now()).toMinutes();
     }
 }

@@ -49,9 +49,9 @@ public interface AlertHistoryRepository extends JpaRepository<AlertHistory, Long
             @Param("endDate") LocalDateTime endDate);
 
     /**
-     * 회원별 특정 레벨 이상의 알림 이력 조회
+     * 회원별 특정 알림 레벨의 알림 이력 조회
      * @param memberId 회원 ID
-     * @param alertLevel 최소 알림 레벨
+     * @param alertLevel 알림 레벨
      * @param pageable 페이징 정보
      * @return 알림 이력 페이지
      */
@@ -59,7 +59,7 @@ public interface AlertHistoryRepository extends JpaRepository<AlertHistory, Long
            "WHERE ah.member.id = :memberId " +
            "AND ah.alertLevel = :alertLevel " +
            "ORDER BY ah.createdAt DESC")
-    Page<AlertHistory> findByMemberIdAndMinAlertLevel(
+    Page<AlertHistory> findByMemberIdAndAlertLevel(
             @Param("memberId") Long memberId,
             @Param("alertLevel") AlertLevel alertLevel,
             Pageable pageable);
@@ -109,14 +109,24 @@ public interface AlertHistoryRepository extends JpaRepository<AlertHistory, Long
             @Param("daysAgo") LocalDateTime daysAgo);
 
     /**
-     * 전체 긴급 알림 이력 조회 (관리자용)
+     * 특정 알림 레벨의 모든 알림 이력 조회 (관리자용)
+     * @param alertLevel 알림 레벨
+     * @param pageable 페이징 정보
+     * @return 알림 이력 페이지
+     */
+    @Query("SELECT ah FROM AlertHistory ah " +
+           "WHERE ah.alertLevel = :alertLevel " +
+           "ORDER BY ah.createdAt DESC")
+    Page<AlertHistory> findAllByAlertLevel(@Param("alertLevel") AlertLevel alertLevel, Pageable pageable);
+
+    /**
+     * 전체 긴급 알림 이력 조회 (관리자용) - 편의 메서드
      * @param pageable 페이징 정보
      * @return 긴급 알림 이력 페이지
      */
-    @Query("SELECT ah FROM AlertHistory ah " +
-           "WHERE ah.alertLevel = 'EMERGENCY' " +
-           "ORDER BY ah.createdAt DESC")
-    Page<AlertHistory> findAllEmergencyAlerts(Pageable pageable);
+    default Page<AlertHistory> findAllEmergencyAlerts(Pageable pageable) {
+        return findAllByAlertLevel(AlertLevel.EMERGENCY, pageable);
+    }
 
     /**
      * 알림 발송 성공률 통계 (최근 N일)
