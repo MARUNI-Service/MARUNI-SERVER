@@ -1,4 +1,4 @@
-# Member 도메인 구현 가이드라인 (2025-09-16 완성)
+# Member 도메인 구현 가이드라인 (2025-09-27 최신화)
 
 ## 🎉 완성 상태 요약
 
@@ -10,6 +10,8 @@
 - ✅ **비밀번호 암호화**: `PasswordEncoder`를 사용한 안전한 비밀번호 저장
 - ✅ **REST API 완성**: 2개의 컨트롤러, 5개 엔드포인트 + Swagger 문서화 (JWT 기반 보안 강화)
 - ✅ **도메인 연동**: Auth, Guardian, DailyCheck 도메인과의 의존 관계 명확히 구현
+- ✅ **푸시 알림 지원**: Firebase FCM 푸시 토큰 관리 기능 추가
+- ✅ **데이터베이스 최적화**: 이메일, 소셜 로그인 인덱스 추가
 - ✅ **실제 운영 준비**: 상용 서비스 수준의 회원 관리 시스템
 
 ## 📐 아키텍처 구조
@@ -25,6 +27,8 @@ com.anyang.maruni.domain.member/
 │   │   │   └── MemberUpdateRequest.java     ✅ 완성
 │   │   └── response/
 │   │       └── MemberResponse.java          ✅ 완성
+│   ├── exception/
+│   │   └── MemberNotFoundException.java   ✅ 완성 (커스텀 예외)
 │   ├── mapper/
 │   │   └── MemberMapper.java              ✅ 완성
 │   └── service/
@@ -122,7 +126,10 @@ public class CustomUserDetailsService implements UserDetailsService {
 ### MemberEntity 엔티티
 ```java
 @Entity
-@Table(name = "member_table")
+@Table(name = "member_table", indexes = {
+    @Index(name = "idx_member_email", columnList = "memberEmail"),
+    @Index(name = "idx_social_type_id", columnList = "socialType, socialId"),
+})
 public class MemberEntity extends BaseTimeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -137,7 +144,10 @@ public class MemberEntity extends BaseTimeEntity {
 
     // 소셜 로그인 정보
     @Enumerated(EnumType.STRING)
+    @Column(nullable = true)
     private SocialType socialType;
+
+    @Column(nullable = true)
     private String socialId;
 
     // Guardian 도메인과의 관계 (다대일)
@@ -145,14 +155,24 @@ public class MemberEntity extends BaseTimeEntity {
     @JoinColumn(name = "guardian_id")
     private GuardianEntity guardian;
 
+    // 푸시 알림 토큰 (Firebase FCM)
+    @Column(name = "push_token", length = 1000)
+    private String pushToken;
+
     // 정적 팩토리 메서드
     public static MemberEntity createRegularMember(String email, String name, String password);
     public static MemberEntity createSocialMember(String email, String name, String password, SocialType socialType, String socialId);
 
     // 비즈니스 로직 메서드
     public void updateMemberInfo(String name, String password);
+    public void updateSocialInfo(SocialType socialType, String socialId);
     public void assignGuardian(GuardianEntity guardian);
     public void removeGuardian();
+
+    // 푸시 토큰 관리 메서드
+    public void updatePushToken(String pushToken);
+    public void removePushToken();
+    public boolean hasPushToken();
 }
 ```
 
@@ -177,6 +197,13 @@ public interface MemberRepository extends JpaRepository<MemberEntity, Long> {
 
     // Guardian 도메인을 위한 보호자별 회원 목록 조회
     List<MemberEntity> findByGuardian(GuardianEntity guardian);
+
+    // 보호자가 없는 회원 목록 조회
+    List<MemberEntity> findByGuardianIsNull();
+
+    // 특정 보호자의 회원 ID 목록 조회
+    @Query("SELECT m.id FROM MemberEntity m WHERE m.guardian.id = :guardianId")
+    List<Long> findMemberIdsByGuardianId(@Param("guardianId") Long guardianId);
 }
 ```
 
@@ -213,6 +240,10 @@ public interface MemberRepository extends JpaRepository<MemberEntity, Long> {
 ### DailyCheck 도메인
 - `DailyCheckService`는 `memberRepository.findActiveMemberIds()`를 호출하여 매일 안부 메시지를 보낼 대상 회원 목록을 조회합니다.
 
+### Notification 도메인
+- `PushTokenService`는 `MemberEntity`의 `pushToken` 필드를 통해 Firebase FCM 푸시 알림 발송을 위한 토큰을 관리합니다.
+- `updatePushToken()`, `removePushToken()`, `hasPushToken()` 메서드를 통해 푸시 토큰 생명주기를 관리합니다.
+
 ## 📈 보안 특성
 
 - **비밀번호 암호화**: `BCryptPasswordEncoder`를 사용하여 비밀번호를 단방향 암호화하여 저장합니다.
@@ -226,6 +257,13 @@ public interface MemberRepository extends JpaRepository<MemberEntity, Long> {
 1. **비밀번호 정책 강화**: `MemberService`의 `save` 또는 `update` 메서드에서 비밀번호 복잡도 검증 로직을 추가할 수 있습니다.
 2. **소셜 로그인 확장**: 새로운 소셜 로그인 제공자를 추가할 경우 `SocialType` Enum을 확장하고 관련 로직을 추가해야 합니다.
 3. **회원 상태 관리**: 현재 모든 회원은 활성 상태로 간주됩니다. 향후 휴면, 탈퇴 등 다양한 회원 상태를 관리하려면 `MemberEntity`에 상태 필드(e.g., `MemberStatus` Enum)를 추가하고 관련 비즈니스 로직을 구현해야 합니다.
+4. **푸시 토큰 갱신**: 푸시 토큰은 Firebase에서 주기적으로 갱신될 수 있으므로, 클라이언트에서 토큰 갱신 시 `updatePushToken()` 메서드를 호출하여 최신 토큰을 유지해야 합니다.
+
+### 최신 추가 기능 (2025-09-27)
+1. **푸시 알림 토큰 관리**: Firebase FCM과 연동하여 실시간 푸시 알림 발송 지원
+2. **데이터베이스 인덱스 최적화**: 이메일 조회 및 소셜 로그인 조회 성능 향상
+3. **Guardian 관계 확장**: 보호자가 없는 회원 조회, 특정 보호자의 회원 ID 목록 조회 기능 추가
+4. **소셜 정보 업데이트**: 소셜 로그인 정보 변경을 위한 `updateSocialInfo()` 메서드 추가
 
 ### API 사용 예시
 ```bash
