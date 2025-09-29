@@ -199,37 +199,54 @@ graph LR
 
 ```mermaid
 graph TB
-    subgraph "maruni-app Container"
+    subgraph "maruni-app Container (Port: 8080)"
         subgraph "Presentation Layer"
-            API[REST API Controllers<br/>25+ Endpoints]
-            Swagger[Swagger UI<br/>API Documentation]
+            API[REST API Controllers<br/>25+ Endpoints<br/>JWT + @AutoApiResponse]
+            Swagger[Swagger UI<br/>/swagger-ui.html<br/>OpenAPI 3.0 문서화]
+            Security[Spring Security<br/>JWT Filter Chain<br/>Authentication/Authorization]
         end
 
-        subgraph "Application Layer"
-            Auth[Auth Service<br/>JWT 인증/인가]
-            Member[Member Service<br/>회원 관리]
-            Conversation[Conversation Service<br/>AI 대화]
-            DailyCheck[DailyCheck Service<br/>일일 안부 확인]
-            Guardian[Guardian Service<br/>보호자 관리]
-            AlertRule[AlertRule Service<br/>이상징후 감지]
-            Notification[Notification Service<br/>알림 발송]
+        subgraph "Application Layer (6개 도메인)"
+            subgraph "Foundation Services"
+                Auth[Auth Service<br/>- Token 발급/검증<br/>- Refresh Token 관리<br/>- Redis 기반 Blacklist]
+                Member[Member Service<br/>- 회원 가입/조회<br/>- 프로필 관리<br/>- BCrypt 암호화]
+            end
+
+            subgraph "Core Services"
+                Conversation[Conversation Service<br/>- OpenAI GPT-4o 연동<br/>- 감정 분석 (3단계)<br/>- 대화 세션 관리]
+                DailyCheck[DailyCheck 시스템<br/>- DailyCheckScheduler<br/>- DailyCheckOrchestrator<br/>- RetryService (재시도)]
+                Guardian[Guardian Service<br/>- 보호자 관계 관리<br/>- 알림 설정<br/>- 권한 제어]
+            end
+
+            subgraph "Integration Services"
+                AlertRule[AlertRule Service<br/>- 3종 감지 알고리즘<br/>- 실시간 키워드 분석<br/>- 이상징후 판정]
+                Notification[Notification Service<br/>- FCM 푸시 알림<br/>- Mock/Real 환경 분리<br/>- 발송 이력 관리]
+            end
         end
 
         subgraph "Infrastructure Layer"
-            JPA[Spring Data JPA<br/>PostgreSQL 연동]
-            Redis_Client[Redis Client<br/>Lettuce]
-            Scheduler[Spring Scheduler<br/>@Scheduled]
-            Firebase_SDK[Firebase SDK<br/>FCM 연동]
-            OpenAI_Client[OpenAI Client<br/>Spring AI]
+            subgraph "Data Access"
+                JPA[Spring Data JPA<br/>- PostgreSQL 연동<br/>- Custom Repository<br/>- Query Method]
+                Redis_Client[Redis Client (Lettuce)<br/>- JWT Token Store<br/>- Session Cache<br/>- Connection Pool]
+            end
+
+            subgraph "External Integrations"
+                Scheduler[Spring Scheduler<br/>- @Scheduled Cron<br/>- Async Task<br/>- Error Handling]
+                Firebase_SDK[Firebase SDK<br/>- FCM Push Service<br/>- Token Management<br/>- Batch Notification]
+                OpenAI_Client[OpenAI Client<br/>- Spring AI Framework<br/>- GPT-4o Integration<br/>- Emotion Analysis]
+            end
         end
     end
 
-    API --> Auth
+    %% API Layer Connections
+    API -.-> Security
+    Security -.-> Auth
     API --> Member
     API --> Conversation
     API --> Guardian
     API --> AlertRule
 
+    %% Service Layer Connections
     Auth --> Redis_Client
     Member --> JPA
     Conversation --> JPA
@@ -241,20 +258,295 @@ graph TB
     AlertRule --> Notification
     Notification --> Firebase_SDK
 
+    %% Scheduler Connections
     Scheduler --> DailyCheck
+
+    %% Cross-Domain Dependencies
+    AlertRule -.-> Guardian
+    DailyCheck -.-> Member
+    Notification -.-> Guardian
+
+    %% Styling
+    classDef foundation fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef core fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef integration fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
+    classDef infrastructure fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+
+    class Auth,Member foundation
+    class Conversation,DailyCheck,Guardian core
+    class AlertRule,Notification integration
+    class JPA,Redis_Client,Scheduler,Firebase_SDK,OpenAI_Client infrastructure
 ```
 
-### 📋 **데이터 저장소 매핑**
+### 📋 **상세 데이터 저장소 매핑**
 
-| 도메인 | PostgreSQL 테이블 | Redis 키 | 용도 |
-|--------|-------------------|----------|------|
-| **Member** | `member_table` | - | 회원 정보, 프로필 |
-| **Auth** | `refresh_token` | `refreshToken:{memberId}`<br/>`blacklist:token:{token}` | JWT 토큰 관리 |
-| **Conversation** | `conversations`<br/>`messages` | - | AI 대화 기록 |
-| **DailyCheck** | `daily_check_records`<br/>`retry_records` | - | 안부 확인 기록 |
-| **Guardian** | `guardian` | - | 보호자 정보, 관계 |
-| **AlertRule** | `alert_rule`<br/>`alert_history` | - | 알림 규칙, 이력 |
-| **Notification** | `notification_history` | - | 알림 발송 기록 |
+#### 🗄️ **PostgreSQL 테이블 구조 (실제 코드 기준)**
+
+| 도메인 | 테이블명 | 주요 컬럼 | 관계 | 용도 |
+|--------|----------|-----------|------|------|
+| **Member** | `member_table` | `id`, `memberEmail`, `memberName`, `memberPassword`, `socialType`, `socialId`, `guardian_id`, `push_token` | `guardian.id` (FK) | 회원 정보 + OAuth2 + FCM |
+| **Auth** | `refresh_token` | `id`, `member_id`, `token`, `expires_at`, `created_at` | `member_table.id` (FK) | JWT Refresh Token 저장 |
+| **Conversation** | `conversations` | `id`, `member_id`, `session_id`, `status`, `created_at` | `member_table.id` (FK) | AI 대화 세션 |
+| **Conversation** | `messages` | `id`, `conversation_id`, `content`, `message_type`, `emotion_type`, `ai_response` | `conversations.id` (FK) | 대화 메시지 내역 |
+| **DailyCheck** | `daily_check_records` | `id`, `memberId`, `checkDate`, `message`, `success`, `created_at`, `updated_at` | `member_table.id` (FK) | 일일 안부 확인 기록 |
+| **DailyCheck** | `retry_records` | `id`, `daily_check_id`, `retry_attempt`, `retry_at`, `error_message`, `success` | `daily_check_records.id` (FK) | 재시도 이력 |
+| **Guardian** | `guardian` | `id`, `guardianName`, `guardianEmail`, `guardianPhone`, `relation`, `notificationPreference`, `isActive` | - | 보호자 기본 정보 |
+| **AlertRule** | `alert_rule` | `id`, `member_id`, `rule_type`, `conditions`, `alert_level`, `is_active` | `member_table.id` (FK) | 이상징후 감지 규칙 |
+| **AlertRule** | `alert_history` | `id`, `member_id`, `alert_rule_id`, `triggered_at`, `alert_content`, `resolved_at` | `member_table.id`, `alert_rule.id` (FK) | 알림 발생 이력 |
+
+#### 🔄 **Redis 캐시 구조 (5개 키 패턴)**
+
+| 도메인 | Redis 키 패턴 | TTL | 데이터 구조 | 용도 |
+|--------|---------------|-----|-------------|------|
+| **Auth** | `refreshToken:{memberId}` | 24시간 | String | Refresh Token 저장 |
+| **Auth** | `blacklist:token:{tokenHash}` | Access Token TTL | String | 무효화된 토큰 관리 |
+| **Auth** | `loginAttempt:{email}` | 15분 | Counter | 로그인 시도 횟수 제한 |
+| **Conversation** | `conversation:session:{sessionId}` | 1시간 | Hash | 대화 세션 임시 저장 |
+| **DailyCheck** | `dailycheck:lock:{memberId}:{date}` | 24시간 | String | 중복 발송 방지 |
+
+### 🔗 **도메인 간 의존성 매핑**
+
+```mermaid
+graph TB
+    subgraph "Container: maruni-app"
+        subgraph "Foundation Layer (기반 시스템)"
+            Member[👤 Member Domain<br/>- MemberEntity<br/>- MemberService<br/>- CustomUserDetailsService]
+            Auth[🔐 Auth Domain<br/>- RefreshToken Entity<br/>- TokenValidator<br/>- JwtAuthenticationFilter]
+        end
+
+        subgraph "Core Service Layer (핵심 서비스)"
+            Conversation[💬 Conversation Domain<br/>- ConversationEntity<br/>- MessageEntity<br/>- SimpleAIResponseGenerator]
+            DailyCheck[📅 DailyCheck Domain<br/>- DailyCheckRecord<br/>- RetryRecord<br/>- DailyCheckScheduler<br/>- DailyCheckOrchestrator]
+            Guardian[👥 Guardian Domain<br/>- GuardianEntity<br/>- GuardianRelation<br/>- NotificationPreference]
+        end
+
+        subgraph "Integration Layer (통합/알림)"
+            AlertRule[🚨 AlertRule Domain<br/>- AlertRule Entity<br/>- AlertHistory<br/>- 3종 Analyzer]
+            Notification[📢 Notification Domain<br/>- NotificationService<br/>- MockPushNotificationService<br/>- FCM Integration]
+        end
+    end
+
+    subgraph "External Container: postgres-db"
+        DB[(PostgreSQL 15<br/>15개 테이블<br/>관계형 데이터)]
+    end
+
+    subgraph "External Container: redis"
+        Cache[(Redis 7<br/>5개 키 패턴<br/>캐시 + 세션)]
+    end
+
+    subgraph "External Services"
+        OpenAI[🤖 OpenAI GPT-4o<br/>api.openai.com<br/>AI 대화 생성]
+        FCM[🔥 Firebase FCM<br/>fcm.googleapis.com<br/>푸시 알림]
+    end
+
+    %% Foundation Dependencies
+    Auth -.-> Member
+    Auth --> Cache
+
+    %% Core Service Dependencies
+    Conversation --> Member
+    Conversation --> DB
+    Conversation --> OpenAI
+
+    DailyCheck --> Member
+    DailyCheck --> DB
+    DailyCheck --> Notification
+
+    Guardian --> Member
+    Guardian --> DB
+
+    %% Integration Dependencies
+    AlertRule --> Member
+    AlertRule --> Guardian
+    AlertRule --> DB
+    AlertRule --> Notification
+
+    Notification --> Guardian
+    Notification --> FCM
+
+    %% Data Layer Connections
+    Member --> DB
+    Auth --> DB
+
+    %% Styling
+    classDef foundation fill:#e3f2fd,stroke:#1976d2
+    classDef core fill:#f3e5f5,stroke:#7b1fa2
+    classDef integration fill:#e8f5e8,stroke:#388e3c
+    classDef external fill:#fff3e0,stroke:#f57c00
+    classDef service fill:#fce4ec,stroke:#c2185b
+
+    class Member,Auth foundation
+    class Conversation,DailyCheck,Guardian core
+    class AlertRule,Notification integration
+    class DB,Cache,OpenAI,FCM external
+```
+
+### 🏗️ **컨테이너별 리소스 할당**
+
+#### 📊 **maruni-app Container (Spring Boot)**
+
+```yaml
+# docker-compose.yml 리소스 설정
+services:
+  app:
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'          # CPU 1코어
+          memory: 2G           # 메모리 2GB
+        reservations:
+          cpus: '0.5'          # CPU 최소 0.5코어
+          memory: 1G           # 메모리 최소 1GB
+    environment:
+      # JVM 힙 설정
+      JAVA_OPTS: >
+        -Xms1g -Xmx1.5g
+        -XX:+UseG1GC
+        -XX:MaxGCPauseMillis=200
+        -XX:+UnlockExperimentalVMOptions
+        -XX:+UseContainerSupport
+      # 도메인별 스레드 풀 설정
+      SPRING_TASK_EXECUTION_POOL_CORE_SIZE: 10
+      SPRING_TASK_EXECUTION_POOL_MAX_SIZE: 20
+      SPRING_TASK_SCHEDULING_POOL_SIZE: 5
+```
+
+#### 🗄️ **postgres-db Container (PostgreSQL)**
+
+```yaml
+services:
+  db:
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'          # CPU 0.5코어
+          memory: 1G           # 메모리 1GB
+        reservations:
+          cpus: '0.25'         # CPU 최소 0.25코어
+          memory: 512M         # 메모리 최소 512MB
+    environment:
+      # PostgreSQL 성능 튜닝
+      POSTGRES_SHARED_BUFFERS: 256MB
+      POSTGRES_EFFECTIVE_CACHE_SIZE: 512MB
+      POSTGRES_WORK_MEM: 4MB
+      POSTGRES_MAINTENANCE_WORK_MEM: 64MB
+      POSTGRES_MAX_CONNECTIONS: 100
+```
+
+#### 🔄 **redis Container (Redis)**
+
+```yaml
+services:
+  redis:
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'         # CPU 0.25코어
+          memory: 512M         # 메모리 512MB
+        reservations:
+          cpus: '0.1'          # CPU 최소 0.1코어
+          memory: 128M         # 메모리 최소 128MB
+    environment:
+      # Redis 메모리 최적화
+      REDIS_MAXMEMORY: 256mb
+      REDIS_MAXMEMORY_POLICY: allkeys-lru
+      REDIS_SAVE: '900 1 300 10 60 10000'  # 스냅샷 설정
+```
+
+### 🔄 **도메인별 처리 플로우 매핑**
+
+#### 💬 **AI 대화 처리 플로우**
+```mermaid
+sequenceDiagram
+    participant Client as 모바일/웹 클라이언트
+    participant App as maruni-app
+    participant DB as postgres-db
+    participant OpenAI as OpenAI API
+    participant Redis as redis
+
+    Client->>App: POST /api/conversations/messages<br/>{message: "안녕하세요"}
+
+    App->>Redis: JWT 토큰 검증
+    Redis-->>App: 토큰 유효성 확인
+
+    App->>DB: Conversation 세션 조회/생성
+    DB-->>App: 세션 정보 반환
+
+    App->>DB: Message 엔티티 저장 (USER)
+
+    App->>OpenAI: GPT-4o API 호출<br/>{"model": "gpt-4o", "messages": [...]}
+    OpenAI-->>App: AI 응답 + 감정 분석
+
+    App->>DB: Message 엔티티 저장 (AI)
+    App->>DB: Conversation 상태 업데이트
+
+    App-->>Client: ConversationResponseDto<br/>{aiResponse, emotionType}
+```
+
+#### 📅 **일일 안부 확인 플로우**
+```mermaid
+sequenceDiagram
+    participant Scheduler as Spring Scheduler
+    participant App as DailyCheck Service
+    participant DB as postgres-db
+    participant Redis as redis
+    participant Notification as Notification Service
+    participant FCM as Firebase FCM
+
+    Note over Scheduler: 매일 오전 9시 (Cron: 0 0 9 * * *)
+
+    Scheduler->>App: @Scheduled 메서드 트리거
+
+    App->>Redis: Lock 확인<br/>dailycheck:lock:{memberId}:{date}
+    alt Lock 존재하지 않음
+        App->>Redis: Lock 설정 (TTL: 24시간)
+        App->>DB: 활성 회원 목록 조회
+
+        loop 각 회원별
+            App->>DB: DailyCheckRecord 생성
+            App->>Notification: 안부 메시지 발송 요청
+            Notification->>FCM: 푸시 알림 발송
+
+            alt 발송 실패
+                App->>DB: RetryRecord 생성
+                Note over App: 5분 후 재시도 (최대 3회)
+            end
+        end
+    else Lock 이미 존재
+        App->>App: 중복 실행 방지, 처리 중단
+    end
+```
+
+#### 🚨 **이상징후 감지 플로우**
+```mermaid
+sequenceDiagram
+    participant Trigger as 이벤트 트리거
+    participant AlertRule as AlertRule Service
+    participant Analyzer as 3종 Analyzer
+    participant DB as postgres-db
+    participant Guardian as Guardian Service
+    participant Notification as Notification Service
+
+    alt 대화 메시지 이벤트
+        Trigger->>AlertRule: 새 메시지 이벤트
+        AlertRule->>Analyzer: 감정 패턴 분석
+        Analyzer-->>AlertRule: 분석 결과 (NEGATIVE/긴급키워드)
+    else 무응답 이벤트
+        Trigger->>AlertRule: 24시간 무응답 체크
+        AlertRule->>Analyzer: 무응답 패턴 분석
+        Analyzer-->>AlertRule: 무응답 기간 판정
+    end
+
+    alt 이상징후 감지됨
+        AlertRule->>DB: AlertHistory 생성
+        AlertRule->>Guardian: 담당 보호자 조회
+        Guardian-->>AlertRule: 보호자 목록 + 알림 설정
+
+        AlertRule->>Notification: 긴급 알림 발송 요청
+        Notification->>DB: 알림 기록 저장
+        Note over Notification: FCM/SMS/Email 발송
+    end
+```
 
 ---
 
