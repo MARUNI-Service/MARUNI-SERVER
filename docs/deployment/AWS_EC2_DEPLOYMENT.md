@@ -1,23 +1,30 @@
-# AWS EC2 Ubuntu 배포 가이드 (MobaXterm 사용)
+# AWS EC2 Ubuntu 배포 가이드 (Docker Hub 방식)
+
+> **🚀 Docker Hub 방식**: 로컬에서 이미지 빌드 → EC2에서 pull만 실행
+> **장점**: EC2 메모리 부담 없음, 빌드 시간 90% 단축, t2.micro 사용 가능
 
 ## 📋 목차
 1. [사전 준비 사항](#1-사전-준비-사항)
 1-1. [MobaXterm 설치 및 설정](#1-1-mobaxterm-설치-및-설정)
-2. [EC2 인스턴스 초기 설정](#2-ec2-인스턴스-초기-설정)
-3. [필수 패키지 설치](#3-필수-패키지-설치)
-4. [Docker 및 Docker Compose 설치](#4-docker-및-docker-compose-설치)
-5. [프로젝트 배포](#5-프로젝트-배포)
-6. [환경 변수 설정](#6-환경-변수-설정)
-7. [애플리케이션 실행](#7-애플리케이션-실행)
-8. [도메인 및 HTTPS 설정 (선택)](#8-도메인-및-https-설정-선택)
-9. [모니터링 및 로그 확인](#9-모니터링-및-로그-확인)
-10. [트러블슈팅](#10-트러블슈팅)
+1-2. [Docker Hub 계정 생성 (필수)](#1-2-docker-hub-계정-생성-필수)
+2. [로컬에서 Docker 이미지 빌드 및 푸시](#2-로컬에서-docker-이미지-빌드-및-푸시)
+3. [EC2 인스턴스 초기 설정](#3-ec2-인스턴스-초기-설정)
+4. [필수 패키지 설치](#4-필수-패키지-설치)
+5. [Docker 및 Docker Compose 설치](#5-docker-및-docker-compose-설치)
+6. [프로젝트 배포 (설정 파일만)](#6-프로젝트-배포-설정-파일만)
+7. [환경 변수 설정](#7-환경-변수-설정)
+8. [애플리케이션 실행 (이미지 Pull)](#8-애플리케이션-실행-이미지-pull)
+9. [도메인 및 HTTPS 설정 (선택)](#9-도메인-및-https-설정-선택)
+10. [모니터링 및 로그 확인](#10-모니터링-및-로그-확인)
+11. [트러블슈팅](#11-트러블슈팅)
 
 ---
 
 ## 1. 사전 준비 사항
 
 ### ✅ 체크리스트
+- [ ] **Docker Hub 계정 생성** (https://hub.docker.com) - 필수!
+- [ ] **로컬 PC에 Docker Desktop 설치** (Windows/Mac)
 - [ ] AWS EC2 Ubuntu 인스턴스 생성 완료
 - [ ] SSH 키페어 (.pem 파일) 다운로드
 - [ ] 보안 그룹 설정 확인
@@ -25,10 +32,12 @@
 - [ ] Firebase 서비스 계정 키 (푸시 알림용, 선택)
 
 ### 📌 EC2 인스턴스 권장 사양
+> **Docker Hub 방식은 t2.micro도 사용 가능!** (EC2에서 빌드 안하므로)
+
 - **OS**: Ubuntu 22.04 LTS 또는 24.04 LTS
-- **인스턴스 타입**: t3.small 이상 (t2.micro는 메모리 부족 가능)
+- **인스턴스 타입**: t2.micro 이상 (1GB RAM도 충분)
 - **스토리지**: 20GB 이상
-- **메모리**: 최소 2GB (권장 4GB)
+- **메모리**: 최소 1GB (Docker Hub 방식 덕분)
 
 ### 🔒 보안 그룹 인바운드 규칙
 ```
@@ -101,9 +110,117 @@ Private key 파일 선택 → your-key.pem 파일 찾아서 선택
 
 ---
 
-## 2. EC2 인스턴스 초기 설정
+## 1-2. Docker Hub 계정 생성 (필수)
 
-### 2.1 SSH 접속 확인
+### 1-2-1. Docker Hub 계정 생성
+1. **Docker Hub 접속**
+   - https://hub.docker.com 접속
+   - **Sign Up** 클릭
+
+2. **계정 정보 입력**
+   ```
+   Docker ID: your-username (영문 소문자, 숫자, 하이픈만 가능)
+   Email: your-email@example.com
+   Password: 강력한 비밀번호 설정
+   ```
+
+3. **이메일 인증**
+   - 가입 후 이메일 확인
+   - 인증 링크 클릭
+
+4. **완료**
+   - Docker Hub 대시보드 접속 확인
+   - **Docker ID 기억하기** (배포 시 사용)
+
+### 1-2-2. 로컬 PC에 Docker Desktop 설치
+
+#### Windows 사용자
+1. **Docker Desktop for Windows 다운로드**
+   - https://www.docker.com/products/docker-desktop
+   - **Download for Windows** 클릭
+
+2. **설치**
+   - 다운로드한 파일 실행
+   - WSL 2 설치 옵션 체크 (권장)
+   - 설치 완료 후 재부팅
+
+3. **실행 및 로그인**
+   - Docker Desktop 실행
+   - 우측 상단 **Sign in** 클릭
+   - Docker Hub 계정으로 로그인
+
+4. **확인**
+   ```bash
+   # PowerShell 또는 CMD에서 실행
+   docker --version
+   # 출력: Docker version 24.x.x
+   ```
+
+---
+
+## 2. 로컬에서 Docker 이미지 빌드 및 푸시
+
+> **⚠️ 중요**: 이 단계는 **로컬 PC (Windows)**에서 실행합니다!
+
+### 2.1 프로젝트 디렉토리로 이동
+```bash
+# PowerShell 또는 CMD
+cd C:\Users\rlarb\coding\maruni\maruni-server
+```
+
+### 2.2 Docker 이미지 빌드
+```bash
+# your-dockerhub-username을 실제 Docker Hub ID로 변경
+# 예: docker build -t kimgyuilli/maruni-server:latest .
+
+docker build -t your-dockerhub-username/maruni-server:latest .
+
+# 빌드 진행 (약 3-5분 소요)
+# [1/2] FROM gradle:8.5-jdk21
+# [2/2] FROM openjdk:21-jdk-slim
+# ...
+# Successfully tagged your-dockerhub-username/maruni-server:latest
+```
+
+**💡 팁**: 빌드가 실패하면 Docker Desktop이 실행 중인지 확인하세요.
+
+### 2.3 Docker Hub 로그인 (터미널)
+```bash
+# Docker Hub 로그인
+docker login
+
+# Docker Hub 계정 정보 입력
+# Username: your-dockerhub-username
+# Password: your-password
+
+# 출력: Login Succeeded
+```
+
+### 2.4 Docker 이미지 푸시
+```bash
+# Docker Hub에 이미지 업로드 (약 5-10분 소요, 500MB+)
+docker push your-dockerhub-username/maruni-server:latest
+
+# 업로드 진행
+# The push refers to repository [docker.io/your-dockerhub-username/maruni-server]
+# latest: digest: sha256:abc123... size: 1234
+```
+
+### 2.5 Docker Hub에서 확인
+1. https://hub.docker.com 접속
+2. 로그인 후 **Repositories** 클릭
+3. `maruni-server` 저장소 확인
+4. **Tags** 탭에서 `latest` 태그 확인
+
+**✅ 로컬 작업 완료!** 이제 EC2로 이동합니다.
+
+---
+
+## 3. EC2 인스턴스 초기 설정
+
+> **⚠️ 중요**: 이 단계부터는 **EC2 서버 (MobaXterm)**에서 실행합니다!
+
+### 3.1 SSH 접속 확인
 MobaXterm으로 EC2에 접속했다면, 터미널에 다음과 같이 표시됩니다:
 ```
 Welcome to Ubuntu 22.04.x LTS (GNU/Linux ...)
@@ -111,7 +228,7 @@ Welcome to Ubuntu 22.04.x LTS (GNU/Linux ...)
 ubuntu@ip-xxx-xxx-xxx-xxx:~$
 ```
 
-### 2.2 시스템 업데이트
+### 3.2 시스템 업데이트
 ```bash
 # 패키지 목록 업데이트
 sudo apt update
@@ -120,7 +237,7 @@ sudo apt update
 sudo apt upgrade -y
 ```
 
-### 2.3 타임존 설정 (선택)
+### 3.3 타임존 설정 (선택)
 ```bash
 # 서울 시간대로 설정
 sudo timedatectl set-timezone Asia/Seoul
@@ -129,7 +246,8 @@ sudo timedatectl set-timezone Asia/Seoul
 timedatectl
 ```
 
-### 2.4 스왑 메모리 추가 (t2.micro 등 메모리 부족 시)
+### 3.4 스왑 메모리 추가 (선택, t2.micro 사용 시 권장)
+> **Docker Hub 방식**은 EC2에서 빌드를 안 하므로 스왑이 필수는 아니지만, 안정성을 위해 추가 권장
 ```bash
 # 2GB 스왑 파일 생성
 sudo fallocate -l 2G /swapfile
@@ -146,7 +264,7 @@ free -h
 
 ---
 
-## 3. 필수 패키지 설치
+## 4. 필수 패키지 설치
 
 ```bash
 # Git 설치
@@ -164,9 +282,9 @@ sudo apt install -y build-essential
 
 ---
 
-## 4. Docker 및 Docker Compose 설치
+## 5. Docker 및 Docker Compose 설치
 
-### 4.1 Docker 설치
+### 5.1 Docker 설치
 ```bash
 # 기존 Docker 제거 (있을 경우)
 sudo apt remove -y docker docker-engine docker.io containerd runc
@@ -191,7 +309,7 @@ sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin d
 docker --version
 ```
 
-### 4.2 Docker 권한 설정
+### 5.2 Docker 권한 설정
 ```bash
 # 현재 사용자를 docker 그룹에 추가 (sudo 없이 docker 명령 실행)
 sudo usermod -aG docker $USER
@@ -203,7 +321,7 @@ newgrp docker
 docker ps
 ```
 
-### 4.3 Docker Compose 확인
+### 5.3 Docker Compose 확인
 ```bash
 # Docker Compose 버전 확인 (V2는 플러그인으로 설치됨)
 docker compose version
@@ -211,9 +329,11 @@ docker compose version
 
 ---
 
-## 5. 프로젝트 배포
+## 6. 프로젝트 배포 (설정 파일만)
 
-### 5.1 작업 디렉토리 생성
+> **Docker Hub 방식**은 소스코드 전체가 아닌 **docker-compose.yml과 .env 파일만** 필요합니다!
+
+### 6.1 작업 디렉토리 생성
 ```bash
 # 홈 디렉토리로 이동
 cd ~
@@ -223,93 +343,127 @@ mkdir -p maruni
 cd maruni
 ```
 
-### 5.2 방법 A: Git으로 직접 클론 (권장)
-```bash
-# Git 저장소에서 클론
-git clone https://github.com/yourusername/maruni-server.git
-cd maruni-server
+### 6.2 docker-compose.prod.yml 파일 생성
 
-# 특정 브랜치로 전환 (필요시)
-git checkout main
-```
+> **중요**: 로컬 개발용 `docker-compose.yml`과 별도로 **배포용 파일**을 사용합니다.
 
-### 5.3 방법 B: MobaXterm으로 파일 전송 (권장 - GUI 방식)
-**로컬 PC의 프로젝트 파일을 EC2로 업로드:**
-
-1. **MobaXterm 왼쪽 SFTP 패널 사용**
-   - MobaXterm에서 EC2 접속 상태 유지
-   - 왼쪽 파일 브라우저에서 `/home/ubuntu/maruni` 폴더로 이동
-   - 없으면 우클릭 → "Create new folder" → `maruni` 생성
-
-2. **프로젝트 폴더 업로드**
-   - Windows 탐색기에서 `maruni-server` 폴더 전체 선택
-   - MobaXterm 왼쪽 패널 `/home/ubuntu/maruni/` 위치로 **드래그 앤 드롭**
-   - 업로드 진행 상황 표시됨 (시간 소요: 1~3분)
-
-3. **업로드 완료 확인**
-   - 터미널에서 확인:
+#### MobaXterm 에디터 사용 (권장)
+1. **파일 생성**
    ```bash
-   cd ~/maruni/maruni-server
-   ls -la
+   nano docker-compose.prod.yml
    ```
 
-**📌 주의사항:**
-- `.git` 폴더, `build/`, `out/`, `node_modules/` 등 불필요한 폴더는 제외하고 업로드 권장
-- `.env` 파일은 보안상 업로드하지 말고 서버에서 직접 생성
+2. **아래 내용 복사 붙여넣기**
+   ```yaml
+   services:
+     db:
+       image: postgres:15
+       container_name: postgres-db
+       restart: unless-stopped
+       ports:
+         - "5432:5432"
+       environment:
+         POSTGRES_DB: maruni-db
+         POSTGRES_USER: ${DB_USERNAME}
+         POSTGRES_PASSWORD: ${DB_PASSWORD}
+         POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+       volumes:
+         - postgres-data:/var/lib/postgresql/data
+       networks:
+         - backend
+       healthcheck:
+         test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d maruni-db"]
+         start_period: 10s
+         interval: 5s
+         timeout: 10s
+         retries: 5
 
-### 5.4 방법 C: SCP 명령어 (터미널 사용)
-```bash
-# 로컬 PC에서 실행 (새 터미널)
-# 프로젝트 루트 디렉토리로 이동 후
-scp -i "your-key.pem" -r maruni-server ubuntu@your-ec2-public-ip:~/maruni/
+     redis:
+       image: redis:7
+       container_name: redis
+       restart: unless-stopped
+       ports:
+         - "6379:6379"
+       command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}", "--appendonly", "yes"]
+       volumes:
+         - redis-data:/data
+       networks:
+         - backend
+       healthcheck:
+         test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+         interval: 30s
+         timeout: 10s
+         retries: 5
 
-# 다시 EC2 SSH 세션으로 돌아가서
-cd ~/maruni/maruni-server
-```
+     app:
+       image: your-dockerhub-username/maruni-server:latest
+       container_name: maruni-app
+       restart: unless-stopped
+       ports:
+         - "8080:8080"
+       depends_on:
+         db:
+           condition: service_healthy
+         redis:
+           condition: service_healthy
+       environment:
+         SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+         SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-http://localhost:8080}
+       env_file:
+         - .env
+       networks:
+         - backend
+       healthcheck:
+         test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+         interval: 30s
+         timeout: 10s
+         retries: 5
+         start_period: 60s
 
-### 5.5 프로젝트 구조 확인
+   volumes:
+     postgres-data:
+       driver: local
+     redis-data:
+       driver: local
+
+   networks:
+     backend:
+       driver: bridge
+   ```
+
+3. **⚠️ 중요: `your-dockerhub-username` 변경**
+   - 위 내용에서 `your-dockerhub-username`을 **실제 Docker Hub ID**로 변경
+   - 예: `kimgyuilli/maruni-server:latest`
+
+4. **저장**
+   - `Ctrl+O` → Enter → `Ctrl+X`
+
+### 6.3 파일 확인
 ```bash
 ls -la
 
-# 예상 파일들
-# Dockerfile
-# docker-compose.yml
-# build.gradle
-# .env.example
-# src/
+# 예상 출력:
+# drwxr-xr-x 2 ubuntu ubuntu 4096 ... .
+# drwxr-xr-x 3 ubuntu ubuntu 4096 ... ..
+# -rw-r--r-- 1 ubuntu ubuntu 1234 ... docker-compose.prod.yml
 ```
 
 ---
 
-## 6. 환경 변수 설정
+## 7. 환경 변수 설정
 
-### 6.1 .env 파일 생성
+### 7.1 .env 파일 생성
 
-#### 방법 A: MobaXterm 내장 에디터 사용 (권장 - GUI)
-1. **파일 복사**
-   ```bash
-   cp .env.example .env
-   ```
-
-2. **MobaXterm으로 편집**
-   - 왼쪽 SFTP 패널에서 `.env` 파일 더블클릭
-   - 내장 에디터 열림
-   - 환경 변수 값 수정 (아래 6.2 참조)
-   - 저장: `Ctrl+S` 또는 상단 저장 버튼
-   - 에디터 닫기
-
-#### 방법 B: nano 에디터 사용 (터미널)
 ```bash
-# .env.example 복사
-cp .env.example .env
-
-# nano 에디터로 편집
+# nano 에디터로 .env 파일 생성
 nano .env
-
-# 편집 후 저장: Ctrl+O → Enter → Ctrl+X
 ```
 
-### 6.2 필수 환경 변수 설정
+### 7.2 필수 환경 변수 설정
+
+**아래 내용을 복사해서 nano 에디터에 붙여넣고, 값을 수정하세요:**
+
+
 ```bash
 # === 운영 환경 프로파일 ===
 SPRING_PROFILES_ACTIVE=prod
@@ -345,10 +499,10 @@ SWAGGER_SERVER_URL=http://your-ec2-public-ip:8080
 - OpenAI API Key는 실제 발급받은 키로 교체
 - .env 파일은 절대 Git에 커밋하지 않음
 
-### 6.3 파일 저장 및 권한 설정
+### 7.3 파일 저장 및 권한 설정
 ```bash
-# MobaXterm 에디터 사용 시: 그냥 저장하고 닫기
-# nano 에디터 사용 시: Ctrl+O → Enter → Ctrl+X
+# nano 에디터 저장 및 종료
+# Ctrl+O → Enter → Ctrl+X
 
 # .env 파일 권한 제한 (소유자만 읽기/쓰기)
 chmod 600 .env
@@ -358,8 +512,7 @@ ls -l .env
 # 출력: -rw------- 1 ubuntu ubuntu ... .env
 ```
 
-### 💡 MobaXterm 팁: 환경 변수 값 생성
-**강력한 비밀번호 생성:**
+### 💡 팁: 강력한 비밀번호 자동 생성
 ```bash
 # 랜덤 32자 문자열 생성 (JWT_SECRET_KEY용)
 openssl rand -base64 32
@@ -367,25 +520,44 @@ openssl rand -base64 32
 # 랜덤 16자 문자열 생성 (DB/Redis 비밀번호용)
 openssl rand -base64 16
 ```
-생성된 값을 복사해서 `.env` 파일에 붙여넣기
 
 ---
 
-## 7. 애플리케이션 실행
+## 8. 애플리케이션 실행 (이미지 Pull)
 
-### 7.1 Docker Compose로 전체 스택 실행
+> **🚀 Docker Hub 방식**: EC2에서 빌드 없이 이미지만 pull해서 실행!
+
+### 8.1 Docker Hub 이미지 Pull
 ```bash
-# 백그라운드 모드로 실행 (-d: detached)
-docker compose up -d --build
+# your-dockerhub-username을 실제 Docker Hub ID로 변경
+docker pull your-dockerhub-username/maruni-server:latest
 
-# 실행 로그 실시간 확인 (Ctrl+C로 종료, 컨테이너는 계속 실행)
-docker compose logs -f
+# Pull 진행 (약 3-5분 소요, 500MB+)
+# latest: Pulling from your-dockerhub-username/maruni-server
+# ...
+# Status: Downloaded newer image for your-dockerhub-username/maruni-server:latest
 ```
 
-### 7.2 실행 확인
+### 8.2 전체 스택 실행
+```bash
+# 배포용 docker-compose.prod.yml 사용
+# 백그라운드 모드로 실행 (--build 옵션 없음!)
+docker compose -f docker-compose.prod.yml up -d
+
+# 실행 로그 실시간 확인 (Ctrl+C로 종료, 컨테이너는 계속 실행)
+docker compose -f docker-compose.prod.yml logs -f
+```
+
+**✅ 빌드 과정 없이 즉시 실행됩니다!** (EC2 메모리 부담 0MB)
+
+**💡 참고**:
+- 로컬 개발: `docker compose up` (기존 방식)
+- EC2 배포: `docker compose -f docker-compose.prod.yml up` (Docker Hub 방식)
+
+### 8.3 실행 확인
 ```bash
 # 컨테이너 상태 확인
-docker compose ps
+docker compose -f docker-compose.prod.yml ps
 
 # 예상 출력:
 # NAME                IMAGE               STATUS              PORTS
@@ -394,7 +566,7 @@ docker compose ps
 # redis               redis:7             Up 2 minutes        0.0.0.0:6379->6379/tcp
 ```
 
-### 7.3 헬스체크
+### 8.4 헬스체크
 ```bash
 # 애플리케이션 헬스체크
 curl http://localhost:8080/actuator/health
@@ -403,7 +575,7 @@ curl http://localhost:8080/actuator/health
 # {"status":"UP"}
 ```
 
-### 7.4 Swagger UI 접속
+### 8.5 Swagger UI 접속
 브라우저에서 접속:
 ```
 http://your-ec2-public-ip:8080/swagger-ui/index.html
@@ -411,13 +583,15 @@ http://your-ec2-public-ip:8080/swagger-ui/index.html
 
 ---
 
-## 8. 도메인 및 HTTPS 설정 (선택)
+---
 
-### 8.1 도메인 연결
+## 9. 도메인 및 HTTPS 설정 (선택)
+
+### 9.1 도메인 연결
 1. 도메인 구입 (가비아, Route53 등)
 2. DNS A 레코드 추가: `api.maruni.com` → EC2 퍼블릭 IP
 
-### 8.2 Nginx 리버스 프록시 설치
+### 9.2 Nginx 리버스 프록시 설치
 ```bash
 # Nginx 설치
 sudo apt install -y nginx
@@ -456,7 +630,7 @@ sudo nginx -t
 sudo systemctl restart nginx
 ```
 
-### 8.3 Let's Encrypt SSL 인증서 (HTTPS)
+### 9.3 Let's Encrypt SSL 인증서 (HTTPS)
 ```bash
 # Certbot 설치
 sudo apt install -y certbot python3-certbot-nginx
@@ -468,7 +642,7 @@ sudo certbot --nginx -d api.maruni.com
 sudo certbot renew --dry-run
 ```
 
-### 8.4 .env 파일 업데이트
+### 9.4 .env 파일 업데이트
 ```bash
 nano .env
 
@@ -483,26 +657,28 @@ docker compose restart app
 
 ---
 
-## 9. 모니터링 및 로그 확인
+---
 
-### 9.1 로그 확인
+## 10. 모니터링 및 로그 확인
+
+### 10.1 로그 확인
 ```bash
 # 전체 로그 실시간 확인
-docker compose logs -f
+docker compose -f docker-compose.prod.yml logs -f
 
 # 특정 서비스 로그만 확인
-docker compose logs -f app
-docker compose logs -f db
-docker compose logs -f redis
+docker compose -f docker-compose.prod.yml logs -f app
+docker compose -f docker-compose.prod.yml logs -f db
+docker compose -f docker-compose.prod.yml logs -f redis
 
 # 최근 100줄만 확인
-docker compose logs --tail=100 app
+docker compose -f docker-compose.prod.yml logs --tail=100 app
 ```
 
-### 9.2 컨테이너 상태 확인
+### 10.2 컨테이너 상태 확인
 ```bash
 # 실행 중인 컨테이너 확인
-docker compose ps
+docker compose -f docker-compose.prod.yml ps
 
 # 리소스 사용량 확인
 docker stats
@@ -511,7 +687,7 @@ docker stats
 docker system df
 ```
 
-### 9.3 데이터베이스 접속 (디버깅용)
+### 10.3 데이터베이스 접속 (디버깅용)
 ```bash
 # PostgreSQL 컨테이너 내부 접속
 docker exec -it postgres-db psql -U maruni_admin -d maruni-db
@@ -522,7 +698,7 @@ SELECT * FROM member_entity LIMIT 5;
 \q  -- 종료
 ```
 
-### 9.4 Redis 접속 (디버깅용)
+### 10.4 Redis 접속 (디버깅용)
 ```bash
 # Redis 컨테이너 내부 접속
 docker exec -it redis redis-cli -a your_redis_password
@@ -535,12 +711,14 @@ exit  -- 종료
 
 ---
 
-## 10. 트러블슈팅
+---
+
+## 11. 트러블슈팅
 
 ### 문제 1: 컨테이너가 시작되지 않음
 ```bash
 # 상세 로그 확인
-docker compose logs app
+docker compose -f docker-compose.prod.yml logs app
 
 # 일반적인 원인:
 # - .env 파일 누락 또는 필수 환경변수 미설정
@@ -557,17 +735,17 @@ cat .env
 sudo netstat -tlnp | grep -E '8080|5432|6379'
 
 # 컨테이너 재시작
-docker compose down
-docker compose up -d --build
+docker compose -f docker-compose.prod.yml down
+docker compose -f docker-compose.prod.yml up -d
 ```
 
 ### 문제 2: DB 연결 실패
 ```bash
 # DB 컨테이너 상태 확인
-docker compose ps db
+docker compose -f docker-compose.prod.yml ps db
 
 # DB 로그 확인
-docker compose logs db
+docker compose -f docker-compose.prod.yml logs db
 
 # DB 헬스체크
 docker exec postgres-db pg_isready -U maruni_admin
@@ -576,36 +754,32 @@ docker exec postgres-db pg_isready -U maruni_admin
 **해결 방법:**
 ```bash
 # DB 재시작
-docker compose restart db
+docker compose -f docker-compose.prod.yml restart db
 
 # DB 볼륨 삭제 후 재생성 (주의: 데이터 삭제됨)
-docker compose down -v
-docker compose up -d
+docker compose -f docker-compose.prod.yml down -v
+docker compose -f docker-compose.prod.yml up -d
 ```
 
 ### 문제 3: 메모리 부족 (Java heap space)
+> **Docker Hub 방식은 EC2에서 빌드를 안 하므로 이 문제가 거의 발생하지 않습니다!**
+
 ```bash
 # 메모리 확인
 free -h
 
-# 스왑 메모리 추가 (위의 2.4 참조)
+# 스왑 메모리 추가 (위의 3.4 참조)
 ```
 
-**해결 방법 - Dockerfile에 Java 메모리 설정:**
-```dockerfile
-# Dockerfile의 ENTRYPOINT 수정
-ENTRYPOINT ["java", "-Xmx512m", "-Xms256m", "-Djava.security.egd=file:/dev/./urandom", "-jar", "app.jar"]
-```
-
-```bash
-# 재빌드
-docker compose up -d --build
-```
+**해결 방법 (필요시):**
+- 로컬에서 이미지 빌드 시 Dockerfile의 ENTRYPOINT 수정
+- 메모리 제한된 환경: `-Xmx512m -Xms256m` 추가
+- 이미지 재빌드 및 Docker Hub에 재푸시
 
 ### 문제 4: OpenAI API 연결 실패
 ```bash
 # 로그 확인
-docker compose logs app | grep -i openai
+docker compose -f docker-compose.prod.yml logs app | grep -i openai
 
 # 일반적인 원인:
 # - API Key 오류 (sk-proj- 형식 확인)
@@ -623,13 +797,13 @@ curl https://api.openai.com/v1/models \
   -H "Authorization: Bearer $OPENAI_API_KEY"
 
 # 앱 재시작
-docker compose restart app
+docker compose -f docker-compose.prod.yml restart app
 ```
 
 ### 문제 5: Swagger UI 접속 안됨
 ```bash
 # 애플리케이션 로그 확인
-docker compose logs app | grep -i swagger
+docker compose -f docker-compose.prod.yml logs app | grep -i swagger
 
 # 보안그룹 8080 포트 열림 확인
 # 방화벽 확인
@@ -664,37 +838,40 @@ docker system prune -a
 ### 애플리케이션 관리
 ```bash
 # 전체 재시작
-docker compose restart
+docker compose -f docker-compose.prod.yml restart
 
 # 특정 서비스만 재시작
-docker compose restart app
+docker compose -f docker-compose.prod.yml restart app
 
 # 전체 중지
-docker compose stop
+docker compose -f docker-compose.prod.yml stop
 
 # 전체 시작
-docker compose start
+docker compose -f docker-compose.prod.yml start
 
 # 전체 종료 및 삭제 (볼륨 유지)
-docker compose down
+docker compose -f docker-compose.prod.yml down
 
 # 전체 종료 및 볼륨까지 삭제 (데이터 완전 삭제)
-docker compose down -v
+docker compose -f docker-compose.prod.yml down -v
 ```
 
-### 업데이트 배포
+### 업데이트 배포 (Docker Hub 방식)
 ```bash
-# Git에서 최신 코드 받기
-git pull origin main
+# 1. 로컬 PC에서 새 이미지 빌드 및 푸시
+# (Windows PowerShell/CMD)
+cd C:\Users\rlarb\coding\maruni\maruni-server
+docker build -t your-dockerhub-username/maruni-server:latest .
+docker push your-dockerhub-username/maruni-server:latest
 
-# .env 파일 업데이트 (필요시)
-nano .env
+# 2. EC2에서 새 이미지 pull 및 재시작
+# (MobaXterm SSH)
+cd ~/maruni
+docker pull your-dockerhub-username/maruni-server:latest
+docker compose -f docker-compose.prod.yml up -d
 
-# 재빌드 및 재시작
-docker compose up -d --build
-
-# 로그 확인
-docker compose logs -f app
+# 3. 로그 확인
+docker compose -f docker-compose.prod.yml logs -f app
 ```
 
 ### 백업 (권장)
@@ -719,11 +896,20 @@ docker exec redis redis-cli -a your_redis_password SAVE
 
 ## ✅ 배포 완료 체크리스트
 
+### 로컬 PC (Windows)
+- [ ] Docker Hub 계정 생성 완료
+- [ ] Docker Desktop 설치 및 로그인 완료
+- [ ] Docker 이미지 빌드 성공 (`docker build`)
+- [ ] Docker Hub에 이미지 푸시 성공 (`docker push`)
+- [ ] Docker Hub에서 이미지 확인 완료
+
+### EC2 서버
 - [ ] EC2 인스턴스 초기 설정 완료
 - [ ] Docker & Docker Compose 설치 완료
-- [ ] 프로젝트 파일 업로드 완료
-- [ ] .env 파일 설정 완료 (모든 필수 환경변수 입력)
-- [ ] `docker compose up -d --build` 성공
+- [ ] `docker-compose.prod.yml` 파일 생성 완료
+- [ ] `.env` 파일 설정 완료 (모든 필수 환경변수 입력)
+- [ ] Docker Hub에서 이미지 pull 성공
+- [ ] `docker compose -f docker-compose.prod.yml up -d` 성공
 - [ ] 헬스체크 통과 (`/actuator/health`)
 - [ ] Swagger UI 접속 가능
 - [ ] (선택) 도메인 연결 완료
