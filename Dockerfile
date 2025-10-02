@@ -27,10 +27,6 @@ RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 # 빌드된 JAR 파일 복사
 COPY --from=builder /app/build/libs/*.jar app.jar
 
-# 환경변수 설정 (기본값)
-ENV SPRING_PROFILES_ACTIVE=dev
-ENV SERVER_PORT=8080
-
 # 포트 노출
 EXPOSE 8080
 
