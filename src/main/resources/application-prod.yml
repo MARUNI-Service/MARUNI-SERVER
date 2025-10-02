@@ -1,7 +1,13 @@
-# 운영 환경 설정
+# ===================================
+# MARUNI 운영 환경 설정 (Production)
+# ===================================
+# SPRING_PROFILES_ACTIVE=prod 로 활성화
+# 환경변수는 .env 파일 또는 Docker 환경변수로 주입
+
 spring:
+  # === 데이터베이스 설정 (PostgreSQL) ===
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:maruni-db}
+    url: jdbc:postgresql://${DB_HOST:db}:${DB_PORT:5432}/${DB_NAME:maruni-db}
     driver-class-name: org.postgresql.Driver
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
@@ -9,10 +15,13 @@ spring:
       maximum-pool-size: 20
       minimum-idle: 10
       connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
 
+  # === Redis 설정 ===
   data:
     redis:
-      host: ${REDIS_HOST:localhost}
+      host: ${REDIS_HOST:redis}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD}
       timeout: 2000ms
@@ -20,30 +29,38 @@ spring:
         pool:
           max-active: 8
           max-idle: 8
-          min-idle: 0
+          min-idle: 2
 
+  # === JPA 설정 (운영) ===
   jpa:
     hibernate:
-      ddl-auto: validate  # 운영환경에서는 validate 사용
+      ddl-auto: validate  # 운영: 스키마 검증만 (자동 생성 금지)
     show-sql: false
     properties:
       hibernate:
         format_sql: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
 
-# 운영환경 쿠키 설정 (보안 강화)
+# === 보안 설정 (운영) ===
 cookie:
-  secure: true
+  secure: true  # HTTPS 쿠키만 허용
 
-# 운영환경 Swagger 설정
+# === Swagger 설정 (운영) ===
 swagger:
   server:
-    url: ${SWAGGER_SERVER_URL:https://api.yourdomain.com}
+    url: ${SWAGGER_SERVER_URL:http://your-ec2-public-ip:8080}
     description: 운영 서버
 
-# 운영환경 로깅 (ERROR 레벨만)
+# === 로깅 설정 (운영) ===
 logging:
   level:
-    org.hibernate.SQL: warn
-    org.hibernate.type.descriptor.sql.BasicBinder: warn
-    com.example.login: info
     root: warn
+    com.anyang.maruni: info
+    org.hibernate.SQL: warn
+    org.hibernate.type: warn
+    org.springframework.web: info
+    org.springframework.security: warn
