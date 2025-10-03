@@ -15,7 +15,6 @@ import java.util.concurrent.atomic.AtomicLong;
  * 실제 Firebase를 사용하지 않고 로컬에서 테스트할 수 있는 Mock 구현체입니다.
  */
 @Component
-@Profile({"dev", "test"})
 @ConditionalOnProperty(name = "firebase.enabled", havingValue = "false", matchIfMissing = true)
 @Slf4j
 public class MockFirebaseMessagingWrapper implements FirebaseMessagingWrapper {

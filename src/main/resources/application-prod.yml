@@ -55,6 +55,10 @@ swagger:
     url: ${SWAGGER_SERVER_URL:http://your-ec2-public-ip:8080}
     description: 운영 서버
 
+# === Firebase 설정 (운영) ===
+firebase:
+  enabled: false  # Mock 사용 (실제 Firebase 연동 시 true로 변경)
+
 # === 로깅 설정 (운영) ===
 logging:
   level:
