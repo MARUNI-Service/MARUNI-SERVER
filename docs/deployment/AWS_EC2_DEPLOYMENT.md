@@ -396,7 +396,7 @@ cd maruni
          retries: 5
 
      app:
-       image: your-dockerhub-username/maruni-server:latest
+       image: kimgyuill/maruni-server:latest
        container_name: maruni-app
        restart: unless-stopped
        ports:
