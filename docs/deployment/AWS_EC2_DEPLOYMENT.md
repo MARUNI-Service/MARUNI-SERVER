@@ -604,7 +604,7 @@ Nginx 설정 내용:
 ```nginx
 server {
     listen 80;
-    server_name api.maruni.com;  # 실제 도메인으로 변경
+    server_name api.maruni.kro.kr;  # 실제 도메인으로 변경
 
     location / {
         proxy_pass http://localhost:8080;
@@ -636,7 +636,7 @@ sudo systemctl restart nginx
 sudo apt install -y certbot python3-certbot-nginx
 
 # SSL 인증서 발급 및 자동 설정
-sudo certbot --nginx -d api.maruni.com
+sudo certbot --nginx -d api.maruni.kro.kr
 
 # 자동 갱신 테스트
 sudo certbot renew --dry-run
