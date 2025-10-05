@@ -7,6 +7,8 @@ security:
     - "/api-docs"
     - "/v3/api-docs/**"
     - "/swagger-ui/**"
+    - "/api/join/**"
+    - "/api/auth/login"
 
 # 공통 JWT 설정
 jwt:
