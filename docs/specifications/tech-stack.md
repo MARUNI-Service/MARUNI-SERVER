@@ -14,10 +14,9 @@ Spring Framework: 6.x
 Build Tool: Gradle 8.x
 ```
 
-### **Database & Cache**
+### **Database**
 ```yaml
-Primary Database: PostgreSQL 14+
-Cache: Redis 7.x
+Primary Database: PostgreSQL 15+
 Connection Pool: HikariCP (Spring Boot Default)
 ORM: Spring Data JPA + Hibernate 6.x
 ```
@@ -28,6 +27,7 @@ AI Framework: Spring AI 1.0.0-M3
 AI Provider: OpenAI GPT-4o
 HTTP Client: Spring WebClient
 Scheduling: Spring @Scheduled
+Push Notification: Firebase Admin SDK 9.5.0
 ```
 
 ### **Security & Authentication**
@@ -37,6 +37,7 @@ Authentication: JWT (JSON Web Token)
 JWT Library: JJWT 0.12.5
 Password Encoding: BCryptPasswordEncoder
 OAuth2: Spring OAuth2 Client
+Token Storage: Stateless (Client-side)
 ```
 
 ### **Documentation & Validation**
@@ -74,7 +75,6 @@ dependencies {
     // Spring Boot 스타터
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
     // Spring AI (BOM 사용)
@@ -98,17 +98,25 @@ dependencies {
 }
 ```
 
-### **Database & Cache**
+### **Database**
 ```gradle
 dependencies {
     // PostgreSQL
     runtimeOnly 'org.postgresql:postgresql'
 
-    // Redis
-    implementation 'org.apache.commons:commons-pool2'
-
     // Test Database
     testRuntimeOnly 'com.h2database:h2'
+}
+```
+
+### **Firebase & Push Notification**
+```gradle
+dependencies {
+    // Firebase Admin SDK (서버에서 푸시 알림 발송용)
+    implementation 'com.google.firebase:firebase-admin:9.5.0'
+
+    // Google Cloud 인증 (Firebase 서비스 계정 인증용)
+    implementation 'com.google.auth:google-auth-library-oauth2-http:1.39.0'
 }
 ```
 
@@ -170,8 +178,6 @@ jwt:
   secret-key: ${JWT_SECRET_KEY:your_jwt_secret_key_at_least_32_characters}
   access-token:
     expiration: ${JWT_ACCESS_EXPIRATION:3600000}  # 1시간
-  refresh-token:
-    expiration: ${JWT_REFRESH_EXPIRATION:1209600000}  # 14일
 
 # Swagger 설정
 swagger:
@@ -202,19 +208,13 @@ maruni:
 ### **개발 환경 (.env 파일)**
 ```env
 # Database 설정
-DB_USERNAME=maruni_dev
-DB_PASSWORD=dev_password
+DB_USERNAME=postgres
+DB_PASSWORD=your_db_password
 DB_URL=jdbc:postgresql://localhost:5432/maruni_dev
-
-# Redis 설정
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_PASSWORD=redis_password
 
 # JWT 설정 (필수 - 32자 이상)
 JWT_SECRET_KEY=your_super_secret_jwt_key_at_least_32_characters_long_for_security
 JWT_ACCESS_EXPIRATION=3600000
-JWT_REFRESH_EXPIRATION=1209600000
 
 # OpenAI API 설정
 OPENAI_API_KEY=sk-your-openai-api-key-here
@@ -224,10 +224,10 @@ OPENAI_TEMPERATURE=0.7
 
 # Firebase 설정 (알림용)
 FIREBASE_PROJECT_ID=maruni-project
-FIREBASE_CREDENTIALS_PATH=path/to/firebase-credentials.json
+FIREBASE_PRIVATE_KEY_PATH=config/firebase-service-account.json
 
 # 암호화 설정
-ENCRYPTION_KEY=your_32_byte_encryption_key_here
+ENCRYPTION_KEY=maruni_encryption_key_32_bytes_long
 ```
 
 ---
@@ -236,55 +236,119 @@ ENCRYPTION_KEY=your_32_byte_encryption_key_here
 
 ### **docker-compose.yml**
 ```yaml
-version: '3.8'
-
 services:
-  # PostgreSQL Database
-  postgres:
-    image: postgres:14-alpine
-    container_name: maruni-postgres
-    environment:
-      POSTGRES_DB: maruni
-      POSTGRES_USER: ${DB_USERNAME:-maruni}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-maruni_password}
+  db:
+    image: postgres:15
+    container_name: postgres-db
+    restart: unless-stopped
     ports:
       - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-  # Redis Cache
-  redis:
-    image: redis:7-alpine
-    container_name: maruni-redis
-    command: redis-server --requirepass ${REDIS_PASSWORD:-redis_password}
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-
-  # MARUNI Application
-  app:
-    build: .
-    container_name: maruni-app
-    depends_on:
-      - postgres
-      - redis
     environment:
-      SPRING_PROFILES_ACTIVE: docker
-      DB_URL: jdbc:postgresql://postgres:5432/maruni
-      DB_USERNAME: ${DB_USERNAME:-maruni}
-      DB_PASSWORD: ${DB_PASSWORD:-maruni_password}
-      REDIS_HOST: redis
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_password}
+      POSTGRES_DB: maruni-db
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d maruni-db"]
+      start_period: 10s
+      interval: 5s
+      timeout: 10s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: maruni-app
+    restart: unless-stopped
     ports:
       - "8080:8080"
-    volumes:
-      - app_logs:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-http://localhost:8080}
+    env_file:
+      - .env
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
 volumes:
-  postgres_data:
-  redis_data:
-  app_logs:
+  postgres-data:
+    driver: local
+
+networks:
+  backend:
+    driver: bridge
+```
+
+### **docker-compose.prod.yml (운영 환경)**
+```yaml
+services:
+  db:
+    image: postgres:15
+    container_name: postgres-db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: maruni-db
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d maruni-db"]
+      start_period: 10s
+      interval: 5s
+      timeout: 10s
+      retries: 5
+
+  app:
+    # Docker Hub에서 이미지 pull
+    image: ${DOCKER_IMAGE:-your-dockerhub-username/maruni-server:latest}
+    container_name: maruni-app
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-http://localhost:8080}
+    env_file:
+      - .env
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+volumes:
+  postgres-data:
+    driver: local
+
+networks:
+  backend:
+    driver: bridge
 ```
 
 ### **Dockerfile**
@@ -445,8 +509,11 @@ java -jar build/libs/maruni-0.0.1-SNAPSHOT.jar
 
 ### **Docker 환경**
 ```bash
-# 빌드 및 실행
+# 개발 환경 빌드 및 실행
 docker-compose up --build
+
+# 운영 환경 실행 (Docker Hub 이미지)
+docker-compose -f docker-compose.prod.yml up -d
 
 # 백그라운드 실행
 docker-compose up -d
@@ -466,22 +533,122 @@ docker-compose down -v
 ## 🎯 환경별 설정
 
 ### **개발 환경 (dev)**
-- H2 Console 활성화
+- PostgreSQL 개발 DB 사용
 - SQL 쿼리 로그 출력
 - 상세 에러 메시지 표시
 - Hot Reload 활성화
+- Swagger UI 활성화
 
 ### **테스트 환경 (test)**
 - H2 In-Memory Database
 - 트랜잭션 자동 롤백
 - Mock 서비스 활성화
+- OpenAI API Mock 사용
 
 ### **운영 환경 (prod)**
-- PostgreSQL 사용
+- PostgreSQL 운영 DB 사용
 - 로그 레벨 INFO 이상
 - 보안 강화 설정
 - 성능 최적화 옵션
+- Swagger UI 비활성화 권장
 
 ---
 
-**Version**: v1.0.0 | **Updated**: 2025-09-16
+## 🔄 아키텍처 다이어그램
+
+### **시스템 아키텍처**
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        클라이언트                            │
+│              (모바일 앱 / 웹 브라우저)                        │
+└────────────────────────┬────────────────────────────────────┘
+                         │ HTTPS/REST API
+                         │ JWT Access Token
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   MARUNI Backend Server                      │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │              Spring Security Filter Chain             │  │
+│  │  - JwtAuthenticationFilter (JWT 검증)                │  │
+│  │  - LoginFilter (로그인 처리)                          │  │
+│  └───────────────────────────────────────────────────────┘  │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │              Spring Boot Controllers                  │  │
+│  │  - Member, Guardian, Conversation, AlertRule, etc.   │  │
+│  └───────────────────────────────────────────────────────┘  │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │           Application Services (DDD)                  │  │
+│  │  - MemberService, ConversationService, etc.          │  │
+│  └───────────────────────────────────────────────────────┘  │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │              Domain Layer (DDD)                       │  │
+│  │  - Entities, Repositories, Domain Services           │  │
+│  └───────────────────────────────────────────────────────┘  │
+└────────┬──────────────────┬──────────────────┬──────────────┘
+         │                  │                  │
+         │ JPA              │ HTTP             │ Firebase Admin
+         ▼                  ▼                  ▼
+┌────────────────┐  ┌──────────────┐  ┌──────────────────┐
+│  PostgreSQL    │  │  OpenAI API  │  │ Firebase FCM     │
+│   Database     │  │   (GPT-4o)   │  │ (Push Notify)    │
+└────────────────┘  └──────────────┘  └──────────────────┘
+```
+
+### **인증 아키텍처**
+```
+Stateless JWT Authentication (Access Token Only)
+
+클라이언트                         서버
+    │                              │
+    │  1. POST /api/members/login  │
+    │  {email, password}           │
+    ├─────────────────────────────>│
+    │                              │ 2. DB 인증
+    │                              │ 3. Access Token 생성
+    │                              │    (1시간 유효)
+    │  4. Authorization: Bearer .. │
+    │<─────────────────────────────┤
+    │                              │
+    │  5. 토큰 저장                │
+    │  (로컬 스토리지/메모리)       │
+    │                              │
+    │  6. API 호출                 │
+    │  Authorization: Bearer ..    │
+    ├─────────────────────────────>│
+    │                              │ 7. JWT 검증
+    │                              │ 8. SecurityContext 설정
+    │  9. 응답                     │
+    │<─────────────────────────────┤
+    │                              │
+    │  10. 로그아웃 (클라이언트)   │
+    │  - 토큰 삭제                 │
+    │                              │
+```
+
+---
+
+## 📋 의존성 버전 관리
+
+### **주요 버전**
+```yaml
+Java: 21 (LTS)
+Spring Boot: 3.5.3
+Spring Security: 6.x (Spring Boot 제공)
+Spring Data JPA: 3.x (Spring Boot 제공)
+PostgreSQL Driver: Latest (Spring Boot 제공)
+JJWT: 0.12.5
+Spring AI: 1.0.0-M3
+Firebase Admin: 9.5.0
+SpringDoc OpenAPI: 2.8.8
+Lombok: Latest (Spring Boot 제공)
+```
+
+### **호환성**
+- Java 21 이상 필수
+- PostgreSQL 14 이상 권장
+- Docker 20.10 이상
+- Docker Compose v2 이상
+
+---
+
+**Version**: v2.0.0 | **Updated**: 2025-10-05 | **Status**: Simplified Architecture (PostgreSQL Only, No Redis)

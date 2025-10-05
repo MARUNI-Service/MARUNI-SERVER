@@ -1,16 +1,4 @@
-# Auth 도메인 구현 가이드라인 (2025-09-16 완성)
-
-## 🎉 완성 상태 요약
-
-**Auth 도메인은 DDD 의존성 역전 원칙을 완벽히 적용하여 100% 완성되었습니다.**
-
-### 🏆 완성 지표
-- ✅ **JWT Access/Refresh 토큰 시스템**: 완전한 이중 토큰 보안 구조
-- ✅ **DDD 의존성 역전**: Domain Interface ← Global 구현체 구조 완성
-- ✅ **Redis 기반 토큰 관리**: RefreshToken 저장 + Blacklist 관리
-- ✅ **Spring Security 통합**: 필터 체인 기반 인증/인가 처리
-- ✅ **REST API 완성**: 3개 엔드포인트 + Swagger 문서화
-- ✅ **실제 운영 준비**: 상용 서비스 수준 보안 시스템
+# Auth 도메인 구현 가이드 (2025-10-05 단순화 완료)
 
 ## 📐 아키텍처 구조
 
@@ -18,35 +6,20 @@
 ```
 com.anyang.maruni.domain.auth/
 ├── application/                    # Application Layer
-│   ├── dto/response/              # Response DTO
-│   │   └── TokenResponse.java     ✅ 완성
-│   └── service/                   # Application Service
-│       └── AuthenticationService.java ✅ 완성 (AuthenticationEventHandler 구현)
+│   └── service/
+│       └── AuthenticationService.java ✅ 로그인 성공 시 토큰 발급
 ├── domain/                        # Domain Layer
-│   ├── entity/                    # Domain Entity
-│   │   └── RefreshToken.java      ✅ 완성 (Redis Entity)
-│   ├── repository/                # Repository Interface
-│   │   ├── RefreshTokenRepository.java     ✅ 완성
-│   │   └── TokenBlacklistRepository.java   ✅ 완성 (인터페이스)
-│   ├── service/                   # Domain Service
-│   │   ├── TokenManager.java      ✅ 완성 (인터페이스)
-│   │   ├── TokenService.java      ✅ 완성 (인터페이스)
-│   │   ├── TokenValidator.java    ✅ 완성
-│   │   └── RefreshTokenService.java ✅ 완성
-│   └── vo/                        # Value Object
-│       └── MemberTokenInfo.java   ✅ 완성
-├── infrastructure/                # Infrastructure Layer
-│   └── BlacklistTokenStorage.java ✅ 완성 (Redis 구현)
-└── presentation/                  # Presentation Layer
-    └── controller/                # REST API Controller
-        └── AuthApiController.java ✅ 완성 (3개 엔드포인트)
+│   ├── service/
+│   │   └── TokenManager.java      ✅ 인터페이스 (DDD 의존성 역전)
+│   └── vo/
+│       └── MemberTokenInfo.java   ✅ Value Object
+└── infrastructure/                # (비어있음 - Redis 제거됨)
 ```
 
 ### Global Security 구현체 (의존성 역전)
 ```
 com.anyang.maruni.global.security/
 ├── JWTUtil.java                   ✅ TokenManager 구현체
-├── JwtTokenService.java           ✅ TokenService 구현체
 ├── AuthenticationEventHandler.java ✅ 인터페이스
 ├── JwtAuthenticationFilter.java   ✅ Spring Security 필터
 └── LoginFilter.java               ✅ 로그인 처리 필터
@@ -55,198 +28,188 @@ com.anyang.maruni.global.security/
 ### 주요 의존성
 ```java
 // Application Service 의존성
-- TokenManager: JWT 토큰 생성/검증 (Global JWTUtil로 구현)
-- TokenService: 토큰 발급/재발급 (Global JwtTokenService로 구현)
-- TokenValidator: 도메인 기반 토큰 검증
-- RefreshTokenService: Refresh Token 도메인 서비스
-- TokenBlacklistRepository: 블랙리스트 관리 (Infrastructure 구현)
+AuthenticationService:
+  - TokenManager: JWT 토큰 생성 (Global JWTUtil로 구현)
+
+// Global Security
+JwtAuthenticationFilter:
+  - JWTUtil: 토큰 추출 및 검증
+  - CustomUserDetailsService: 사용자 정보 로드
 ```
 
 ## 🔐 핵심 기능 구현
 
-### 1. JWT 이중 토큰 시스템
+### 1. Access Token 단일 토큰 시스템
 
-#### 토큰 종류와 역할
+#### 토큰 특성
 ```java
-// Access Token: 짧은 수명, API 접근용
+// Access Token: Stateless JWT
 - 수명: 1시간 (설정 가능)
 - 저장: HTTP 헤더 (Authorization: Bearer)
-- 용도: 모든 API 호출시 인증
-
-// Refresh Token: 긴 수명, Access Token 재발급용
-- 수명: 24시간 (설정 가능)
-- 저장: HttpOnly 쿠키 + Redis
-- 용도: Access Token 재발급
+- 용도: 모든 API 호출 시 인증
+- 특징: 서버 상태 저장 없음, 클라이언트가 관리
 ```
 
 #### TokenManager 인터페이스 (DDD 의존성 역전)
 ```java
+// 위치: src/main/java/com/anyang/maruni/domain/auth/domain/service/TokenManager.java
 public interface TokenManager {
     // 토큰 생성
     String createAccessToken(String memberId, String email);
-    String createRefreshToken(String memberId, String email);
 
     // 토큰 추출
-    Optional<String> extractRefreshToken(HttpServletRequest request);
     Optional<String> extractAccessToken(HttpServletRequest request);
 
     // 토큰 정보 추출
-    Optional<String> getId(String token);
     Optional<String> getEmail(String token);
-    Optional<Long> getExpiration(String token);
 
     // 토큰 검증
-    boolean isRefreshToken(String token);
     boolean isAccessToken(String token);
-
-    // 설정값
-    long getAccessTokenExpiration();
 }
 ```
 
 ### 2. 토큰 발급 시스템
 
-#### TokenService 인터페이스
+#### AuthenticationService (로그인 성공 처리)
 ```java
-public interface TokenService {
-    /**
-     * 로그인 시 Access + Refresh Token 모두 발급
-     */
-    void issueTokens(HttpServletResponse response, MemberTokenInfo memberInfo);
+// 위치: src/main/java/com/anyang/maruni/domain/auth/application/service/AuthenticationService.java
+@Service
+@RequiredArgsConstructor
+public class AuthenticationService implements AuthenticationEventHandler {
 
-    /**
-     * Access Token만 재발급 (일반적인 갱신)
-     */
-    void reissueAccessToken(HttpServletResponse response, String memberId, String email);
+    private final TokenManager tokenManager;
 
-    /**
-     * Access + Refresh Token 모두 재발급 (보안 강화)
-     */
-    void reissueAllTokens(HttpServletResponse response, String memberId, String email);
+    @Override
+    public void handleLoginSuccess(HttpServletResponse response, MemberTokenInfo memberInfo) {
+        // Access Token 발급
+        String accessToken = tokenManager.createAccessToken(
+            memberInfo.memberId(),
+            memberInfo.email()
+        );
 
-    /**
-     * 로그아웃 시 Refresh Token 쿠키 만료
-     */
-    void expireRefreshCookie(HttpServletResponse response);
-}
-```
+        // HTTP 응답 헤더에 설정
+        response.setHeader("Authorization", "Bearer " + accessToken);
+        response.setContentType("application/json; charset=UTF-8");
 
-#### 실제 토큰 발급 플로우
-```java
-// JwtTokenService (Global 구현체)
-public void issueTokens(HttpServletResponse response, MemberTokenInfo memberInfo) {
-    String memberId = memberInfo.memberId();
-
-    // 1. JWT 토큰 생성
-    String accessToken = jwtUtil.createAccessToken(memberId, memberInfo.email());
-    String refreshToken = jwtUtil.createRefreshToken(memberId, memberInfo.email());
-
-    // 2. Refresh Token을 Redis에 저장 (TTL 설정)
-    saveRefreshTokenWithTtl(memberId, refreshToken);
-
-    // 3. HTTP 응답 설정
-    setAccessToken(response, accessToken);      // Authorization 헤더
-    setRefreshCookie(response, refreshToken);   // HttpOnly 쿠키
-
-    log.info("Access / Refresh 토큰 발급 완료 - Member: {}", memberInfo.email());
+        log.info("✅ Access Token 발급 완료 - Member: {}", memberInfo.email());
+    }
 }
 ```
 
 ### 3. 토큰 검증 시스템
 
-#### TokenValidator 도메인 서비스
+#### JwtAuthenticationFilter (Spring Security)
 ```java
-@Service
-public class TokenValidator {
-    /**
-     * Refresh Token의 종합적 검증
-     */
-    public TokenValidationResult validateRefreshToken(String refreshToken) {
-        // 1. JWT 형식 및 만료시간 검증
-        if (!tokenManager.isRefreshToken(refreshToken)) {
-            return TokenValidationResult.invalid("Invalid or expired refresh token");
-        }
+// 위치: src/main/java/com/anyang/maruni/global/security/JwtAuthenticationFilter.java
+@RequiredArgsConstructor
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-        // 2. 토큰에서 사용자 ID 추출
-        String memberId = tokenManager.getId(refreshToken).orElse(null);
-        if (memberId == null) {
-            return TokenValidationResult.invalid("Invalid token payload");
-        }
+    private final JWTUtil jwtUtil;
+    private final CustomUserDetailsService userDetailsService;
 
-        // 3. Redis 저장된 토큰과 일치 여부 확인
-        if (!refreshTokenService.isValidTokenForMember(memberId, refreshToken)) {
-            return TokenValidationResult.invalid("Token not found or mismatched");
-        }
+    @Override
+    protected void doFilterInternal(HttpServletRequest request,
+                                  HttpServletResponse response,
+                                  FilterChain filterChain) {
 
-        // 4. 검증 성공
-        String email = tokenManager.getEmail(refreshToken).orElse(null);
-        return TokenValidationResult.valid(memberId, email);
-    }
+        // 1. Authorization 헤더에서 Access Token 추출
+        jwtUtil.extractAccessToken(request)
+            .filter(jwtUtil::isAccessToken)  // 2. JWT 형식 및 만료 검증
+            .flatMap(jwtUtil::getEmail)      // 3. 이메일 추출
+            .ifPresent(email -> {
+                try {
+                    // 4. UserDetails 로드
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
-    /**
-     * Access Token의 블랙리스트 검증
-     */
-    public boolean isValidAccessToken(String accessToken) {
-        // 1. JWT 형식 및 만료 시간 검증
-        if (!tokenManager.isAccessToken(accessToken)) {
-            return false;
-        }
+                    // 5. Spring Security 인증 객체 생성
+                    Authentication authentication = new UsernamePasswordAuthenticationToken(
+                        userDetails, null, userDetails.getAuthorities()
+                    );
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        // 2. 블랙리스트 확인
-        return !tokenBlacklistRepository.isTokenBlacklisted(accessToken);
+                    log.info("JWT 인증 성공: {}", email);
+                } catch (Exception e) {
+                    log.warn("UserDetails 로딩 실패: {}", e.getMessage());
+                }
+            });
+
+        filterChain.doFilter(request, response);
     }
 }
 ```
 
-### 4. 로그아웃 및 보안 처리
+### 4. JWT 구현체 (JWTUtil)
 
-#### 로그아웃 플로우
+#### 주요 메서드
 ```java
-// AuthenticationService
-public void logout(HttpServletRequest request, HttpServletResponse response) {
-    // 1. Refresh Token 삭제 (Redis에서 제거)
-    tokenManager.extractRefreshToken(request)
-        .filter(tokenManager::isRefreshToken)
-        .flatMap(tokenManager::getId)
-        .ifPresent(memberId -> {
-            refreshTokenService.revokeToken(memberId);
-            log.info("Refresh token deleted for member: {}", memberId);
-        });
+// 위치: src/main/java/com/anyang/maruni/global/security/JWTUtil.java
+@Component
+public class JWTUtil implements TokenManager {
 
-    // 2. Refresh Token 쿠키 만료
-    tokenService.expireRefreshCookie(response);
+    private final JwtProperties jwtProperties;
+    private SecretKey secretKey;
 
-    // 3. Access Token 블랙리스트 추가
-    tokenManager.extractAccessToken(request)
-        .filter(tokenManager::isAccessToken)
-        .ifPresent(accessToken -> {
-            tokenManager.getExpiration(accessToken).ifPresent(expiration ->
-                tokenBlacklistRepository.addToBlacklist(accessToken, expiration)
-            );
-        });
+    @PostConstruct
+    public void init() {
+        this.secretKey = Keys.hmacShaKeyFor(
+            jwtProperties.getSecretKey().getBytes(StandardCharsets.UTF_8)
+        );
+    }
 
-    log.info("Logout completed");
+    // Access Token 생성
+    public String createAccessToken(String id, String email) {
+        return Jwts.builder()
+            .claim("type", "access")
+            .claim("id", id)
+            .claim("email", email)
+            .issuedAt(new Date())
+            .expiration(new Date(System.currentTimeMillis() +
+                jwtProperties.getAccessToken().getExpiration()))
+            .signWith(secretKey)
+            .compact();
+    }
+
+    // 토큰 검증
+    public boolean isAccessToken(String token) {
+        return safelyParseClaims(token)
+            .map(claims -> "access".equals(claims.get("type", String.class)))
+            .orElse(false);
+    }
+
+    // 이메일 추출
+    public Optional<String> getEmail(String token) {
+        return safelyParseClaims(token)
+            .map(claims -> claims.get("email", String.class));
+    }
+
+    // 헤더에서 토큰 추출
+    public Optional<String> extractAccessToken(HttpServletRequest request) {
+        return Optional.ofNullable(request.getHeader(HttpHeaders.AUTHORIZATION))
+            .filter(header -> header.startsWith("Bearer "))
+            .map(header -> header.substring(7));
+    }
+
+    // 안전한 파싱
+    private Optional<Claims> safelyParseClaims(String token) {
+        try {
+            return Optional.of(Jwts.parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload());
+        } catch (JwtException | IllegalArgumentException e) {
+            log.warn("JWT validation failed");
+            return Optional.empty();
+        }
+    }
 }
 ```
 
-## 📊 엔티티 설계
+## 📊 Value Object
 
-### RefreshToken 엔티티 (Redis)
+### MemberTokenInfo
 ```java
-@RedisHash(value = "refreshToken")
-public class RefreshToken {
-    @Id
-    private String memberId;        // 회원 ID (Primary Key)
-
-    private String token;           // 실제 Refresh Token 값
-
-    @TimeToLive
-    private Long ttl;              // 자동 만료 시간 (초)
-}
-```
-
-### MemberTokenInfo VO (Value Object)
-```java
+// 위치: src/main/java/com/anyang/maruni/domain/auth/domain/vo/MemberTokenInfo.java
 /**
  * 토큰 발급에 필요한 회원 정보를 담는 Value Object
  * 도메인 간 의존성을 분리하여 Auth 도메인의 순수성을 보장
@@ -263,141 +226,16 @@ public record MemberTokenInfo(String memberId, String email) {
 }
 ```
 
-## 🔍 Repository 구현
-
-### RefreshTokenRepository (Spring Data Redis)
-```java
-// Redis 기반 Refresh Token 저장소
-public interface RefreshTokenRepository extends CrudRepository<RefreshToken, String> {
-    // Redis의 자동 TTL 관리로 만료된 토큰은 자동 삭제
-    // Primary Key가 memberId이므로 회원당 하나의 Refresh Token만 유지
-}
-```
-
-### TokenBlacklistRepository (인터페이스)
-```java
-public interface TokenBlacklistRepository {
-    /**
-     * Access Token을 블랙리스트에 추가
-     */
-    void addToBlacklist(String accessToken, long expirationMillis);
-
-    /**
-     * Access Token이 블랙리스트에 존재하는지 확인
-     */
-    boolean isTokenBlacklisted(String accessToken);
-}
-```
-
-### BlacklistTokenStorage (Infrastructure 구현체)
-```java
-@Component
-public class BlacklistTokenStorage implements TokenBlacklistRepository {
-    private final RedisTemplate<String, String> redisTemplate;
-    private static final String BLACKLIST_PREFIX = "blacklist:token:";
-
-    public void addToBlacklist(String accessToken, long expirationMillis) {
-        String key = BLACKLIST_PREFIX + accessToken;
-        // 토큰 만료 시간만큼만 Redis에 저장 (자동 만료)
-        redisTemplate.opsForValue().set(key, "revoked", Duration.ofMillis(expirationMillis));
-        log.info("Token added to blacklist with expiry {}ms", expirationMillis);
-    }
-
-    public boolean isTokenBlacklisted(String accessToken) {
-        String key = BLACKLIST_PREFIX + accessToken;
-        return redisTemplate.hasKey(key);
-    }
-}
-```
-
-## 🌐 REST API 구현
-
-### AuthApiController (3개 엔드포인트)
-```java
-@RestController
-@RequestMapping("/api/auth")
-@AutoApiResponse
-@Tag(name = "인증 API", description = "JWT 토큰 관리")
-public class AuthApiController {
-
-    // 1. Access Token 재발급 (일반적인 갱신)
-    @PostMapping("/token/refresh")
-    @SuccessCodeAnnotation(SuccessCode.MEMBER_TOKEN_REISSUE_SUCCESS)
-    public TokenResponse refreshAccessToken(
-        HttpServletRequest request,
-        HttpServletResponse response) {
-
-        return authenticationService.refreshAccessToken(request, response);
-    }
-
-    // 2. Access + Refresh Token 모두 재발급 (보안 강화)
-    @PostMapping("/token/refresh/full")
-    @SuccessCodeAnnotation(SuccessCode.MEMBER_TOKEN_REISSUE_FULL_SUCCESS)
-    public TokenResponse refreshAllTokens(
-        HttpServletRequest request,
-        HttpServletResponse response) {
-
-        return authenticationService.refreshAllTokens(request, response);
-    }
-
-    // 3. 로그아웃
-    @PostMapping("/logout")
-    @SuccessCodeAnnotation(SuccessCode.MEMBER_LOGOUT_SUCCESS)
-    public CommonApiResponse<Void> logout(
-        HttpServletRequest request,
-        HttpServletResponse response) {
-
-        authenticationService.logout(request, response);
-        return CommonApiResponse.success(SuccessCode.MEMBER_LOGOUT_SUCCESS);
-    }
-}
-```
-
-## 📝 DTO 계층
-
-### TokenResponse
-```java
-@Schema(description = "토큰 응답")
-public class TokenResponse {
-    @Schema(description = "Access Token", example = "Bearer eyJhbGciOiJIUzI1NiIs...")
-    private final String accessToken;
-
-    @Schema(description = "토큰 타입", example = "Bearer")
-    private final String tokenType;
-
-    @Schema(description = "Access Token 만료 시간 (초)", example = "3600")
-    private final Long expiresIn;
-
-    @Schema(description = "Refresh Token 포함 여부", example = "true")
-    private final boolean refreshTokenIncluded;
-
-    // 정적 팩토리 메서드
-    public static TokenResponse accessOnly(String accessToken, Long expiresIn) {
-        return TokenResponse.builder()
-            .accessToken(accessToken)
-            .tokenType("Bearer")
-            .expiresIn(expiresIn)
-            .refreshTokenIncluded(false)
-            .build();
-    }
-
-    public static TokenResponse withRefresh(String accessToken, Long expiresIn) {
-        return TokenResponse.builder()
-            .accessToken(accessToken)
-            .tokenType("Bearer")
-            .expiresIn(expiresIn)
-            .refreshTokenIncluded(true)
-            .build();
-    }
-}
-```
-
 ## 🔗 도메인 간 연동
 
-### Member 도메인 연동
+### Member 도메인 연동 (로그인)
 ```java
 // LoginFilter에서 로그인 성공 시 토큰 발급
+// 위치: src/main/java/com/anyang/maruni/global/security/LoginFilter.java
 public class LoginFilter extends UsernamePasswordAuthenticationFilter {
+
+    private final AuthenticationEventHandler authenticationEventHandler;
+
     @Override
     protected void successfulAuthentication(HttpServletRequest request,
                                           HttpServletResponse response,
@@ -405,181 +243,252 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
                                           Authentication authentication) {
 
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-        MemberTokenInfo memberInfo = MemberTokenInfo.of(
-            userDetails.getMemberId(),
-            userDetails.getEmail()
+
+        // 회원 정보를 Value Object로 변환
+        MemberTokenInfo memberTokenInfo = MemberTokenInfo.of(
+            userDetails.getMember().getId(),
+            userDetails.getMember().getMemberEmail()
         );
 
         // AuthenticationService를 통한 토큰 발급
-        authenticationEventHandler.handleLoginSuccess(response, memberInfo);
+        authenticationEventHandler.handleLoginSuccess(response, memberTokenInfo);
+
+        log.info("로그인 성공 - 사용자: {}", userDetails.getUsername());
     }
 }
 ```
 
 ### Spring Security 연동
 ```java
-// JwtAuthenticationFilter에서 Access Token 검증
-public class JwtAuthenticationFilter extends OncePerRequestFilter {
-    @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                  HttpServletResponse response,
-                                  FilterChain filterChain) {
-
-        String accessToken = jwtUtil.extractAccessToken(request).orElse(null);
-
-        // TokenValidator를 통한 토큰 검증
-        if (accessToken != null && tokenValidator.isValidAccessToken(accessToken)) {
-            // Spring Security 인증 객체 생성
-            setAuthenticationContext(accessToken);
-        }
-
-        filterChain.doFilter(request, response);
-    }
-}
-```
-
-### Global Configuration 연동
-```java
-// SecurityConfig에서 JWT 필터 등록
+// SecurityConfig에서 필터 체인 구성
+// 위치: src/main/java/com/anyang/maruni/global/config/SecurityConfig.java
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        // JWT 필터 체인 구성
-        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-            .addFilterAt(loginFilter, UsernamePasswordAuthenticationFilter.class);
+        http
+            // JWT 필터 추가
+            .addFilterBefore(jwtAuthenticationFilter(),
+                UsernamePasswordAuthenticationFilter.class)
+            .addFilterAt(loginFilter(),
+                UsernamePasswordAuthenticationFilter.class)
+
+            // 기본 설정
+            .csrf(AbstractHttpConfigurer::disable)
+            .httpBasic(AbstractHttpConfigurer::disable)
+            .formLogin(AbstractHttpConfigurer::disable)
+            .sessionManagement(session ->
+                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+            // 권한 설정
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(publicUrls).permitAll()
+                .anyRequest().authenticated()
+            );
 
         return http.build();
     }
 }
 ```
 
-## ⚙️ 설정 및 운영
+## ⚙️ 설정
 
-### JWT 설정 (application.yml)
+### JWT 설정 (application-security.yml)
 ```yaml
+# 위치: src/main/resources/application-security.yml
 jwt:
-  secret-key: ${JWT_SECRET_KEY}  # 최소 32자 이상
+  secret-key: ${JWT_SECRET_KEY:your_jwt_secret_key_at_least_32_characters}
   access-token:
-    expiration: ${JWT_ACCESS_EXPIRATION:3600000}   # 1시간
-  refresh-token:
-    expiration: ${JWT_REFRESH_EXPIRATION:86400000} # 24시간
-
-# 쿠키 보안 설정
-cookie:
-  secure: ${COOKIE_SECURE:false}  # Production에서는 true
+    expiration: ${JWT_ACCESS_EXPIRATION:3600000}  # 1시간 (밀리초)
 ```
 
 ### 환경 변수 (.env)
 ```bash
 # JWT 보안 설정
-JWT_SECRET_KEY=your_jwt_secret_key_at_least_32_characters
+JWT_SECRET_KEY=c29tZS1yYW5kb20tc2VjcmV0LWtleS1mb3Itand0LXNlY3JldC1rZXktY2hhbmdlLW1lLWxhdGVyCg
 JWT_ACCESS_EXPIRATION=3600000   # 1시간 (밀리초)
-JWT_REFRESH_EXPIRATION=86400000 # 24시간 (밀리초)
-
-# 쿠키 보안 (Production)
-COOKIE_SECURE=true
-```
-
-### Redis 설정
-```yaml
-spring:
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD}
-      timeout: 2000ms
-      lettuce:
-        pool:
-          max-active: 8
-          max-idle: 8
-          min-idle: 0
 ```
 
 ## 📈 보안 특성
 
-### 실제 운영 보안 지표
-- ✅ **이중 토큰 시스템**: Access(짧은 수명) + Refresh(긴 수명) 분리 보안
-- ✅ **HttpOnly 쿠키**: XSS 공격 방지를 위한 Refresh Token 저장
-- ✅ **토큰 블랙리스트**: 로그아웃된 Access Token 무효화 처리
-- ✅ **Redis TTL**: 자동 만료를 통한 토큰 생명주기 관리
-- ✅ **JWT 서명 검증**: HMAC-SHA256 기반 무결성 보장
-- ✅ **CSRF 보호**: SameSite 쿠키 속성으로 CSRF 공격 방지
+### Stateless JWT의 장점
+- ✅ **서버 확장성**: 상태 저장 없이 수평 확장 가능
+- ✅ **단순한 구조**: Redis, DB 의존성 없음
+- ✅ **빠른 검증**: 서명 검증만으로 인증 완료
+- ✅ **표준 기반**: JWT RFC 7519 준수
 
-### 보안 시나리오 대응
+### 보안 고려사항
 ```java
-// 1. Access Token 탈취 시
+// 1. 토큰 탈취 시
 - 짧은 수명 (1시간)으로 피해 최소화
-- 로그아웃 시 블랙리스트 추가로 즉시 무효화
+- HTTPS 사용 필수 (프로덕션 환경)
 
-// 2. Refresh Token 탈취 시
-- HttpOnly 쿠키로 JavaScript 접근 차단
-- Redis 저장으로 서버 측 revoke 가능
-- 재발급 시 기존 토큰 자동 무효화
+// 2. XSS 공격 방지
+- localStorage 대신 메모리에 토큰 저장 권장
+- HttpOnly 쿠키 사용 가능 (필요 시)
 
-// 3. 동시 로그인 제어
-- 회원당 하나의 Refresh Token만 유지
-- 새 로그인 시 기존 토큰 자동 교체
+// 3. CSRF 방어
+- Custom Header (Authorization) 사용으로 자동 방어
+```
+
+## 🎯 인증 플로우
+
+### 전체 인증 흐름
+```
+1. 로그인 요청
+   POST /api/auth/login
+   { "email": "user@example.com", "password": "password123" }
+   ↓
+2. LoginFilter에서 인증 처리
+   - Spring Security AuthenticationManager로 인증
+   - 성공 시 AuthenticationService.handleLoginSuccess() 호출
+   ↓
+3. Access Token 발급
+   - JWTUtil.createAccessToken()으로 JWT 생성
+   - Response Header에 "Authorization: Bearer {token}" 설정
+   ↓
+4. 클라이언트가 토큰 저장
+   - 메모리 또는 localStorage에 저장
+   ↓
+5. API 요청 시 토큰 전송
+   GET /api/users/me
+   Headers: { "Authorization": "Bearer eyJhbGci..." }
+   ↓
+6. JwtAuthenticationFilter에서 검증
+   - 헤더에서 토큰 추출
+   - JWT 서명 및 만료 검증
+   - 이메일로 UserDetails 로드
+   - Spring Security Context에 인증 정보 설정
+   ↓
+7. Controller에서 인증 정보 사용
+   @AuthenticationPrincipal CustomUserDetails userDetails
+```
+
+### 로그아웃 처리
+```
+클라이언트 측 처리:
+- 메모리/localStorage에서 토큰 삭제
+- 로그인 페이지로 리다이렉트
+
+서버 측 처리:
+- 없음 (Stateless이므로 서버에서 관리할 상태 없음)
+- 토큰은 만료 시간까지 유효하나, 클라이언트가 삭제하면 사용 불가
 ```
 
 ## 🎯 Claude Code 작업 가이드
 
-### 향후 확장 시 주의사항
-1. **토큰 만료 시간 조정**: 보안과 사용성의 균형 고려
-2. **Redis 메모리 관리**: TTL 설정으로 메모리 사용량 최적화
-3. **블랙리스트 성능**: 대용량 환경에서 Redis 성능 모니터링 필요
-4. **도메인 인터페이스 유지**: Global 구현체 변경 시 인터페이스 계약 준수
+### 향후 확장 가능성
+```java
+// 필요 시 추가 가능한 기능들:
+1. Refresh Token 추가
+   - 긴 수명의 토큰으로 Access Token 재발급
+   - Redis 또는 DB에 저장
+
+2. 토큰 블랙리스트
+   - 로그아웃된 토큰 무효화
+   - Redis에 만료 시간까지 저장
+
+3. 다중 기기 로그인 관리
+   - 기기별 세션 추적
+   - 선택적 로그아웃 기능
+
+현재 구조는 이러한 확장을 쉽게 지원할 수 있도록 설계됨
+```
 
 ### DDD 의존성 구조 유지
 ```java
 // ✅ 올바른 의존성 방향
-Domain Interface ← Global Implementation
-    ↑                      ↑
-Application Service    Infrastructure
+Domain Interface (TokenManager)
+    ↑
+Application Service (AuthenticationService)
+    ↑
+Presentation (Controller)
+
+Global Implementation (JWTUtil) → Domain Interface 구현
 ```
 
 ### API 사용 예시
 ```bash
-# 1. 로그인 (LoginFilter에서 자동 처리)
-POST /api/members/login
+# 1. 로그인
+POST /api/auth/login
+Content-Type: application/json
+
 {
   "email": "user@example.com",
   "password": "password123"
 }
-# Response: Authorization 헤더 + refresh 쿠키 자동 설정
 
-# 2. Access Token 재발급
-POST /api/auth/token/refresh
-Cookie: refresh=eyJhbGciOiJIUzI1NiIs...
-# Response: 새로운 Authorization 헤더
+# Response
+HTTP/1.1 200 OK
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+Content-Type: application/json
 
-# 3. 전체 토큰 재발급 (보안 강화)
-POST /api/auth/token/refresh/full
-Cookie: refresh=eyJhbGciOiJIUzI1NiIs...
-# Response: 새로운 Authorization 헤더 + 새로운 refresh 쿠키
+{
+  "code": "MEMBER_LOGIN_SUCCESS",
+  "message": "로그인 성공"
+}
 
-# 4. 로그아웃
-POST /api/auth/logout
-Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
-Cookie: refresh=eyJhbGciOiJIUzI1NiIs...
-# Response: 토큰 무효화 완료
+# 2. 인증이 필요한 API 호출
+GET /api/users/me
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+# Response
+{
+  "code": "MEMBER_VIEW",
+  "message": "회원 조회 성공",
+  "data": {
+    "id": 1,
+    "email": "user@example.com",
+    "name": "홍길동"
+  }
+}
+
+# 3. 로그아웃 (클라이언트 측)
+// JavaScript 예시
+localStorage.removeItem('access_token');
+// 또는
+sessionStorage.removeItem('access_token');
+window.location.href = '/login';
 ```
 
 ### 문제 해결 가이드
 ```java
-// Token 검증 실패 시
-1. JWT 형식 오류 → TokenManager.isAccessToken() 확인
-2. 토큰 만료 → 재발급 API 호출
-3. 블랙리스트 토큰 → 재로그인 필요
-4. Redis 연결 오류 → 인프라 상태 확인
+// 토큰 검증 실패 시
+1. "Invalid or expired token"
+   → 토큰 만료: 재로그인 필요
+   → JWT 형식 오류: 토큰 값 확인
 
-// Refresh Token 오류 시
-1. 쿠키 누락 → 로그인 상태 확인
-2. Redis 토큰 불일치 → 재로그인 필요
-3. TTL 만료 → 재로그인 필요
+2. "JWT validation failed"
+   → 서명 불일치: SECRET_KEY 확인
+   → 만료된 토큰: 재로그인
+
+3. "UserDetails 로딩 실패"
+   → 사용자가 DB에 없음: 회원 탈퇴 또는 삭제됨
+   → DB 연결 오류: 인프라 상태 확인
 ```
 
-**Auth 도메인은 MARUNI의 모든 보안 요구사항을 만족하는 완성된 인증/인가 시스템입니다. DDD 의존성 역전 원칙을 완벽히 적용하여 도메인 순수성을 보장하면서도 실제 운영 환경에서 요구되는 모든 보안 기능을 구현했습니다.** 🔐
+## 📝 주요 파일 위치
+
+```
+인증 관련 핵심 파일:
+├── domain/auth/application/service/
+│   └── AuthenticationService.java          # 토큰 발급
+├── domain/auth/domain/service/
+│   └── TokenManager.java                    # 인터페이스
+├── domain/auth/domain/vo/
+│   └── MemberTokenInfo.java                 # Value Object
+├── global/security/
+│   ├── JWTUtil.java                         # TokenManager 구현
+│   ├── JwtAuthenticationFilter.java         # 토큰 검증 필터
+│   ├── LoginFilter.java                     # 로그인 필터
+│   └── AuthenticationEventHandler.java      # 이벤트 인터페이스
+├── global/config/
+│   ├── SecurityConfig.java                  # Security 설정
+│   └── JwtSecurityConfig.java               # JWT Bean 설정
+└── global/config/properties/
+    └── JwtProperties.java                   # JWT 설정 클래스
+```
+
+**Auth 도메인은 MARUNI의 인증 요구사항을 만족하는 단순하고 명확한 시스템입니다. Stateless JWT 기반으로 확장 가능하며, 필요 시 Refresh Token이나 블랙리스트 등의 기능을 쉽게 추가할 수 있습니다.** 🔐

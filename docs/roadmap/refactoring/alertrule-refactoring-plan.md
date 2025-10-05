@@ -606,7 +606,7 @@ public class AlertSystemHealthIndicator implements HealthIndicator {
 **🎯 최종 목표: AlertRule 도메인을 현재의 100% 완성 상태에서 → 확장 가능하고 성능 최적화된 엔터프라이즈급 도메인으로 발전시키기**
 
 ## 📚 **참고 문서**
-- [AlertRule 도메인 구현 가이드](../domains/alertrule.md)
-- [MARUNI 프로젝트 아키텍처](../README.md)
-- [코딩 표준](../specifications/coding-standards.md)
-- [성능 최적화 가이드](../specifications/performance-guide.md)
+- [AlertRule 도메인 구현 가이드](../../domains/alertrule.md)
+- [MARUNI 프로젝트 아키텍처](../../README.md)
+- [코딩 표준](../../specifications/coding-standards.md)
+- [성능 최적화 가이드](../../specifications/performance-guide.md)

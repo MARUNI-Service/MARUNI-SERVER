@@ -20,7 +20,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 
-import com.anyang.maruni.domain.auth.domain.service.TokenService;
 import com.anyang.maruni.domain.member.application.dto.request.MemberLoginRequest;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
 import com.anyang.maruni.domain.member.infrastructure.security.CustomUserDetails;
@@ -32,10 +31,6 @@ class LoginFilterTest {
 
 	@Mock
 	private AuthenticationManager authenticationManager;
-	
-	@Mock
-	private TokenService tokenService;
-	
 	@Mock
 	private AuthenticationEventHandler eventHandler;
 	

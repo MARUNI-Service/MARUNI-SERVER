@@ -17,7 +17,7 @@ docs/
 │   ├── alertrule.md            # 이상징후 감지 (3종 알고리즘)
 │   ├── guardian.md             # 보호자 관리 시스템
 │   ├── member.md               # 회원 관리 시스템
-│   ├── auth.md                 # JWT 인증/인가 시스템
+│   ├── auth.md                 # JWT Stateless 인증 시스템
 │   └── notification.md         # 알림 시스템
 ├── roadmap/                    # 🚀 발전 계획
 │   ├── README.md               # 전체 로드맵 및 Phase별 현황
@@ -30,7 +30,7 @@ docs/
     ├── api-design-guide.md     # ⭐⭐ REST API 설계 (API 개발)
     ├── database-design-guide.md # ⭐ Entity 설계 패턴 (DB 작업)
     ├── testing-guide.md        # ⭐ TDD 테스트 작성법 (테스트 작성)
-    ├── security-guide.md       # 🔒 JWT 보안 구현 (보안 설정)
+    ├── security-guide.md       # 🔒 JWT Stateless 인증 구현 (보안 설정)
     ├── performance-guide.md    # ⚡ JPA 성능 최적화 (성능 작업)
     └── tech-stack.md           # 🛠️ 기술 스택 전체 (환경 구성)
 ```
@@ -68,9 +68,9 @@ docs/
 ### 🛠️ **기술 스택**
 ```
 Backend: Spring Boot 3.5.x + Java 21
-Database: PostgreSQL + Redis
+Database: PostgreSQL (단일 DB)
 AI: OpenAI GPT-4o (Spring AI)
-Auth: JWT (Access/Refresh Token)
+Auth: JWT (Access Token Only, Stateless)
 Testing: TDD Red-Green-Blue 사이클
 Architecture: DDD (Domain-Driven Design)
 Docs: Swagger/OpenAPI 3.0
@@ -82,22 +82,25 @@ Deployment: Docker + Docker Compose
 ### 필수 환경 변수 (`.env` 파일)
 ```bash
 # Database
-DB_USERNAME=your_db_username
+DB_USERNAME=postgres
 DB_PASSWORD=your_db_password
 
-# Redis  
-REDIS_PASSWORD=your_redis_password
-
-# JWT (필수)
+# JWT (필수 - Access Token Only)
 JWT_SECRET_KEY=your_jwt_secret_key_at_least_32_characters
 JWT_ACCESS_EXPIRATION=3600000
-JWT_REFRESH_EXPIRATION=86400000
 
-# OpenAI API (Phase 1: AI 대화 시스템)
+# OpenAI API (AI 대화 시스템)
 OPENAI_API_KEY=your_openai_api_key_here
 OPENAI_MODEL=gpt-4o
 OPENAI_MAX_TOKENS=100
 OPENAI_TEMPERATURE=0.7
+
+# Firebase (푸시 알림)
+FIREBASE_PROJECT_ID=maruni-project
+FIREBASE_PRIVATE_KEY_PATH=config/firebase-service-account.json
+
+# 데이터 암호화
+ENCRYPTION_KEY=maruni_encryption_key_32_bytes_long
 ```
 
 ### 개발 명령어
@@ -118,7 +121,7 @@ docker-compose up -d
 ```
 🔐 Foundation Layer (기반 시스템) ✅ 완성
 ├── Member (회원 관리) ✅
-└── Auth (JWT 인증) ✅
+└── Auth (JWT Stateless 인증) ✅
 
 💬 Core Service Layer (핵심 서비스) ✅ 완성
 ├── Conversation (AI 대화) ✅     # OpenAI GPT-4o 연동
@@ -164,8 +167,8 @@ docker-compose up -d
 - **7개 REST API**: CRUD + 관계 관리 완성
 
 #### ✅ **인증/보안 시스템** (Member + Auth 도메인)
-- **JWT 이중 토큰**: Access(1시간) + Refresh(24시간) 분리
-- **Redis 기반 저장**: 토큰 무효화 및 블랙리스트 관리
+- **JWT Stateless 인증**: Access Token Only (1시간 유효)
+- **클라이언트 기반 로그아웃**: 서버 측 상태 저장소 없음
 - **DDD 의존성 역전**: 도메인 → Global 구현체 구조
 - **Spring Security**: 필터 체인 기반 완전 보안
 
@@ -173,7 +176,7 @@ docker-compose up -d
 ```
 com.anyang.maruni/
 ├── global/                          # 완성됨 - 수정 지양
-│   ├── config/                     # 설정 (Swagger, Security, Redis, JWT)
+│   ├── config/                     # 설정 (Swagger, Security, JWT)
 │   ├── response/                   # 표준화된 API 응답 시스템
 │   │   ├── annotation/            # @AutoApiResponse, @SuccessCodeAnnotation
 │   │   ├── dto/CommonApiResponse  # 공통 응답 DTO
@@ -184,7 +187,6 @@ com.anyang.maruni/
 │   ├── advice/                    # 컨트롤러 조언
 │   ├── security/                  # Spring Security 필터 및 JWT 유틸
 │   │   ├── JWTUtil.java          # JWT 토큰 생성/검증 (TokenManager 구현)
-│   │   ├── JwtTokenService.java  # 토큰 발급 서비스 (TokenService 구현)
 │   │   ├── JwtAuthenticationFilter.java  # JWT 인증 필터
 │   │   ├── LoginFilter.java      # 로그인 처리 필터
 │   │   └── AuthenticationEventHandler.java  # 인증 이벤트 인터페이스
@@ -204,15 +206,12 @@ com.anyang.maruni/
 │   │   │       └── CustomUserDetailsService.java
 │   │   └── presentation/        # Presentation Layer
 │   │       └── controller/     # REST API 컨트롤러
-│   ├── auth/                    # 인증/권한 도메인 ✅
+│   ├── auth/                    # 인증/권한 도메인 ✅ (Stateless)
 │   │   ├── application/         # AuthenticationService (이벤트 핸들러 구현)
 │   │   ├── domain/              # 토큰 관련 도메인 서비스 및 VO
-│   │   │   ├── service/        # TokenValidator, RefreshTokenService 등
-│   │   │   ├── vo/             # MemberTokenInfo (Value Object)
-│   │   │   ├── entity/         # RefreshToken Entity
-│   │   │   └── repository/     # 토큰 저장소 인터페이스
-│   │   ├── infrastructure/      # Redis 기반 토큰 저장소 구현
-│   │   └── presentation/        # 토큰 재발급 API 등
+│   │   │   ├── service/        # TokenManager 인터페이스
+│   │   │   └── vo/             # MemberTokenInfo (Value Object)
+│   │   └── presentation/        # (로그아웃 API 없음 - 클라이언트 처리)
 │   ├── conversation/             # AI 대화 도메인 ✅ (100% 완료)
 │   │   ├── application/          # Application Layer
 │   │   │   ├── dto/             # ConversationRequestDto, ConversationResponseDto, MessageDto
@@ -263,7 +262,7 @@ com.anyang.maruni/
 - **ApiResponseAdvice**: 모든 컨트롤러 응답을 `CommonApiResponse<T>` 구조로 래핑
 - **@SuccessCodeAnnotation**: 메소드별 성공 코드 지정
 
-#### 2. 예외 처리 시스템  
+#### 2. 예외 처리 시스템
 - **GlobalExceptionHandler**: 모든 예외를 일관된 응답으로 변환
 - **BaseException**: 모든 비즈니스 예외의 기본 클래스
 - **자동 처리**: Bean Validation 오류, Enum 변환 오류 등
@@ -273,11 +272,11 @@ com.anyang.maruni/
 - **JWT 인증 지원**: Bearer 토큰 인증 스키마 자동 적용
 - **동적 서버 URL**: 환경별 서버 URL 자동 설정
 
-#### 4. 인증/보안 시스템 (JWT 기반)
+#### 4. 인증/보안 시스템 (JWT Stateless)
 - **의존성 역전**: 도메인 인터페이스 → Global 구현체 구조로 DDD 원칙 준수
-- **토큰 관리**: Access/Refresh 토큰 분리, Redis 기반 저장
+- **Stateless JWT**: Access Token Only (1시간), 서버 측 상태 저장소 없음
+- **클라이언트 로그아웃**: 토큰 삭제는 클라이언트에서 처리
 - **Spring Security**: 필터 체인을 통한 JWT 인증/인가 처리
-- **계층 분리**: Infrastructure → Application Service → Domain Repository 의존성 구조
 
 ## 🎯 Claude Code 작업 가이드라인
 
@@ -318,7 +317,7 @@ com.anyang.maruni/
 ✅ "docs/domains/member.md를 확인하니 MemberService가 이미 완성되어 있습니다"
 
 ❌ "JWT 설정을 새로 하겠습니다"
-✅ "docs/specifications/security-guide.md에 JWT 시스템이 완전히 구현되어 있어 기존 패턴을 사용하겠습니다"
+✅ "docs/specifications/security-guide.md에 JWT Stateless 시스템이 완전히 구현되어 있어 기존 패턴을 사용하겠습니다"
 
 ❌ "Entity를 만들어야겠습니다"
 ✅ "docs/specifications/database-design-guide.md의 BaseTimeEntity 상속 패턴을 따르겠습니다"
@@ -417,7 +416,7 @@ Presentation Layer:
 ### 패키지 & 클래스
 - **도메인 패키지**: 단수형, 소문자 (`member`, `auth`)
 - **Entity**: `{Domain}Entity`
-- **Service**: `{Domain}Service`  
+- **Service**: `{Domain}Service`
 - **Controller**: `{Domain}Controller`
 - **DTO**: `{Domain}{Action}RequestDto/ResponseDto`
 - **API 경로**: `/api/{domain}` (RESTful)
@@ -429,7 +428,7 @@ Presentation Layer:
 **API 응답이 래핑되지 않을 때**
 → `@AutoApiResponse` 어노테이션 확인
 
-**커스텀 예외가 처리되지 않을 때**  
+**커스텀 예외가 처리되지 않을 때**
 → `BaseException` 상속 및 `ErrorCode` 정의 확인
 
 **Swagger 예시가 표시되지 않을 때**
@@ -438,12 +437,12 @@ Presentation Layer:
 **Docker 환경에서 DB 연결 실패**
 → `.env` 파일 환경변수 및 `docker-compose up -d` 실행 확인
 
-**JWT 토큰 인증 실패**  
-→ Authorization 헤더 형식 확인 (`Bearer {token}`)  
-→ 토큰 만료 시간 및 Secret Key 설정 확인  
+**JWT 토큰 인증 실패**
+→ Authorization 헤더 형식 확인 (`Bearer {token}`)
+→ 토큰 만료 시간 및 Secret Key 설정 확인
 
 **Security 관련 403/401 에러**
-→ SecurityConfig의 permitAll() 경로 설정 확인  
+→ SecurityConfig의 permitAll() 경로 설정 확인
 → JWT 필터 순서 및 CustomUserDetailsService Bean 등록 확인
 
 ### 디버깅
@@ -454,7 +453,7 @@ curl http://localhost:8080/actuator/health
 # 컨테이너 상태 확인
 docker-compose ps
 
-# 애플리케이션 로그 확인  
+# 애플리케이션 로그 확인
 docker-compose logs -f app
 ```
 
@@ -464,11 +463,12 @@ docker-compose logs -f app
 - 민감 정보는 반드시 환경 변수로 관리
 - Bean Validation을 통한 입력 검증 필수
 - JPA 쿼리 사용으로 SQL Injection 방지
+- Stateless JWT로 CSRF 공격 방지
 
-### 성능  
+### 성능
 - 조회 전용 메소드에 `@Transactional(readOnly = true)` 적용
-- Redis 캐싱 전략적 활용
 - N+1 쿼리 문제 방지를 위한 적절한 fetch 전략
+- PostgreSQL 인덱스 전략적 활용
 
 ## 작업 완료 후 문서 업데이트
 
@@ -478,9 +478,9 @@ docker-compose logs -f app
 - 새 개발 패턴 발견 → 표준 템플릿 섹션 업데이트
 - 새 문제 해결법 → 문제 해결 가이드 업데이트
 
-## 📋 프로젝트 현황 (2025-09-16 완성)
+## 📋 프로젝트 현황 (2025-10-05 단순화 완료)
 
-### 🎉 **Phase 2 MVP 100% 완성!**
+### 🎉 **Phase 2 MVP 100% 완성 + 인증 시스템 단순화!**
 
 **MARUNI는 TDD + DDD 방법론을 완전 적용하여 상용 서비스 수준으로 완성되었습니다.**
 
@@ -490,7 +490,7 @@ docker-compose logs -f app
 - **TDD 완전 사이클**: Red-Green-Blue 모든 도메인 적용
 - **실제 AI 연동**: OpenAI GPT-4o + Spring AI 완전 구현
 - **자동화 시스템**: 스케줄링 + 알림 + 감지 완전 자동화
-- **상용 서비스 준비**: 실제 운영 가능한 완성도
+- **단순화 아키텍처**: PostgreSQL 단일 DB, Stateless JWT
 
 #### 🏆 **주요 성과**
 ```
@@ -498,7 +498,16 @@ docker-compose logs -f app
 📅 스케줄링 시스템: 매일 오전 9시 자동 발송 + 83% 코드 개선
 🚨 이상징후 감지: 3종 알고리즘 + 50% 코드 품질 향상
 👥 보호자 관리: 7개 REST API + 완전한 알림 연동
-🔐 JWT 인증: Access/Refresh 토큰 + Redis 기반 완전 보안
+🔐 JWT 인증: Access Token Only, Stateless 인증, 클라이언트 로그아웃
+```
+
+#### 🔄 **최근 단순화 작업 (2025-10-05)**
+```
+✅ Redis 완전 제거 → PostgreSQL 단일 DB 환경
+✅ Refresh Token 제거 → Access Token Only (1시간 유효)
+✅ 로그아웃 API 제거 → 클라이언트 기반 로그아웃
+✅ 토큰 블랙리스트 제거 → 완전한 Stateless 구조
+✅ 문서 100% 최신화 → 실제 코드와 완벽 일치
 ```
 
 ### 📚 **상세 구현 내용은 문서 참조**
@@ -508,7 +517,7 @@ docker-compose logs -f app
 - **`docs/domains/dailycheck.md`**: 스케줄링 시스템 (TDD 완전 사이클)
 - **`docs/domains/alertrule.md`**: 이상징후 감지 (3종 알고리즘)
 - **`docs/domains/guardian.md`**: 보호자 관리 시스템
-- **`docs/domains/member.md`** + **`docs/domains/auth.md`**: 인증/보안
+- **`docs/domains/member.md`** + **`docs/domains/auth.md`**: 인증/보안 (Stateless JWT)
 
 #### 🚀 **향후 계획**
 - **`docs/roadmap/phase3.md`**: 고도화 & 모바일 연동 (8주 계획)
@@ -518,3 +527,5 @@ docker-compose logs -f app
 ---
 
 **⚠️ 중요: 모든 상세 구현 내용과 코드 패턴은 docs/ 폴더의 해당 문서를 반드시 확인하세요.**
+
+**Updated**: 2025-10-05 | **Version**: 2.0.0 | **Status**: Simplified Architecture (Access Token Only, PostgreSQL Single DB)

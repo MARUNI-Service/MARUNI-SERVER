@@ -11,12 +11,8 @@
 Access Token:
   - 만료시간: 1시간 (3,600,000ms)
   - 용도: API 호출 인증
-  - 저장위치: 클라이언트 메모리
-
-Refresh Token:
-  - 만료시간: 14일 (1,209,600,000ms)
-  - 용도: Access Token 재발급
-  - 저장위치: Redis (서버 관리)
+  - 저장위치: 클라이언트 (로컬 스토리지, 세션 스토리지, 메모리)
+  - 특징: Stateless (서버 측 저장소 없음)
 ```
 
 ### **JWT 설정**
@@ -26,8 +22,6 @@ jwt:
   secret-key: ${JWT_SECRET_KEY:your_jwt_secret_key_at_least_32_characters}
   access-token:
     expiration: ${JWT_ACCESS_EXPIRATION:3600000}
-  refresh-token:
-    expiration: ${JWT_REFRESH_EXPIRATION:1209600000}
 ```
 
 ### **환경변수 설정**
@@ -35,54 +29,119 @@ jwt:
 # .env 파일
 JWT_SECRET_KEY=your_super_secret_jwt_key_at_least_32_characters_long_for_security
 JWT_ACCESS_EXPIRATION=3600000
-JWT_REFRESH_EXPIRATION=1209600000
 ```
 
 ---
 
 ## 🛡️ JWT 구현
 
-### **JWTUtil 클래스**
+### **JWTUtil 클래스** (TokenManager 구현체)
 ```java
 @Component
-public class JWTUtil {
+@Slf4j
+public class JWTUtil implements TokenManager {
     @Value("${jwt.secret-key}")
     private String secretKey;
 
     @Value("${jwt.access-token.expiration}")
-    private Long accessTokenExpiration;
+    private Long accessExpiration;
 
-    // JWT 생성
-    public String generateAccessToken(MemberTokenInfo memberInfo) {
-        Date expiration = new Date(System.currentTimeMillis() + accessTokenExpiration);
+    // Access Token 생성
+    @Override
+    public String createAccessToken(String memberId, String email) {
+        return createJWT("access", email, accessExpiration);
+    }
+
+    // JWT 토큰 생성 (HMAC-SHA256)
+    private String createJWT(String category, String email, Long expiration) {
+        SecretKey key = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
 
         return Jwts.builder()
-            .subject(memberInfo.getEmail())
-            .claim("id", memberInfo.getId())
-            .claim("name", memberInfo.getName())
-            .issuedAt(new Date())
-            .expiration(expiration)
-            .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+            .claim("category", category)
+            .claim("email", email)
+            .issuedAt(new Date(System.currentTimeMillis()))
+            .expiration(new Date(System.currentTimeMillis() + expiration))
+            .signWith(key, SignatureAlgorithm.HS256)
             .compact();
     }
 
-    // JWT 검증
-    public Claims validateToken(String token) {
-        try {
-            return Jwts.parser()
-                .verifyWith(getSigningKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
-        } catch (JwtException | IllegalArgumentException e) {
-            throw new BaseException(ErrorCode.INVALID_TOKEN);
+    // Authorization 헤더에서 토큰 추출
+    @Override
+    public Optional<String> extractAccessToken(HttpServletRequest request) {
+        String authorizationHeader = request.getHeader("Authorization");
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            return Optional.of(authorizationHeader.substring(7));
         }
+        return Optional.empty();
     }
 
-    private SecretKey getSigningKey() {
-        byte[] keyBytes = secretKey.getBytes(StandardCharsets.UTF_8);
-        return Keys.hmacShaKeyFor(keyBytes);
+    // 토큰에서 이메일 추출
+    @Override
+    public Optional<String> getEmail(String token) {
+        return safelyParseClaims(token)
+            .map(claims -> claims.get("email", String.class));
     }
+
+    // Access Token 여부 확인
+    @Override
+    public boolean isAccessToken(String token) {
+        return safelyParseClaims(token)
+            .map(claims -> "access".equals(claims.get("category", String.class)))
+            .orElse(false);
+    }
+
+    // JWT 검증 및 파싱
+    private Optional<Claims> safelyParseClaims(String token) {
+        try {
+            SecretKey key = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
+
+            return Optional.of(Jwts.parser()
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload());
+        } catch (ExpiredJwtException e) {
+            log.warn("⚠️ JWT 만료: {}", e.getMessage());
+            return Optional.empty();
+        } catch (JwtException | IllegalArgumentException e) {
+            log.warn("⚠️ JWT 검증 실패: {}", e.getMessage());
+            return Optional.empty();
+        }
+    }
+}
+```
+
+### **TokenManager 인터페이스** (DDD 도메인 인터페이스)
+```java
+public interface TokenManager {
+    /**
+     * Access Token 생성
+     * @param memberId 회원 ID
+     * @param email 회원 이메일
+     * @return JWT Access Token
+     */
+    String createAccessToken(String memberId, String email);
+
+    /**
+     * HTTP 요청에서 Access Token 추출
+     * @param request HTTP 요청
+     * @return Access Token (Optional)
+     */
+    Optional<String> extractAccessToken(HttpServletRequest request);
+
+    /**
+     * 토큰에서 이메일 추출
+     * @param token JWT 토큰
+     * @return 이메일 (Optional)
+     */
+    Optional<String> getEmail(String token);
+
+    /**
+     * Access Token 여부 확인
+     * @param token JWT 토큰
+     * @return Access Token이면 true
+     */
+    boolean isAccessToken(String token);
 }
 ```
 
@@ -90,34 +149,51 @@ public class JWTUtil {
 ```java
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
-    private final JWTUtil jwtUtil;
+    private final TokenManager tokenManager;
+    private final CustomUserDetailsService customUserDetailsService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                   HttpServletResponse response,
                                   FilterChain filterChain) throws ServletException, IOException {
 
-        String token = extractTokenFromHeader(request);
+        // 1. Authorization 헤더에서 Access Token 추출
+        Optional<String> accessToken = tokenManager.extractAccessToken(request);
 
-        if (token != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            try {
-                Claims claims = jwtUtil.validateToken(token);
-                setAuthentication(claims);
-            } catch (BaseException e) {
-                logger.warn("JWT validation failed: {}", e.getMessage());
-            }
+        if (accessToken.isEmpty()) {
+            filterChain.doFilter(request, response);
+            return;
         }
+
+        String token = accessToken.get();
+
+        // 2. Access Token 여부 검증
+        if (!tokenManager.isAccessToken(token)) {
+            log.warn("⚠️ Access Token이 아닌 토큰 감지");
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        // 3. 이메일 추출 및 인증 처리
+        tokenManager.getEmail(token).ifPresent(email -> {
+            if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);
+
+                UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(
+                        userDetails,
+                        null,
+                        userDetails.getAuthorities()
+                    );
+
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+                log.info("✅ JWT 인증 성공 - 사용자: {}", email);
+            }
+        });
 
         filterChain.doFilter(request, response);
-    }
-
-    private String extractTokenFromHeader(HttpServletRequest request) {
-        String bearerToken = request.getHeader("Authorization");
-        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7);
-        }
-        return null;
     }
 }
 ```
@@ -133,27 +209,38 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 @RequiredArgsConstructor
 public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final LoginFilter loginFilter;
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http,
+                                         AuthenticationManager authenticationManager,
+                                         AuthenticationEventHandler authenticationEventHandler) throws Exception {
+
+        // LoginFilter 생성 (동적 Bean)
+        LoginFilter loginFilter = new LoginFilter(
+            authenticationManager,
+            authenticationEventHandler
+        );
+        loginFilter.setFilterProcessesUrl("/api/members/login");
+
         return http
             .cors(corsConfigurer -> corsConfigurer.configurationSource(corsConfigurationSource()))
             .csrf(AbstractHttpConfigurer::disable)
+            .formLogin(AbstractHttpConfigurer::disable)
+            .httpBasic(AbstractHttpConfigurer::disable)
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 // Public endpoints
                 .requestMatchers("/api-docs", "/v3/api-docs/**", "/swagger-ui/**").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/join").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/login").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/members").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/members/login").permitAll()
                 .requestMatchers("/actuator/health").permitAll()
 
                 // Protected endpoints
                 .anyRequest().authenticated())
 
-            // JWT 필터 추가
-            .addFilterBefore(jwtAuthenticationFilter, LoginFilter.class)
+            // JWT 필터 체인 (순서 중요)
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterAt(loginFilter, UsernamePasswordAuthenticationFilter.class)
             .build();
     }
@@ -170,44 +257,53 @@ public class SecurityConfig {
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
+        configuration.setExposedHeaders(List.of("Authorization")); // 클라이언트가 Authorization 헤더 읽을 수 있도록
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
+        return configuration.getAuthenticationManager();
     }
 }
 ```
 
 ### **로그인 필터**
 ```java
-@Component
-public class LoginFilter extends AbstractAuthenticationProcessingFilter {
-    private final ObjectMapper objectMapper;
-    private final JwtTokenService jwtTokenService;
-
-    public LoginFilter(AuthenticationManager authManager,
-                      ObjectMapper objectMapper,
-                      JwtTokenService jwtTokenService) {
-        super("/api/login", authManager);
-        this.objectMapper = objectMapper;
-        this.jwtTokenService = jwtTokenService;
-    }
+@Slf4j
+@RequiredArgsConstructor
+public class LoginFilter extends UsernamePasswordAuthenticationFilter {
+    private final AuthenticationEventHandler authenticationEventHandler;
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request,
-                                              HttpServletResponse response) {
+                                              HttpServletResponse response) throws AuthenticationException {
         try {
+            // JSON 요청 본문에서 이메일/비밀번호 추출
             MemberLoginRequest loginRequest = objectMapper.readValue(
-                request.getInputStream(), MemberLoginRequest.class);
+                request.getInputStream(),
+                MemberLoginRequest.class
+            );
 
+            log.info("🔐 로그인 시도 - 이메일: {}", loginRequest.memberEmail());
+
+            // UsernamePasswordAuthenticationToken 생성
             UsernamePasswordAuthenticationToken authToken =
                 new UsernamePasswordAuthenticationToken(
-                    loginRequest.getMemberEmail(),
-                    loginRequest.getMemberPassword());
+                    loginRequest.memberEmail(),
+                    loginRequest.memberPassword()
+                );
 
-            return getAuthenticationManager().authenticate(authToken);
+            // AuthenticationManager를 통한 인증 시도
+            return this.getAuthenticationManager().authenticate(authToken);
+
         } catch (IOException e) {
-            throw new RuntimeException("로그인 요청 파싱 실패", e);
+            log.error("❌ 로그인 요청 파싱 실패", e);
+            throw new RuntimeException("로그인 요청 처리 실패", e);
         }
     }
 
@@ -215,15 +311,60 @@ public class LoginFilter extends AbstractAuthenticationProcessingFilter {
     protected void successfulAuthentication(HttpServletRequest request,
                                           HttpServletResponse response,
                                           FilterChain chain,
-                                          Authentication authResult) throws IOException {
+                                          Authentication authResult) throws IOException, ServletException {
 
+        // CustomUserDetails에서 회원 정보 추출
         CustomUserDetails userDetails = (CustomUserDetails) authResult.getPrincipal();
-        TokenResponse tokenResponse = jwtTokenService.generateTokens(userDetails.getMember());
+        MemberEntity member = userDetails.getMember();
 
-        response.setContentType("application/json");
-        response.setCharacterEncoding("UTF-8");
-        objectMapper.writeValue(response.getWriter(),
-            CommonApiResponse.success(SuccessCode.LOGIN_SUCCESS, tokenResponse));
+        MemberTokenInfo memberInfo = new MemberTokenInfo(
+            member.getMemberId(),
+            member.getMemberEmail()
+        );
+
+        // AuthenticationService를 통해 토큰 발급 및 응답 처리
+        authenticationEventHandler.handleLoginSuccess(response, memberInfo);
+
+        log.info("✅ 로그인 성공 - 회원: {}", member.getMemberEmail());
+    }
+
+    @Override
+    protected void unsuccessfulAuthentication(HttpServletRequest request,
+                                            HttpServletResponse response,
+                                            AuthenticationException failed) throws IOException, ServletException {
+
+        log.warn("❌ 로그인 실패 - 사유: {}", failed.getMessage());
+
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json; charset=UTF-8");
+
+        CommonApiResponse<Void> errorResponse = CommonApiResponse.error(ErrorCode.LOGIN_FAIL);
+        objectMapper.writeValue(response.getWriter(), errorResponse);
+    }
+}
+```
+
+### **AuthenticationService** (로그인 성공 처리)
+```java
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class AuthenticationService implements AuthenticationEventHandler {
+    private final TokenManager tokenManager;
+
+    @Override
+    public void handleLoginSuccess(HttpServletResponse response, MemberTokenInfo memberInfo) {
+        // Access Token 생성
+        String accessToken = tokenManager.createAccessToken(
+            memberInfo.memberId(),
+            memberInfo.email()
+        );
+
+        // Authorization 헤더 설정
+        response.setHeader("Authorization", "Bearer " + accessToken);
+        response.setContentType("application/json; charset=UTF-8");
+
+        log.info("✅ Access Token 발급 완료 - Member: {}", memberInfo.email());
     }
 }
 ```
@@ -232,7 +373,7 @@ public class LoginFilter extends AbstractAuthenticationProcessingFilter {
 
 ## 🔐 데이터 암호화
 
-### **EncryptionService**
+### **EncryptionService** (AES-GCM 암호화)
 ```java
 @Service
 public class EncryptionService {
@@ -298,6 +439,7 @@ public class EncryptionService {
 ### **비밀번호 정책**
 ```java
 @Service
+@RequiredArgsConstructor
 public class PasswordService {
     private final PasswordEncoder passwordEncoder;
 
@@ -360,7 +502,8 @@ public class MemberSaveRequest {
 public class SecurityHeadersFilter implements Filter {
 
     @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) {
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException {
         HttpServletResponse httpResponse = (HttpServletResponse) response;
 
         // Security Headers 추가
@@ -395,7 +538,7 @@ public class SecurityEventLogger {
 
     public void logTokenValidationFailure(String token, String reason) {
         log.warn("TOKEN_VALIDATION_FAILURE: token={}, reason={}",
-            token.substring(0, 10) + "...", reason);
+            token.substring(0, Math.min(10, token.length())) + "...", reason);
     }
 
     public void logSuspiciousActivity(String email, String activity) {
@@ -412,14 +555,14 @@ public class SecurityEventLogger {
 - [ ] Secret Key 32자 이상 사용
 - [ ] 환경변수로 Secret Key 관리
 - [ ] Access Token 짧은 만료시간 (1시간)
-- [ ] Refresh Token Redis 저장
-- [ ] 토큰 블랙리스트 관리
+- [ ] HMAC-SHA256 서명 알고리즘 사용
+- [ ] 토큰 검증 실패 시 적절한 에러 처리
 
 ### **비밀번호 보안**
 - [ ] BCrypt 암호화 (strength 10 이상)
 - [ ] 비밀번호 복잡성 검증
 - [ ] 평문 비밀번호 로깅 금지
-- [ ] 비밀번호 변경 시 기존 토큰 무효화
+- [ ] 비밀번호 변경 시 재로그인 요구
 
 ### **API 보안**
 - [ ] 모든 엔드포인트 인증 검증
@@ -435,6 +578,71 @@ public class SecurityEventLogger {
 - [ ] 민감 정보 환경변수 관리
 - [ ] 로그 보안 정보 마스킹
 
+### **클라이언트 보안**
+- [ ] 토큰을 안전한 저장소에 보관 (메모리 권장)
+- [ ] HTTPS를 통한 토큰 전송
+- [ ] XSS 공격 방지 (입력값 sanitize)
+- [ ] 로그아웃 시 토큰 완전 삭제
+
 ---
 
-**Version**: v1.0.0 | **Updated**: 2025-09-16
+## 🔄 인증 플로우 다이어그램
+
+### **로그인 플로우**
+```
+클라이언트                  LoginFilter              CustomUserDetailsService       AuthenticationService       JWTUtil
+    |                           |                               |                           |                    |
+    | POST /api/members/login   |                               |                           |                    |
+    |-------------------------->|                               |                           |                    |
+    |  {email, password}        |                               |                           |                    |
+    |                           | loadUserByUsername(email)     |                           |                    |
+    |                           |------------------------------>|                           |                    |
+    |                           |                               | DB 조회                   |                    |
+    |                           |                               |---------------------->    |                    |
+    |                           |<------------------------------|                           |                    |
+    |                           | UserDetails                   |                           |                    |
+    |                           |                               |                           |                    |
+    |                           | BCrypt 비밀번호 검증           |                           |                    |
+    |                           |------------------------------>|                           |                    |
+    |                           |<------------------------------|                           |                    |
+    |                           | 인증 성공                      |                           |                    |
+    |                           |                               |                           |                    |
+    |                           | handleLoginSuccess()          |                           |                    |
+    |                           |---------------------------------------------->|                    |
+    |                           |                               |               |                    |
+    |                           |                               |               | createAccessToken()|
+    |                           |                               |               |------------------->|
+    |                           |                               |               |                    | JWT 생성
+    |                           |                               |               |<-------------------|
+    |                           |                               |               | Access Token       |
+    |                           |                               |               |                    |
+    |<---------------------------------------------------------------------------| Authorization 헤더  |
+    | 200 OK                    |                               |               |                    |
+    | Authorization: Bearer ... |                               |               |                    |
+```
+
+### **보호된 API 호출 플로우**
+```
+클라이언트              JwtAuthenticationFilter         CustomUserDetailsService       Controller
+    |                           |                               |                           |
+    | GET /api/protected        |                               |                           |
+    | Authorization: Bearer ... |                               |                           |
+    |-------------------------->|                               |                           |
+    |                           | extractAccessToken()          |                           |
+    |                           | isAccessToken()               |                           |
+    |                           | getEmail()                    |                           |
+    |                           |                               |                           |
+    |                           | loadUserByUsername(email)     |                           |
+    |                           |------------------------------>|                           |
+    |                           |<------------------------------|                           |
+    |                           | UserDetails                   |                           |
+    |                           |                               |                           |
+    |                           | SecurityContext 설정          |                           |
+    |                           |-------------------------------------------------------------->|
+    |                           |                               |                           | 비즈니스 로직 실행
+    |<--------------------------------------------------------------------------| 200 OK
+```
+
+---
+
+**Version**: v2.0.0 | **Updated**: 2025-10-05 | **Status**: Simplified JWT Authentication (Access Token Only)
