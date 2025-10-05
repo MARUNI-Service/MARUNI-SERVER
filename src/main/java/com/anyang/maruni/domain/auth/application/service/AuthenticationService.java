@@ -33,12 +33,16 @@ public class AuthenticationService implements AuthenticationEventHandler {
 
 	@Override
 	public void handleLoginSuccess(HttpServletResponse response, MemberTokenInfo memberInfo) {
-		issueTokensOnLogin(response, memberInfo);
-	}
+		// Access Token만 발급 (단순화)
+		String accessToken = tokenManager.createAccessToken(
+			memberInfo.memberId(),
+			memberInfo.email()
+		);
 
-	public void issueTokensOnLogin(HttpServletResponse response, MemberTokenInfo memberInfo) {
-		log.info("Issuing tokens for member: {}", memberInfo.email());
-		tokenService.issueTokens(response, memberInfo);
+		response.setHeader("Authorization", "Bearer " + accessToken);
+		response.setContentType("application/json; charset=UTF-8");
+
+		log.info("✅ Access Token 발급 완료 - Member: {}", memberInfo.email());
 	}
 
 	public TokenResponse refreshAccessToken(HttpServletRequest request, HttpServletResponse response) {
