@@ -412,57 +412,6 @@ Presentation Layer:
 7. 통합 테스트 → MockMvc 기반
 ```
 
-### 표준 템플릿
-
-#### Entity
-```java
-@Entity
-@Table(name = "table_name")  
-@Getter @NoArgsConstructor @AllArgsConstructor @Builder
-public class ExampleEntity extends BaseTimeEntity {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    
-    @Column(nullable = false)
-    private String requiredField;
-}
-```
-
-#### Service
-```java
-@Service
-@RequiredArgsConstructor
-@Transactional(readOnly = true)
-public class ExampleService {
-    private final ExampleRepository repository;
-    
-    @Transactional
-    public ExampleResponseDto create(ExampleRequestDto request) {
-        // BaseException 상속 예외로 오류 처리
-        return ExampleResponseDto.from(repository.save(entity));
-    }
-}
-```
-
-#### Controller
-```java
-@RestController
-@RequestMapping("/api/examples")
-@RequiredArgsConstructor
-@AutoApiResponse
-@CustomExceptionDescription(SwaggerResponseDescription.COMMON_ERROR)
-public class ExampleController {
-    private final ExampleService service;
-    
-    @PostMapping
-    @SuccessResponseDescription(SuccessCode.SUCCESS)
-    public ExampleResponseDto create(@Valid @RequestBody ExampleRequestDto request) {
-        return service.create(request);
-    }
-}
-```
-
 ## 네이밍 컨벤션
 
 ### 패키지 & 클래스

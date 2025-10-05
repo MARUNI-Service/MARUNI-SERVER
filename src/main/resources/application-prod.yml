@@ -18,19 +18,6 @@ spring:
       idle-timeout: 600000
       max-lifetime: 1800000
 
-  # === Redis 설정 ===
-  data:
-    redis:
-      host: ${REDIS_HOST:redis}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD}
-      timeout: 2000ms
-      lettuce:
-        pool:
-          max-active: 8
-          max-idle: 8
-          min-idle: 2
-
   # === JPA 설정 (운영) ===
   jpa:
     hibernate:
@@ -44,10 +31,6 @@ spring:
           batch_size: 50
         order_inserts: true
         order_updates: true
-
-# === 보안 설정 (운영) ===
-cookie:
-  secure: true  # HTTPS 쿠키만 허용
 
 # === Swagger 설정 (운영) ===
 swagger:

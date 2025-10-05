@@ -6,12 +6,6 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
 
-  data:
-    redis:
-      host: redis
-      port: 6379
-      password: ${REDIS_PASSWORD}
-
   jpa:
     hibernate:
       ddl-auto: update
@@ -19,10 +13,6 @@ spring:
     properties:
       hibernate:
         format_sql: true
-
-# 개발환경 쿠키 설정
-cookie:
-  secure: false
 
 # 개발환경 Swagger 설정
 swagger:
