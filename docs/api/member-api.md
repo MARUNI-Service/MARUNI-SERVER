@@ -359,8 +359,6 @@ curl -X DELETE "http://localhost:8080/api/users/me" \
   "memberEmail": "string (unique)",
   "memberName": "string",
   "memberPassword": "string (BCrypt 암호화)",
-  "socialType": "enum (GOOGLE, KAKAO, NAVER)",
-  "socialId": "string (nullable)",
   "createdAt": "datetime",
   "updatedAt": "datetime"
 }

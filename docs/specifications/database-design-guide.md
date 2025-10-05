@@ -166,17 +166,6 @@ public class MemberEntity extends BaseTimeEntity {
             .memberPassword(password)
             .build();
     }
-
-    // 소셜 회원 생성
-    public static MemberEntity createSocialMember(String email, String name,
-                                                 SocialType socialType, String socialId) {
-        return MemberEntity.builder()
-            .memberEmail(email)
-            .memberName(name)
-            .socialType(socialType)
-            .socialId(socialId)
-            .build();
-    }
 }
 ```
 
@@ -296,10 +285,7 @@ private List<ChildEntity> children;
 
     // 조회용 인덱스
     @Index(name = "idx_created_at", columnList = "createdAt"),
-
-    // 복합 인덱스 (순서 중요)
-    @Index(name = "idx_social_type_id", columnList = "socialType, socialId"),
-
+    
     // 부분 인덱스 (nullable 필드)
     @Index(name = "idx_guardian_id", columnList = "guardian_id")
 })

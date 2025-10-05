@@ -67,7 +67,7 @@ public class CustomUserDetails implements UserDetails {
 	 *
 	 * @return 회원 엔티티
 	 */
-	public MemberEntity getMemberEntity() {
+	public MemberEntity getMember() {
 		return member;
 	}
 }

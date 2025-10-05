@@ -20,10 +20,7 @@ public enum ErrorCode implements ErrorType {
 	LOGIN_FAIL("A401", "이메일 또는 비밀번호가 틀렸습니다", HttpStatus.UNAUTHORIZED.value()),
 	INVALID_TOKEN("A402", "유효하지 않은 토큰입니다", HttpStatus.UNAUTHORIZED.value()),
 	TOKEN_EXPIRED("A403", "만료된 토큰입니다", HttpStatus.UNAUTHORIZED.value()),
-	REFRESH_TOKEN_NOT_FOUND("A404", "리프레시 토큰을 찾을 수 없습니다", HttpStatus.UNAUTHORIZED.value()),
 	ACCESS_TOKEN_REQUIRED("A405", "액세스 토큰이 필요합니다", HttpStatus.UNAUTHORIZED.value()),
-	TOKEN_BLACKLISTED("A406", "차단된 토큰입니다", HttpStatus.UNAUTHORIZED.value()),
-	OAUTH2_LOGIN_FAILED("A407", "소셜 로그인에 실패했습니다. 다시 시도해주세요.", HttpStatus.UNAUTHORIZED.value()),
 
 	// ============ Member Domain ============
 	MEMBER_NOT_FOUND("M404", "회원을 찾을 수 없습니다", HttpStatus.NOT_FOUND.value()),

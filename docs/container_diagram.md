@@ -284,7 +284,7 @@ graph TB
 
 | 도메인 | 테이블명 | 주요 컬럼 | 관계 | 용도 |
 |--------|----------|-----------|------|------|
-| **Member** | `member_table` | `id`, `memberEmail`, `memberName`, `memberPassword`, `socialType`, `socialId`, `guardian_id`, `push_token` | `guardian.id` (FK) | 회원 정보 + OAuth2 + FCM |
+| **Member** | `member_table` | `id`, `memberEmail`, `memberName`, `memberPassword`, `guardian_id`, `push_token` | `guardian.id` (FK) | 회원 정보 + FCM |
 | **Auth** | `refresh_token` | `id`, `member_id`, `token`, `expires_at`, `created_at` | `member_table.id` (FK) | JWT Refresh Token 저장 |
 | **Conversation** | `conversations` | `id`, `member_id`, `session_id`, `status`, `created_at` | `member_table.id` (FK) | AI 대화 세션 |
 | **Conversation** | `messages` | `id`, `conversation_id`, `content`, `message_type`, `emotion_type`, `ai_response` | `conversations.id` (FK) | 대화 메시지 내역 |

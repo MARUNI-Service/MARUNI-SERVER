@@ -114,7 +114,6 @@ public class CustomUserDetailsService implements UserDetailsService {
 @Entity
 @Table(name = "member_table", indexes = {
     @Index(name = "idx_member_email", columnList = "memberEmail"),
-    @Index(name = "idx_social_type_id", columnList = "socialType, socialId"),
 })
 public class MemberEntity extends BaseTimeEntity {
     @Id
@@ -127,15 +126,7 @@ public class MemberEntity extends BaseTimeEntity {
     private String memberName; // 회원 이름
 
     private String memberPassword; // 암호화된 비밀번호
-
-    // 소셜 로그인 정보
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = true)
-    private SocialType socialType;
-
-    @Column(nullable = true)
-    private String socialId;
-
+    
     // Guardian 도메인과의 관계 (다대일)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "guardian_id")
@@ -147,11 +138,9 @@ public class MemberEntity extends BaseTimeEntity {
 
     // 정적 팩토리 메서드
     public static MemberEntity createRegularMember(String email, String name, String password);
-    public static MemberEntity createSocialMember(String email, String name, String password, SocialType socialType, String socialId);
 
     // 비즈니스 로직 메서드
     public void updateMemberInfo(String name, String password);
-    public void updateSocialInfo(SocialType socialType, String socialId);
     public void assignGuardian(GuardianEntity guardian);
     public void removeGuardian();
 
@@ -173,9 +162,6 @@ public interface MemberRepository extends JpaRepository<MemberEntity, Long> {
 
     // 이메일 존재 여부 확인
     Boolean existsByMemberEmail(String memberEmail);
-
-    // 소셜 정보로 회원 조회
-    Optional<MemberEntity> findBySocialTypeAndSocialId(SocialType socialType, String socialId);
 
     // DailyCheck 도메인을 위한 활성 회원 ID 목록 조회
     @Query("SELECT m.id FROM MemberEntity m")
@@ -241,15 +227,8 @@ public interface MemberRepository extends JpaRepository<MemberEntity, Long> {
 
 ### 향후 확장 시 주의사항
 1. **비밀번호 정책 강화**: `MemberService`의 `save` 또는 `update` 메서드에서 비밀번호 복잡도 검증 로직을 추가할 수 있습니다.
-2. **소셜 로그인 확장**: 새로운 소셜 로그인 제공자를 추가할 경우 `SocialType` Enum을 확장하고 관련 로직을 추가해야 합니다.
-3. **회원 상태 관리**: 현재 모든 회원은 활성 상태로 간주됩니다. 향후 휴면, 탈퇴 등 다양한 회원 상태를 관리하려면 `MemberEntity`에 상태 필드(e.g., `MemberStatus` Enum)를 추가하고 관련 비즈니스 로직을 구현해야 합니다.
-4. **푸시 토큰 갱신**: 푸시 토큰은 Firebase에서 주기적으로 갱신될 수 있으므로, 클라이언트에서 토큰 갱신 시 `updatePushToken()` 메서드를 호출하여 최신 토큰을 유지해야 합니다.
-
-### 최신 추가 기능 (2025-09-27)
-1. **푸시 알림 토큰 관리**: Firebase FCM과 연동하여 실시간 푸시 알림 발송 지원
-2. **데이터베이스 인덱스 최적화**: 이메일 조회 및 소셜 로그인 조회 성능 향상
-3. **Guardian 관계 확장**: 보호자가 없는 회원 조회, 특정 보호자의 회원 ID 목록 조회 기능 추가
-4. **소셜 정보 업데이트**: 소셜 로그인 정보 변경을 위한 `updateSocialInfo()` 메서드 추가
+2**회원 상태 관리**: 현재 모든 회원은 활성 상태로 간주됩니다. 향후 휴면, 탈퇴 등 다양한 회원 상태를 관리하려면 `MemberEntity`에 상태 필드(e.g., `MemberStatus` Enum)를 추가하고 관련 비즈니스 로직을 구현해야 합니다.
+3**푸시 토큰 갱신**: 푸시 토큰은 Firebase에서 주기적으로 갱신될 수 있으므로, 클라이언트에서 토큰 갱신 시 `updatePushToken()` 메서드를 호출하여 최신 토큰을 유지해야 합니다.
 
 ### API 사용 예시
 ```bash

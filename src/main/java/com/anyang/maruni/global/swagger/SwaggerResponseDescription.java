@@ -13,7 +13,7 @@ public enum SwaggerResponseDescription {
 
 	MEMBER_JOIN_ERROR(ErrorCode.DUPLICATE_EMAIL, ErrorCode.PARAMETER_VALIDATION_ERROR, ErrorCode.INVALID_INPUT_VALUE),
 
-	AUTH_ERROR(ErrorCode.INVALID_TOKEN, ErrorCode.REFRESH_TOKEN_NOT_FOUND, ErrorCode.LOGIN_FAIL),
+	AUTH_ERROR(ErrorCode.INVALID_TOKEN, ErrorCode.LOGIN_FAIL),
 
 	CONVERSATION_ERROR(
 	    // Message Validation Errors

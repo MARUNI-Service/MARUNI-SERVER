@@ -129,10 +129,6 @@ public class MemberEntity extends BaseTimeEntity {
     @Column
     private String memberName;
 
-    // 3. Enum 필드
-    @Enumerated(EnumType.STRING)
-    private SocialType socialType;
-
     // 4. 연관 관계 필드
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "guardian_id")

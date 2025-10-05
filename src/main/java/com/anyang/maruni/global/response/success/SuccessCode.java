@@ -13,7 +13,6 @@ public enum SuccessCode implements SuccessType {
 	MEMBER_LOGIN_SUCCESS("M201", "로그인 성공"),
 	MEMBER_LOGOUT_SUCCESS("M202", "로그아웃 성공"),
 	MEMBER_TOKEN_REISSUE_SUCCESS("M203", "Access 토큰 재발급 성공"),
-	MEMBER_TOKEN_REISSUE_FULL_SUCCESS("M204", "Access/Refresh 토큰 재발급 성공"),
 	MEMBER_EMAIL_CHECK_OK("M205", "이메일 사용 가능"),
 	MEMBER_CREATED("M206", "회원가입 성공"),
 	MEMBER_UPDATED("M207", "회원 정보 수정 성공"),

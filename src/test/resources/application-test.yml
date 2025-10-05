@@ -56,8 +56,6 @@ jwt:
   secret-key: test-jwt-secret-key-for-testing-minimum-32-characters-required-for-security
   access-token:
     expiration: 3600000   # 1시간
-  refresh-token:
-    expiration: 86400000  # 24시간
 
 # 쿠키 설정 (테스트용)
 cookie:
