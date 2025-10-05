@@ -3,12 +3,8 @@ package com.anyang.maruni.domain.auth.application.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.anyang.maruni.domain.auth.application.dto.response.TokenResponse;
 import com.anyang.maruni.domain.auth.domain.service.TokenManager;
-import com.anyang.maruni.domain.auth.domain.service.TokenService;
 import com.anyang.maruni.domain.auth.domain.vo.MemberTokenInfo;
-import com.anyang.maruni.global.exception.BaseException;
-import com.anyang.maruni.global.response.error.ErrorCode;
 import com.anyang.maruni.global.security.AuthenticationEventHandler;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,7 +19,6 @@ import lombok.extern.slf4j.Slf4j;
 public class AuthenticationService implements AuthenticationEventHandler {
 
 	private final TokenManager tokenManager;
-	private final TokenService tokenService;
 
 	@Override
 	public void handleLoginSuccess(HttpServletResponse response, MemberTokenInfo memberInfo) {
