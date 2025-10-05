@@ -7,7 +7,6 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import com.anyang.maruni.domain.auth.domain.service.TokenValidator;
 import com.anyang.maruni.global.security.AuthenticationEventHandler;
 import com.anyang.maruni.domain.member.infrastructure.security.CustomUserDetailsService;
 import com.anyang.maruni.global.security.JWTUtil;
@@ -23,7 +22,6 @@ public class JwtSecurityConfig {
 
 	private final JWTUtil jwtUtil;
 	private final ObjectMapper objectMapper;
-	private final TokenValidator tokenValidator;
 	private final CustomUserDetailsService customUserDetailsService;
 	private final AuthenticationEventHandler authenticationEventHandler;
 
@@ -47,6 +45,6 @@ public class JwtSecurityConfig {
 
 	@Bean
 	public JwtAuthenticationFilter jwtAuthenticationFilter() {
-		return new JwtAuthenticationFilter(jwtUtil, tokenValidator, customUserDetailsService);
+		return new JwtAuthenticationFilter(jwtUtil, customUserDetailsService);
 	}
 }

@@ -8,7 +8,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.anyang.maruni.domain.auth.domain.service.TokenValidator;
 import com.anyang.maruni.domain.member.infrastructure.security.CustomUserDetailsService;
 
 import jakarta.servlet.FilterChain;
@@ -23,7 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 	private final JWTUtil jwtUtil;
-	private final TokenValidator tokenValidator;
 	private final CustomUserDetailsService userDetailsService;
 
 	@Override
@@ -31,7 +29,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		throws ServletException, IOException {
 
 		jwtUtil.extractAccessToken(request)
-			.filter(token -> validateAccessToken(token, response))
+			.filter(jwtUtil::isAccessToken)  // 단순히 JWT 형식과 만료 검증만
 			.flatMap(jwtUtil::getEmail)
 			.ifPresent(email -> {
 				try {
@@ -42,32 +40,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 						userDetails.getAuthorities()
 					);
 					SecurityContextHolder.getContext().setAuthentication(authentication);
-					log.info("SecurityContext에 인증 객체 저장 완료: {}", email);
+					log.info("✅ JWT 인증 성공: {}", email);
 				} catch (Exception e) {
-					log.warn("UserDetails 로딩 실패: {}", e.getMessage());
-					sendUnauthorized(response, "회원 인증 실패");
+					log.warn("❌ UserDetails 로딩 실패: {}", e.getMessage());
 				}
 			});
 
 		filterChain.doFilter(request, response);
-	}
-
-	private boolean validateAccessToken(String token, HttpServletResponse response) {
-		// 도메인 서비스에 토큰 검증 위임
-		if (!tokenValidator.isValidAccessToken(token)) {
-			log.warn("토큰 검증 실패");
-			sendUnauthorized(response, "유효하지 않은 토큰입니다.");
-			return false;
-		}
-
-		return true;
-	}
-
-	private void sendUnauthorized(HttpServletResponse response, String message) {
-		try {
-			response.sendError(HttpServletResponse.SC_UNAUTHORIZED, message);
-		} catch (IOException e) {
-			log.error("응답 중 에러 발생", e);
-		}
 	}
 }
