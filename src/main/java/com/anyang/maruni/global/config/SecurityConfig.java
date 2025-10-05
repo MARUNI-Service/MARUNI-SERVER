@@ -10,10 +10,12 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import com.anyang.maruni.global.config.properties.SecurityProperties;
+import com.anyang.maruni.global.response.dto.CommonApiResponse;
+import com.anyang.maruni.global.response.error.ErrorCode;
 import com.anyang.maruni.global.security.JwtAuthenticationFilter;
 import com.anyang.maruni.global.security.LoginFilter;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
 @Configuration
@@ -23,6 +25,7 @@ public class SecurityConfig {
 
     private final SecurityProperties securityProperties;
     private final CorsConfig corsConfig;
+    private final ObjectMapper objectMapper;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
@@ -40,8 +43,13 @@ public class SecurityConfig {
                 .requestMatchers(securityProperties.getPublicUrlsArray()).permitAll()
                 .anyRequest().authenticated())
             .exceptionHandling(except -> except
-                .authenticationEntryPoint((request, response, authException) ->
-                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized")));
+                .authenticationEntryPoint((request, response, authException) -> {
+                    response.setStatus(ErrorCode.INVALID_TOKEN.getStatus());
+                    response.setContentType("application/json; charset=UTF-8");
+
+                    CommonApiResponse<?> errorResponse = CommonApiResponse.fail(ErrorCode.INVALID_TOKEN);
+                    objectMapper.writeValue(response.getWriter(), errorResponse);
+                }));
 
         http.addFilterAt(loginFilter, UsernamePasswordAuthenticationFilter.class);
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

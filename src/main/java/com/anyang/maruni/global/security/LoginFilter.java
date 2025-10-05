@@ -9,6 +9,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import com.anyang.maruni.domain.member.application.dto.request.MemberLoginRequest;
 import com.anyang.maruni.domain.auth.domain.vo.MemberTokenInfo;
 import com.anyang.maruni.domain.member.infrastructure.security.CustomUserDetails;
+import com.anyang.maruni.global.exception.BaseException;
 import com.anyang.maruni.global.response.dto.CommonApiResponse;
 import com.anyang.maruni.global.response.error.ErrorCode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -39,7 +40,8 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
 
 			return authenticationManager.authenticate(authToken);
 		} catch (IOException e) {
-			throw new RuntimeException("로그인 요청 처리 실패", e);
+			log.error("로그인 요청 파싱 실패: {}", e.getMessage());
+			throw new BaseException(ErrorCode.INVALID_INPUT_VALUE);
 		}
 	}
 
