@@ -8,7 +8,6 @@ import javax.crypto.SecretKey;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
 
 import com.anyang.maruni.domain.auth.domain.service.TokenManager;
@@ -19,7 +18,6 @@ import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,12 +29,7 @@ public class JWTUtil implements TokenManager {
 	public static final String CLAIM_EMAIL = "email";
 	public static final String CLAIM_TYPE = "type";
 	public static final String TOKEN_TYPE_ACCESS = "access";
-	public static final String TOKEN_TYPE_REFRESH = "refresh";
-	public static final String COOKIE_NAME_REFRESH = "refresh";
 
-
-	@Value("${cookie.secure:false}")
-	private boolean secure;
 
 	private final JwtProperties jwtProperties;
 	private SecretKey secretKey;
@@ -55,20 +48,6 @@ public class JWTUtil implements TokenManager {
 		return createJWT(id, email, TOKEN_TYPE_ACCESS, jwtProperties.getAccessToken().getExpiration());
 	}
 
-	// Refresh Token 생성
-	public String createRefreshToken(String id, String email) {
-		return createJWT(id, email, TOKEN_TYPE_REFRESH, jwtProperties.getRefreshToken().getExpiration());
-	}
-
-	// Refresh Token 무효화
-	public ResponseCookie invalidateRefreshToken() {
-		return buildRefreshCookie("", 0);
-	}
-
-	// Refresh Token을 쿠키로 발급
-	public ResponseCookie createRefreshTokenCookie(String refreshToken) {
-		return buildRefreshCookie(refreshToken, jwtProperties.getRefreshToken().getExpiration());
-	}
 
 	// JWT 생성 내부 메서드
 	private String createJWT(String id, String email, String type, long expireMs) {
@@ -132,9 +111,6 @@ public class JWTUtil implements TokenManager {
 		return validateToken(token, TOKEN_TYPE_ACCESS);
 	}
 
-	public boolean isRefreshToken(String token) {
-		return validateToken(token, TOKEN_TYPE_REFRESH);
-	}
 
 
 
@@ -145,32 +121,7 @@ public class JWTUtil implements TokenManager {
 			.map(header -> header.substring(7));
 	}
 
-	// 쿠키에서 RefreshToken 추출
-	public Optional<String> extractRefreshToken(HttpServletRequest request) {
-		if (request.getCookies() == null) return Optional.empty();
-		for (Cookie cookie : request.getCookies()) {
-			if (COOKIE_NAME_REFRESH.equals(cookie.getName())) {
-				return Optional.ofNullable(cookie.getValue());
-			}
-		}
-		return Optional.empty();
-	}
-
-	private ResponseCookie buildRefreshCookie(String value, long maxAge) {
-		return ResponseCookie.from(COOKIE_NAME_REFRESH, value)
-			.maxAge(maxAge)
-			.path("/")
-			.httpOnly(true)
-			.secure(secure)
-			.sameSite("Lax")
-			.build();
-	}
-
 	public long getAccessTokenExpiration() {
 		return jwtProperties.getAccessToken().getExpiration();
-	}
-
-	public long getRefreshTokenExpiration() {
-		return jwtProperties.getRefreshToken().getExpiration();
 	}
 }

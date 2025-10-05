@@ -6,7 +6,7 @@ import lombok.Getter;
 
 @Getter
 @Builder
-@Schema(description = "토큰 응답")
+@Schema(description = "토큰 응답 (Access Token만 사용)")
 public class TokenResponse {
 
 	@Schema(description = "Access Token", example = "Bearer eyJhbGciOiJIUzI1NiIs...")
@@ -18,24 +18,11 @@ public class TokenResponse {
 	@Schema(description = "Access Token 만료 시간 (초)", example = "3600")
 	private final Long expiresIn;
 
-	@Schema(description = "Refresh Token 포함 여부", example = "true")
-	private final boolean refreshTokenIncluded;
-
-	public static TokenResponse accessOnly(String accessToken, Long expiresIn) {
+	public static TokenResponse of(String accessToken, Long expiresIn) {
 		return TokenResponse.builder()
 			.accessToken(accessToken)
 			.tokenType("Bearer")
 			.expiresIn(expiresIn)
-			.refreshTokenIncluded(false)
-			.build();
-	}
-
-	public static TokenResponse withRefresh(String accessToken, Long expiresIn) {
-		return TokenResponse.builder()
-			.accessToken(accessToken)
-			.tokenType("Bearer")
-			.expiresIn(expiresIn)
-			.refreshTokenIncluded(true)
 			.build();
 	}
 }

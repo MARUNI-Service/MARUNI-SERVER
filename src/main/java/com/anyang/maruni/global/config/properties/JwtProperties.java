@@ -13,24 +13,15 @@ import lombok.Data;
 @Component
 @ConfigurationProperties(prefix = "jwt")
 public class JwtProperties {
-    
+
     private AccessToken accessToken = new AccessToken();
-    private RefreshToken refreshToken = new RefreshToken();
     private String secretKey;
-    
+
     /**
      * Access Token 설정
      */
     @Data
     public static class AccessToken {
         private long expiration = 3600000L; // 1시간 (기본값)
-    }
-    
-    /**
-     * Refresh Token 설정
-     */
-    @Data
-    public static class RefreshToken {
-        private long expiration = 1209600000L; // 14일 (기본값)
     }
 }
