@@ -18,13 +18,8 @@ public interface TokenManager {
     Optional<String> extractAccessToken(HttpServletRequest request);
 
     // 토큰 정보 추출
-    Optional<String> getId(String token);
     Optional<String> getEmail(String token);
-    Optional<Long> getExpiration(String token);
 
     // 토큰 검증
     boolean isAccessToken(String token);
-
-    // 설정값
-    long getAccessTokenExpiration();
 }

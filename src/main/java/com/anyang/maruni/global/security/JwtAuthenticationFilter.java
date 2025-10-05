@@ -40,9 +40,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 						userDetails.getAuthorities()
 					);
 					SecurityContextHolder.getContext().setAuthentication(authentication);
-					log.info("✅ JWT 인증 성공: {}", email);
+					log.info("JWT 인증 성공: {}", email);
 				} catch (Exception e) {
-					log.warn("❌ UserDetails 로딩 실패: {}", e.getMessage());
+					log.warn("UserDetails 로딩 실패: {}", e.getMessage());
 				}
 			});
 

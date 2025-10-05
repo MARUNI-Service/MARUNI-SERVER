@@ -6,7 +6,6 @@ import java.util.Optional;
 
 import javax.crypto.SecretKey;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 
@@ -75,29 +74,10 @@ public class JWTUtil implements TokenManager {
 		}
 	}
 
-	// 토큰 파싱: ID
-	public Optional<String> getId(String token) {
-		return safelyParseClaims(token)
-			.map(claims -> claims.get(CLAIM_ID, String.class));
-	}
-
 	// 토큰 파싱: 이메일
 	public Optional<String> getEmail(String token) {
 		return safelyParseClaims(token)
 			.map(claims -> claims.get(CLAIM_EMAIL, String.class));
-	}
-
-	// 토큰 파싱: 타입 구분(access/refresh)
-	public Optional<String> getTokenType(String token) {
-		return safelyParseClaims(token)
-			.map(claims -> claims.get(CLAIM_TYPE, String.class));
-	}
-
-	// 토큰 파싱: 만료 시간
-	public Optional<Long> getExpiration(String token) {
-		return safelyParseClaims(token)
-			.map(Claims::getExpiration)
-			.map(exp -> exp.getTime() - System.currentTimeMillis());
 	}
 
 	// 토큰 검증 (만료 포함)
@@ -111,17 +91,10 @@ public class JWTUtil implements TokenManager {
 		return validateToken(token, TOKEN_TYPE_ACCESS);
 	}
 
-
-
-
 	// 헤더에서 AccessToken 추출
 	public Optional<String> extractAccessToken(HttpServletRequest request) {
 		return Optional.ofNullable(request.getHeader(HttpHeaders.AUTHORIZATION))
 			.filter(header -> header.startsWith("Bearer "))
 			.map(header -> header.substring(7));
-	}
-
-	public long getAccessTokenExpiration() {
-		return jwtProperties.getAccessToken().getExpiration();
 	}
 }

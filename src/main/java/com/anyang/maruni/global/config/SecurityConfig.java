@@ -24,8 +24,6 @@ public class SecurityConfig {
     private final SecurityProperties securityProperties;
     private final CorsConfig corsConfig;
 
-    // private final OAuth2SecurityConfig oAuth2SecurityConfig;
-
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
         LoginFilter loginFilter,
@@ -44,8 +42,6 @@ public class SecurityConfig {
             .exceptionHandling(except -> except
                 .authenticationEntryPoint((request, response, authException) ->
                     response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized")));
-
-        // http.oauth2Login(oAuth2SecurityConfig::configureOAuth2Login);
 
         http.addFilterAt(loginFilter, UsernamePasswordAuthenticationFilter.class);
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
