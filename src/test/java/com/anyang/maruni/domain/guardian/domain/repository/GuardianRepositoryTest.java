@@ -1,10 +1,10 @@
 package com.anyang.maruni.domain.guardian.domain.repository;
 
-import com.anyang.maruni.domain.guardian.domain.entity.GuardianEntity;
-import com.anyang.maruni.domain.guardian.domain.entity.GuardianRelation;
-import com.anyang.maruni.domain.guardian.domain.entity.NotificationPreference;
-import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
-import com.anyang.maruni.domain.member.domain.repository.MemberRepository;
+import static org.assertj.core.api.Assertions.*;
+
+import java.util.List;
+import java.util.Optional;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,12 +12,12 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Import;
 
+import com.anyang.maruni.domain.guardian.domain.entity.GuardianEntity;
+import com.anyang.maruni.domain.guardian.domain.entity.GuardianRelation;
+import com.anyang.maruni.domain.guardian.domain.entity.NotificationPreference;
+import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
+import com.anyang.maruni.domain.member.domain.repository.MemberRepository;
 import com.anyang.maruni.global.config.JpaConfig;
-
-import java.util.List;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.*;
 
 /**
  * Guardian Repository TDD Red 테스트
@@ -101,13 +101,13 @@ class GuardianRepositoryTest {
         );
         guardianRepository.save(guardian);
 
-        MemberEntity member1 = MemberEntity.createRegularMember(
+        MemberEntity member1 = MemberEntity.createMember(
             "member1@example.com", "김회원1", "password123"
         );
         member1.assignGuardian(guardian);
         memberRepository.save(member1);
 
-        MemberEntity member2 = MemberEntity.createRegularMember(
+        MemberEntity member2 = MemberEntity.createMember(
             "member2@example.com", "김회원2", "password123"
         );
         member2.assignGuardian(guardian);

@@ -36,7 +36,7 @@ public class MemberMapper {
 	 * 주의: 비밀번호 암호화는 Service 레이어에서 처리
 	 */
 	public MemberEntity toEntity(MemberSaveRequest request, String encodedPassword) {
-		return MemberEntity.createRegularMember(
+		return MemberEntity.createMember(
 			request.getMemberEmail(),
 			request.getMemberName(),
 			encodedPassword

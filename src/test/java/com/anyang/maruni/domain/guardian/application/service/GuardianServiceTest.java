@@ -105,7 +105,7 @@ class GuardianServiceTest {
         Long memberId = 1L;
         Long guardianId = 2L;
 
-        MemberEntity member = MemberEntity.createRegularMember(
+        MemberEntity member = MemberEntity.createMember(
             "member@example.com", "김회원", "password123"
         );
         GuardianEntity guardian = mock(GuardianEntity.class);
@@ -131,8 +131,8 @@ class GuardianServiceTest {
         GuardianEntity guardian = mock(GuardianEntity.class);
 
         List<MemberEntity> members = Arrays.asList(
-            MemberEntity.createRegularMember("member1@example.com", "김회원1", "password123"),
-            MemberEntity.createRegularMember("member2@example.com", "김회원2", "password123")
+            MemberEntity.createMember("member1@example.com", "김회원1", "password123"),
+            MemberEntity.createMember("member2@example.com", "김회원2", "password123")
         );
 
         List<MemberResponse> expectedResponses = Arrays.asList(
@@ -160,7 +160,7 @@ class GuardianServiceTest {
         // Given
         Long memberId = 1L;
 
-        MemberEntity member = MemberEntity.createRegularMember(
+        MemberEntity member = MemberEntity.createMember(
             "member@example.com", "김회원", "password123"
         );
 

@@ -2,12 +2,9 @@ package com.anyang.maruni.domain.member.domain.entity;
 
 import com.anyang.maruni.domain.guardian.domain.entity.GuardianEntity;
 import com.anyang.maruni.global.entity.BaseTimeEntity;
-import com.anyang.maruni.global.oauth2.domain.entity.SocialType;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -27,8 +24,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 @Table(name = "member_table", indexes = {
-	@Index(name = "idx_member_email", columnList = "memberEmail"),
-	@Index(name = "idx_social_type_id", columnList = "socialType, socialId"),
+	@Index(name = "idx_member_email", columnList = "memberEmail")
 })
 public class MemberEntity extends BaseTimeEntity {
 	@Id
@@ -44,13 +40,6 @@ public class MemberEntity extends BaseTimeEntity {
 	@Column
 	private String memberPassword;
 
-	@Enumerated(EnumType.STRING)
-	@Column(nullable = true)
-	private SocialType socialType;
-
-	@Column(nullable = true)
-	private String socialId;
-
 	// Guardian 관계 추가 (다대일)
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "guardian_id")
@@ -60,32 +49,17 @@ public class MemberEntity extends BaseTimeEntity {
 	@Column(name = "push_token", length = 1000)
 	private String pushToken;
 
-	public static MemberEntity createRegularMember(String email, String name, String password) {
+	public static MemberEntity createMember(String email, String name, String password) {
 		return MemberEntity.builder()
 			.memberEmail(email)
 			.memberName(name)
 			.memberPassword(password)
-			.build();
-	}
-
-	public static MemberEntity createSocialMember(String email, String name, String password, SocialType socialType, String socialId) {
-		return MemberEntity.builder()
-			.memberEmail(email)
-			.memberName(name)
-			.memberPassword(password)
-			.socialType(socialType)
-			.socialId(socialId)
 			.build();
 	}
 
 	public void updateMemberInfo(String name, String password) {
 		this.memberName = name;
 		this.memberPassword = password;
-	}
-
-	public void updateSocialInfo(SocialType socialType, String socialId) {
-		this.socialType = socialType;
-		this.socialId = socialId;
 	}
 
 	// Guardian 관계 비즈니스 메서드

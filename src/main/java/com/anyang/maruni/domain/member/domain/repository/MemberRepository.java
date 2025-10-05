@@ -10,7 +10,6 @@ import org.springframework.stereotype.Repository;
 
 import com.anyang.maruni.domain.guardian.domain.entity.GuardianEntity;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
-import com.anyang.maruni.global.oauth2.domain.entity.SocialType;
 
 @Repository
 public interface MemberRepository extends JpaRepository<MemberEntity, Long> {
@@ -19,8 +18,6 @@ public interface MemberRepository extends JpaRepository<MemberEntity, Long> {
 
 
 	Boolean existsByMemberEmail(String memberEmail);
-
-	Optional<MemberEntity> findBySocialTypeAndSocialId(SocialType socialType, String socialId);
 
 	/**
 	 * 활성 상태인 모든 회원의 ID 목록 조회

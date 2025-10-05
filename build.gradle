@@ -40,9 +40,6 @@ dependencies {
 	implementation 'io.jsonwebtoken:jjwt-impl:0.12.5'
 	implementation 'io.jsonwebtoken:jjwt-jackson:0.12.5'
 
-	// OAuth2 클라이언트 (소셜 로그인 등 외부 인증 제공자와의 연동)
-	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
-
 
 	// === API 문서화 및 유효성 검사 ===
 

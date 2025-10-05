@@ -52,7 +52,7 @@ class MemberServiceTest {
 		request.setMemberPassword("password123");
 
 		String encodedPassword = "encodedPassword123";
-		MemberEntity memberEntity = MemberEntity.createRegularMember(
+		MemberEntity memberEntity = MemberEntity.createMember(
 			request.getMemberEmail(),
 			request.getMemberName(),
 			encodedPassword
@@ -85,7 +85,7 @@ class MemberServiceTest {
 		request.setMemberName("테스트");
 		request.setMemberPassword("password123");
 
-		MemberEntity existingMember = MemberEntity.createRegularMember(
+		MemberEntity existingMember = MemberEntity.createMember(
 			request.getMemberEmail(),
 			"기존회원",
 			"encodedPassword"
@@ -108,8 +108,8 @@ class MemberServiceTest {
 	void findAll_Success() {
 		// given
 		List<MemberEntity> entities = List.of(
-			MemberEntity.createRegularMember("user1@example.com", "사용자1", "password1"),
-			MemberEntity.createRegularMember("user2@example.com", "사용자2", "password2")
+			MemberEntity.createMember("user1@example.com", "사용자1", "password1"),
+			MemberEntity.createMember("user2@example.com", "사용자2", "password2")
 		);
 
 		List<MemberResponse> responses = List.of(
@@ -137,7 +137,7 @@ class MemberServiceTest {
 	void findById_Success() {
 		// given
 		Long memberId = 1L;
-		MemberEntity entity = MemberEntity.createRegularMember("test@example.com", "테스트", "password");
+		MemberEntity entity = MemberEntity.createMember("test@example.com", "테스트", "password");
 		MemberResponse response = MemberResponse.builder()
 			.id(memberId)
 			.memberEmail("test@example.com")
@@ -185,7 +185,7 @@ class MemberServiceTest {
 		request.setMemberPassword("newPassword123");
 
 		String encodedPassword = "encodedNewPassword123";
-		MemberEntity entity = MemberEntity.createRegularMember("test@example.com", "기존이름", "oldPassword");
+		MemberEntity entity = MemberEntity.createMember("test@example.com", "기존이름", "oldPassword");
 
 		given(memberRepository.findById(memberId)).willReturn(Optional.of(entity));
 		given(passwordEncoder.encode(request.getMemberPassword())).willReturn(encodedPassword);
