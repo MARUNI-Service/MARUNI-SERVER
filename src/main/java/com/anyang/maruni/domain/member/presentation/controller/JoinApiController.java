@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.anyang.maruni.domain.member.application.dto.request.MemberSaveRequest;
+import com.anyang.maruni.domain.member.application.dto.response.EmailCheckResponse;
+import com.anyang.maruni.domain.member.application.dto.response.MemberResponse;
 import com.anyang.maruni.domain.member.application.service.MemberService;
 import com.anyang.maruni.global.exception.BaseException;
 import com.anyang.maruni.global.response.annotation.AutoApiResponse;
@@ -47,8 +49,8 @@ public class JoinApiController {
 	@PostMapping
 	@CustomExceptionDescription(SwaggerResponseDescription.MEMBER_JOIN_ERROR)
 	@SuccessCodeAnnotation(SuccessCode.MEMBER_CREATED)
-	public void join(@RequestBody @Valid MemberSaveRequest req) {
-		memberService.save(req);
+	public MemberResponse join(@RequestBody @Valid MemberSaveRequest req) {
+		return memberService.save(req);
 	}
 
 	// 이메일 중복 체크
@@ -63,10 +65,11 @@ public class JoinApiController {
 	@GetMapping("/email-check")
 	@CustomExceptionDescription(SwaggerResponseDescription.MEMBER_ERROR)
 	@SuccessCodeAnnotation(SuccessCode.MEMBER_EMAIL_CHECK_OK)
-	public void emailCheck(@RequestParam String memberEmail) {
+	public EmailCheckResponse emailCheck(@RequestParam String memberEmail) {
 		boolean isAvailable = memberService.isEmailAvailable(memberEmail);
 		if (!isAvailable) {
 			throw new BaseException(ErrorCode.DUPLICATE_EMAIL);
 		}
+		return EmailCheckResponse.of(memberEmail, isAvailable);
 	}
 }

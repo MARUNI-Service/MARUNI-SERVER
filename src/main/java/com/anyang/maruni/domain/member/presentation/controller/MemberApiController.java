@@ -7,13 +7,13 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
 import com.anyang.maruni.domain.member.application.dto.request.MemberUpdateRequest;
 import com.anyang.maruni.domain.member.application.dto.response.MemberResponse;
 import com.anyang.maruni.domain.member.application.service.MemberService;
 import com.anyang.maruni.domain.member.infrastructure.security.CustomUserDetails;
 import com.anyang.maruni.global.response.annotation.AutoApiResponse;
 import com.anyang.maruni.global.response.annotation.SuccessCodeAnnotation;
-import com.anyang.maruni.global.response.error.ErrorCode;
 import com.anyang.maruni.global.response.success.SuccessCode;
 import com.anyang.maruni.global.swagger.CustomExceptionDescription;
 import com.anyang.maruni.global.swagger.SwaggerResponseDescription;
@@ -67,11 +67,12 @@ public class MemberApiController {
 	@PutMapping("/me")
 	@CustomExceptionDescription(SwaggerResponseDescription.MEMBER_ERROR)
 	@SuccessCodeAnnotation(SuccessCode.MEMBER_UPDATED)
-	public void updateMyInfo(
+	public MemberResponse updateMyInfo(
 			@RequestBody MemberUpdateRequest req,
 			@Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails) {
 		req.setId(userDetails.getMemberId());
 		memberService.update(req);
+		return memberService.findById(userDetails.getMemberId());
 	}
 
 	// 내 계정 삭제

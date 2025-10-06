@@ -29,7 +29,7 @@ public class MemberService {
 
 
 	@Transactional // 쓰기 작업
-	public void save(MemberSaveRequest req) {
+	public MemberResponse save(MemberSaveRequest req) {
 		boolean exists = memberRepository.findByMemberEmail(req.getMemberEmail()).isPresent();
 		if (exists) {
 			throw new BaseException(ErrorCode.DUPLICATE_EMAIL);
@@ -40,7 +40,8 @@ public class MemberService {
 		log.info("[회원가입] 이메일: {}, 이름: {}", req.getMemberEmail(), req.getMemberName());
 
 		MemberEntity memberEntity = memberMapper.toEntity(req, encodedPassword);
-		memberRepository.save(memberEntity);
+		MemberEntity savedEntity = memberRepository.save(memberEntity);
+		return memberMapper.toResponse(savedEntity);
 	}
 
 
