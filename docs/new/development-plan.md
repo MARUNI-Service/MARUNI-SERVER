@@ -1,0 +1,674 @@
+# 개발 계획서
+
+**MARUNI 프로젝트 Guardian 통합 리팩토링**
+
+---
+
+**버전**: 1.0.0
+**작성일**: 2025-10-07
+**상태**: 계획 수립 완료
+**기반 문서**: user-journey.md, api-specification.md
+
+---
+
+## 📋 목차
+
+1. [개요](#1-개요)
+2. [기존 시스템 분석](#2-기존-시스템-분석)
+3. [변경 사항 요약](#3-변경-사항-요약)
+4. [도메인별 개발 계획](#4-도메인별-개발-계획)
+5. [개발 순서 및 일정](#5-개발-순서-및-일정)
+6. [리스크 관리](#6-리스크-관리)
+
+---
+
+## 1. 개요
+
+### 1.1 목적
+
+- **Guardian 도메인을 Member 도메인으로 통합**하여 아키텍처 단순화
+- **단일 앱** 구조로 노인과 보호자 모두 하나의 앱 사용
+- **최소한의 복잡성**으로 핵심 기능 구현
+
+### 1.2 핵심 변경 사항
+
+```
+기존: GuardianEntity (별도 테이블) ❌
+      ↓
+신규: MemberEntity 자기 참조 ✅
+      - guardian (ManyToOne to MemberEntity)
+      - managedMembers (OneToMany to MemberEntity)
+      - dailyCheckEnabled (Boolean)
+```
+
+### 1.3 주요 목표
+
+- ✅ **푸시 알림 문제 해결**: 모든 사용자가 Member이므로 pushToken 보유
+- ✅ **1:N 관계**: 한 보호자가 여러 노인 돌봄 가능
+- ✅ **유연한 역할**: 한 사용자가 노인 + 보호자 역할 동시 수행 가능
+- ✅ **기존 로직 최대한 재사용**: 완성된 시스템의 핵심 로직 보존
+
+---
+
+## 2. 기존 시스템 분석
+
+### 2.1 기존 도메인 구조
+
+| 도메인 | 상태 | 주요 기능 | TDD 적용 |
+|--------|------|-----------|----------|
+| Member | ✅ 완성 | 회원 관리, 푸시 토큰 | 완료 |
+| Auth | ✅ 완성 | JWT Stateless 인증 | 완료 |
+| Guardian | ✅ 완성 | 보호자 관리 (별도 테이블) | 완료 |
+| DailyCheck | ✅ 완성 | 스케줄링, 안부 메시지 | 완료 |
+| Conversation | ✅ 완성 | AI 대화 (GPT-4o) | 완료 |
+| AlertRule | ✅ 완성 | 이상징후 감지 (3종) | 완료 |
+| Notification | ✅ 완성 | 알림 발송 (Mock) | 완료 |
+
+### 2.2 기존 Guardian 구조
+
+**GuardianEntity.java** (별도 테이블)
+```java
+@Entity
+@Table(name = "guardian")
+public class GuardianEntity extends BaseTimeEntity {
+    private Long id;
+    private String guardianName;
+    private String guardianEmail;
+    private String guardianPhone;
+    private GuardianRelation relation;  // ✅ 재사용
+    private NotificationPreference notificationPreference;
+
+    @OneToMany(mappedBy = "guardian")
+    private List<MemberEntity> members;  // Guardian → Members
+
+    // ❌ 문제: pushToken 필드 없음
+}
+```
+
+**MemberEntity.java** (기존)
+```java
+@Entity
+@Table(name = "member_table")
+public class MemberEntity extends BaseTimeEntity {
+    private Long id;
+    private String memberEmail;
+    private String memberName;
+    private String memberPassword;
+    private String pushToken;  // ✅ Member만 보유
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "guardian_id")
+    private GuardianEntity guardian;  // Member → Guardian
+}
+```
+
+### 2.3 핵심 문제점
+
+1. **푸시 알림 불가**: GuardianEntity에 pushToken 없음 → 보호자에게 푸시 불가
+2. **중복 데이터**: Guardian의 이름/이메일이 Member와 별도 관리
+3. **복잡한 구조**: 2개 테이블 + 양방향 관계
+4. **앱 분리 필요**: Guardian은 회원이 아니므로 별도 앱 필요 (비효율적)
+
+---
+
+## 3. 변경 사항 요약
+
+### 3.1 새로운 MemberEntity 구조
+
+```java
+@Entity
+@Table(name = "member_table")
+public class MemberEntity extends BaseTimeEntity {
+    private Long id;
+    private String memberEmail;
+    private String memberName;
+    private String memberPassword;
+    private String pushToken;
+
+    // ✅ 안부 메시지 수신 여부
+    private Boolean dailyCheckEnabled;
+
+    // ✅ 내 보호자 (자기 참조 ManyToOne)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "guardian_member_id")
+    private MemberEntity guardian;
+
+    // ✅ 내가 돌보는 사람들 (자기 참조 OneToMany)
+    @OneToMany(mappedBy = "guardian", fetch = FetchType.LAZY)
+    private List<MemberEntity> managedMembers = new ArrayList<>();
+
+    // ✅ 보호자와의 관계 (Guardian 도메인에서 가져옴)
+    @Enumerated(EnumType.STRING)
+    private GuardianRelation guardianRelation;
+}
+```
+
+### 3.2 Guardian 관계 관리 (신규)
+
+```java
+@Entity
+@Table(name = "guardian_request")
+public class GuardianRequest extends BaseTimeEntity {
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "requester_id")
+    private MemberEntity requester;  // 요청한 사람 (노인)
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "guardian_id")
+    private MemberEntity guardian;  // 요청받은 사람 (보호자)
+
+    @Enumerated(EnumType.STRING)
+    private GuardianRelation relation;  // 관계 (FAMILY, FRIEND 등)
+
+    @Enumerated(EnumType.STRING)
+    private RequestStatus status;  // PENDING, ACCEPTED, REJECTED
+}
+```
+
+### 3.3 역할 판별 로직
+
+```java
+// 안부 메시지를 받는 사람인가?
+boolean isElderlyRole = member.getDailyCheckEnabled();
+
+// 보호자가 있는 사람인가?
+boolean hasGuardian = member.getGuardian() != null;
+
+// 보호자 역할을 하는 사람인가?
+boolean isGuardianRole = !member.getManagedMembers().isEmpty();
+
+// 화면 구성
+if (isElderlyRole) { 표시: [내 안부 메시지] }
+if (hasGuardian) { 표시: [내 보호자] }
+if (isGuardianRole) { 표시: [내가 돌보는 사람들] }
+```
+
+---
+
+## 4. 도메인별 개발 계획
+
+### 4.1 Member 도메인 ⭐⭐⭐ (핵심 변경)
+
+**재사용 비율**: 70% (기본 CRUD, 푸시 토큰 관리)
+**신규 개발**: 30% (Guardian 관계 관리)
+**난이도**: 중
+
+#### 변경 사항
+
+**Entity**
+```diff
+@Entity
+public class MemberEntity extends BaseTimeEntity {
+    // 기존 필드 (재사용)
+    private Long id;
+    private String memberEmail;
+    private String memberName;
+    private String memberPassword;
+    private String pushToken;
+
++   // 신규 필드
++   private Boolean dailyCheckEnabled;
++
+-   @ManyToOne
+-   private GuardianEntity guardian;  // 삭제
+
++   @ManyToOne(fetch = FetchType.LAZY)
++   @JoinColumn(name = "guardian_member_id")
++   private MemberEntity guardian;  // 자기 참조
+
++   @OneToMany(mappedBy = "guardian", fetch = FetchType.LAZY)
++   private List<MemberEntity> managedMembers = new ArrayList<>();
+
++   @Enumerated(EnumType.STRING)
++   private GuardianRelation guardianRelation;
+}
+```
+
+**Repository (재사용 + 추가)**
+```java
+public interface MemberRepository extends JpaRepository<MemberEntity, Long> {
+    // 기존 (재사용)
+    Optional<MemberEntity> findByMemberEmail(String email);
+    boolean existsByMemberEmail(String email);
+    List<Long> findActiveMemberIds();  // DailyCheck용
+
+    // 신규 추가
+    List<MemberEntity> findByGuardian(MemberEntity guardian);  // 보호자의 돌봄 대상 조회
+
+    @Query("SELECT m FROM MemberEntity m WHERE m.dailyCheckEnabled = true")
+    List<MemberEntity> findAllByDailyCheckEnabled();  // 안부 메시지 수신자
+}
+```
+
+**Service (재사용 + 확장)**
+```java
+@Service
+public class MemberService {
+    // 기존 메서드 (재사용)
+    // - signup()
+    // - getMemberById()
+    // - updateMemberInfo()
+    // - updatePushToken()
+    // - removePushToken()
+
+    // 신규 메서드
+    public MemberResponse searchByEmail(String email);  // 회원 검색
+    public List<MemberResponse> getManagedMembers(Long guardianId);  // 돌봄 대상 조회
+    public MemberResponse updateDailyCheckEnabled(Long memberId, Boolean enabled);  // 안부 ON/OFF
+}
+```
+
+#### 개발 작업 목록
+
+- [ ] MemberEntity 스키마 변경 (guardian 자기참조, managedMembers 추가)
+- [ ] Migration 스크립트 작성 (Guardian → Member 데이터 마이그레이션)
+- [ ] MemberRepository 쿼리 추가
+- [ ] MemberService 신규 메서드 구현
+- [ ] MemberController API 추가 (검색, 돌봄 대상 조회)
+- [ ] 단위 테스트 작성 (TDD Red-Green-Blue)
+
+---
+
+### 4.2 Auth 도메인 ⭐ (최소 변경)
+
+**재사용 비율**: 95% (JWT 인증 전체)
+**신규 개발**: 5% (응답 DTO 수정)
+**난이도**: 하
+
+#### 변경 사항
+
+**로그인 응답 DTO 수정**
+```diff
+{
+  "accessToken": "...",
+  "member": {
+    "memberId": 1,
+    "memberEmail": "user@example.com",
+    "memberName": "김순자",
++   "dailyCheckEnabled": true,
++   "hasGuardian": false,
++   "managedMembersCount": 0
+  }
+}
+```
+
+#### 개발 작업 목록
+
+- [ ] MemberLoginResponse DTO 수정
+- [ ] AuthenticationEventHandler 응답 수정
+- [ ] 단위 테스트 업데이트
+
+---
+
+### 4.3 Guardian 관계 관리 ⭐⭐⭐ (신규 개발)
+
+**재사용 비율**: 10% (GuardianRelation enum)
+**신규 개발**: 90% (요청/수락 시스템)
+**난이도**: 중상
+
+#### 신규 구현 사항
+
+**GuardianRequest Entity**
+```java
+@Entity
+@Table(name = "guardian_request",
+       uniqueConstraints = @UniqueConstraint(columnNames = {"requester_id", "guardian_id"}))
+public class GuardianRequest extends BaseTimeEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "requester_id", nullable = false)
+    private MemberEntity requester;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "guardian_id", nullable = false)
+    private MemberEntity guardian;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private GuardianRelation relation;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private RequestStatus status;  // PENDING, ACCEPTED, REJECTED
+
+    public static GuardianRequest createRequest(
+        MemberEntity requester,
+        MemberEntity guardian,
+        GuardianRelation relation) {
+        return GuardianRequest.builder()
+            .requester(requester)
+            .guardian(guardian)
+            .relation(relation)
+            .status(RequestStatus.PENDING)
+            .build();
+    }
+
+    public void accept() {
+        this.status = RequestStatus.ACCEPTED;
+        // 실제 관계 설정
+        requester.assignGuardian(guardian, relation);
+    }
+
+    public void reject() {
+        this.status = RequestStatus.REJECTED;
+    }
+}
+```
+
+**GuardianRelationService** (MemberService에 통합 또는 별도)
+```java
+@Service
+public class GuardianRelationService {
+    // 보호자 요청 생성
+    public GuardianRequestResponse sendRequest(Long requesterId, Long guardianId, GuardianRelation relation);
+
+    // 받은 요청 목록 조회
+    public List<GuardianRequestResponse> getReceivedRequests(Long memberId);
+
+    // 요청 수락
+    public void acceptRequest(Long requestId, Long memberId);
+
+    // 요청 거절
+    public void rejectRequest(Long requestId, Long memberId);
+
+    // 보호자 관계 해제
+    public void removeGuardian(Long memberId);
+}
+```
+
+#### 개발 작업 목록
+
+- [ ] GuardianRequest Entity 생성
+- [ ] RequestStatus Enum 생성 (PENDING, ACCEPTED, REJECTED)
+- [ ] GuardianRequestRepository 생성
+- [ ] GuardianRelationService 구현
+- [ ] GuardianController 생성 (또는 MemberController에 통합)
+- [ ] 단위 테스트 작성 (TDD Red-Green-Blue)
+- [ ] 통합 테스트 작성
+
+---
+
+### 4.4 DailyCheck 도메인 ⭐ (최소 수정)
+
+**재사용 비율**: 95% (스케줄링 시스템 전체)
+**신규 개발**: 5% (쿼리 수정)
+**난이도**: 하
+
+#### 변경 사항
+
+**MemberRepository 쿼리 수정**
+```diff
+public interface MemberRepository extends JpaRepository<MemberEntity, Long> {
+-   List<Long> findActiveMemberIds();
+
++   @Query("SELECT m.id FROM MemberEntity m WHERE m.dailyCheckEnabled = true")
++   List<Long> findDailyCheckEnabledMemberIds();
+}
+```
+
+**DailyCheckOrchestrator 수정**
+```diff
+@Service
+public class DailyCheckOrchestrator {
+    @Transactional
+    public void processAllActiveMembers() {
+-       List<Long> activeMemberIds = memberRepository.findActiveMemberIds();
++       List<Long> activeMemberIds = memberRepository.findDailyCheckEnabledMemberIds();
+
+        for (Long memberId : activeMemberIds) {
+            processMemberDailyCheck(memberId);
+        }
+    }
+}
+```
+
+#### 개발 작업 목록
+
+- [ ] MemberRepository 쿼리 수정
+- [ ] DailyCheckOrchestrator 수정
+- [ ] 단위 테스트 업데이트
+- [ ] 통합 테스트 검증
+
+---
+
+### 4.5 Conversation 도메인 ✅ (재사용)
+
+**재사용 비율**: 100%
+**신규 개발**: 0%
+**난이도**: 없음
+
+#### 확인 사항
+
+- ✅ OpenAI GPT-4o 연동: 그대로 사용
+- ✅ 감정 분석: 그대로 사용
+- ✅ 대화 세션 관리: 그대로 사용
+
+#### 개발 작업 목록
+
+- [ ] 기존 테스트 실행 (검증만)
+
+---
+
+### 4.6 AlertRule 도메인 ⭐ (부분 수정)
+
+**재사용 비율**: 90% (3종 감지 알고리즘)
+**신규 개발**: 10% (Guardian 조회 로직)
+**난이도**: 하
+
+#### 변경 사항
+
+**AlertNotificationService 수정**
+```diff
+@Service
+public class AlertNotificationService {
+    @Transactional
+    public void sendGuardianNotification(Long memberId, AlertLevel alertLevel, String alertMessage) {
+        MemberEntity member = findMemberById(memberId);
+
+-       GuardianEntity guardian = member.getGuardian();
+-       if (guardian == null) {
+-           log.warn("No guardian found for member {}", memberId);
+-           return;
+-       }
+-       notificationService.sendPushNotification(guardian.getId(), "이상징후 감지", alertMessage);
+
++       MemberEntity guardian = member.getGuardian();
++       if (guardian == null) {
++           log.warn("No guardian found for member {}", memberId);
++           return;
++       }
++
++       // Guardian도 Member이므로 pushToken 존재
++       notificationService.sendPushNotification(guardian.getId(), "이상징후 감지", alertMessage);
+    }
+}
+```
+
+#### 개발 작업 목록
+
+- [ ] AlertNotificationService Guardian 조회 로직 수정
+- [ ] 단위 테스트 업데이트
+- [ ] 통합 테스트 검증
+
+---
+
+### 4.7 Notification 도메인 ✅ (재사용)
+
+**재사용 비율**: 100%
+**신규 개발**: 0%
+**난이도**: 없음
+
+#### 확인 사항
+
+- ✅ MockPushNotificationService: 그대로 사용
+- ✅ pushToken 기반 알림 발송: 그대로 사용
+
+#### 개발 작업 목록
+
+- [ ] 기존 테스트 실행 (검증만)
+
+---
+
+## 5. 개발 순서 및 일정
+
+### 5.1 Phase 1: Foundation (기반) - 1주
+
+**목표**: Member + Auth 도메인 완성
+
+| 작업 | 담당 도메인 | 소요 시간 | 우선순위 |
+|------|------------|----------|---------|
+| MemberEntity 스키마 변경 | Member | 0.5일 | P0 |
+| Migration 스크립트 작성 | Member | 0.5일 | P0 |
+| MemberRepository 쿼리 추가 | Member | 0.5일 | P0 |
+| MemberService 신규 메서드 | Member | 1일 | P0 |
+| MemberController API 추가 | Member | 0.5일 | P0 |
+| 단위 테스트 (Member) | Member | 1일 | P0 |
+| Auth 응답 DTO 수정 | Auth | 0.5일 | P1 |
+| 단위 테스트 (Auth) | Auth | 0.5일 | P1 |
+
+**완료 기준**:
+- ✅ Member CRUD API 동작
+- ✅ 회원 검색 API 동작
+- ✅ 로그인 시 dailyCheckEnabled, hasGuardian, managedMembersCount 응답
+
+---
+
+### 5.2 Phase 2: Core Features (핵심 기능) - 1.5주
+
+**목표**: Guardian 관계 + DailyCheck + Conversation
+
+| 작업 | 담당 도메인 | 소요 시간 | 우선순위 |
+|------|------------|----------|---------|
+| GuardianRequest Entity | Guardian | 0.5일 | P0 |
+| GuardianRequestRepository | Guardian | 0.5일 | P0 |
+| GuardianRelationService | Guardian | 1.5일 | P0 |
+| GuardianController API | Guardian | 1일 | P0 |
+| 단위 테스트 (Guardian) | Guardian | 1.5일 | P0 |
+| DailyCheck 쿼리 수정 | DailyCheck | 0.5일 | P1 |
+| 단위 테스트 (DailyCheck) | DailyCheck | 0.5일 | P1 |
+| Conversation 검증 | Conversation | 0.5일 | P2 |
+
+**완료 기준**:
+- ✅ 보호자 요청/수락/거절/해제 API 동작
+- ✅ 안부 메시지가 dailyCheckEnabled=true인 회원에게만 발송
+- ✅ AI 대화 시스템 정상 동작
+
+---
+
+### 5.3 Phase 3: Integration (통합) - 0.5주
+
+**목표**: AlertRule + Notification 통합 검증
+
+| 작업 | 담당 도메인 | 소요 시간 | 우선순위 |
+|------|------------|----------|---------|
+| AlertRule Guardian 로직 수정 | AlertRule | 1일 | P0 |
+| 단위 테스트 (AlertRule) | AlertRule | 1일 | P0 |
+| Notification 검증 | Notification | 0.5일 | P1 |
+| 통합 테스트 (전체) | All | 1일 | P0 |
+
+**완료 기준**:
+- ✅ 이상징후 감지 시 보호자(MemberEntity)에게 알림 발송
+- ✅ 전체 사용자 Journey 1-3 시나리오 동작
+
+---
+
+### 5.4 전체 일정 요약
+
+```
+Week 1: Phase 1 (Foundation)
+  Day 1-2: MemberEntity 스키마 + Migration + Repository
+  Day 3-4: MemberService + Controller + 테스트
+  Day 5: Auth 수정 + 테스트
+
+Week 2: Phase 2 (Core Features)
+  Day 1-2: GuardianRequest + Repository + Service
+  Day 3-4: GuardianController + 테스트
+  Day 5: DailyCheck 수정 + Conversation 검증
+
+Week 3: Phase 3 (Integration)
+  Day 1-2: AlertRule 수정 + 테스트
+  Day 3: Notification 검증 + 통합 테스트
+  Day 4-5: 버퍼 (문서 업데이트, 버그 수정)
+```
+
+**총 예상 기간**: 3주
+
+---
+
+## 6. 리스크 관리
+
+### 6.1 주요 리스크
+
+| 리스크 | 영향도 | 발생 확률 | 대응 방안 |
+|--------|--------|----------|----------|
+| Migration 실패 | 높음 | 중간 | Guardian → Member 데이터 마이그레이션 스크립트 철저히 테스트 |
+| 자기 참조 순환 참조 | 중간 | 중간 | @JsonIgnore, DTO 변환으로 방지 |
+| 기존 테스트 깨짐 | 중간 | 높음 | Guardian 관련 테스트 모두 재작성 |
+| API 호환성 깨짐 | 높음 | 낮음 | API 명세서 기반 개발, Swagger 검증 |
+
+### 6.2 데이터 마이그레이션 계획
+
+**GuardianEntity → MemberEntity 마이그레이션**
+
+```sql
+-- Step 1: GuardianEntity의 데이터를 MemberEntity로 복사
+INSERT INTO member_table (member_email, member_name, created_at, updated_at, daily_check_enabled)
+SELECT guardian_email, guardian_name, created_at, updated_at, false
+FROM guardian
+WHERE NOT EXISTS (
+    SELECT 1 FROM member_table WHERE member_email = guardian.guardian_email
+);
+
+-- Step 2: 기존 Member의 guardian_id를 guardian_member_id로 변경
+UPDATE member_table m
+SET guardian_member_id = (
+    SELECT m2.id FROM member_table m2
+    WHERE m2.member_email = (
+        SELECT g.guardian_email FROM guardian g WHERE g.id = m.guardian_id
+    )
+);
+
+-- Step 3: guardianRelation 업데이트
+UPDATE member_table m
+SET guardian_relation = (
+    SELECT g.relation FROM guardian g WHERE g.id = m.guardian_id
+);
+
+-- Step 4: guardian 테이블 삭제 (백업 후)
+DROP TABLE guardian;
+```
+
+### 6.3 롤백 계획
+
+- **Phase별 Git 브랜치 분리**: feature/phase1, feature/phase2, feature/phase3
+- **각 Phase 완료 후 Tag**: v2.0.0-phase1, v2.0.0-phase2, v2.0.0-phase3
+- **데이터베이스 백업**: Migration 전 전체 백업
+- **테스트 자동화**: CI/CD에서 모든 테스트 통과 확인
+
+---
+
+## 부록: 도메인별 재사용 비율
+
+| 도메인 | 재사용 | 신규/수정 | 난이도 | 예상 시간 |
+|--------|--------|-----------|--------|----------|
+| Member | 70% | 30% | 중 | 3일 |
+| Auth | 95% | 5% | 하 | 1일 |
+| Guardian 관계 | 10% | 90% | 중상 | 4일 |
+| DailyCheck | 95% | 5% | 하 | 1일 |
+| Conversation | 100% | 0% | - | 0.5일 |
+| AlertRule | 90% | 10% | 하 | 2일 |
+| Notification | 100% | 0% | - | 0.5일 |
+
+**전체 평균 재사용 비율**: 80%
+
+---
+
+**Version**: 1.0.0
+**Updated**: 2025-10-07
+**Status**: 계획 수립 완료
+**Next Step**: Phase 1 개발 착수
