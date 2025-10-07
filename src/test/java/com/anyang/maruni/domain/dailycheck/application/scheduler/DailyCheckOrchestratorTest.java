@@ -54,7 +54,7 @@ class DailyCheckOrchestratorTest {
     void processAllActiveMembers_shouldSendToAllActiveMembers() {
         // Given
         List<Long> activeMemberIds = Arrays.asList(1L, 2L, 3L);
-        given(memberRepository.findActiveMemberIds()).willReturn(activeMemberIds);
+        given(memberRepository.findDailyCheckEnabledMemberIds()).willReturn(activeMemberIds);
         given(dailyCheckRecordRepository.existsSuccessfulRecordByMemberIdAndDate(anyLong(), any(LocalDate.class)))
                 .willReturn(false);  // 모든 회원에게 아직 발송하지 않음
         given(notificationService.sendPushNotification(anyLong(), anyString(), anyString()))
@@ -77,7 +77,7 @@ class DailyCheckOrchestratorTest {
     void processAllActiveMembers_shouldPreventDuplicateOnSameDay() {
         // Given
         List<Long> activeMemberIds = Arrays.asList(1L, 2L);
-        given(memberRepository.findActiveMemberIds()).willReturn(activeMemberIds);
+        given(memberRepository.findDailyCheckEnabledMemberIds()).willReturn(activeMemberIds);
         given(dailyCheckRecordRepository.existsSuccessfulRecordByMemberIdAndDate(eq(1L), any(LocalDate.class)))
                 .willReturn(true);   // 1번 회원은 이미 발송됨
         given(dailyCheckRecordRepository.existsSuccessfulRecordByMemberIdAndDate(eq(2L), any(LocalDate.class)))
@@ -112,7 +112,7 @@ class DailyCheckOrchestratorTest {
     void processAllActiveMembers_shouldScheduleRetryOnFailure() {
         // Given
         List<Long> activeMemberIds = Arrays.asList(1L);
-        given(memberRepository.findActiveMemberIds()).willReturn(activeMemberIds);
+        given(memberRepository.findDailyCheckEnabledMemberIds()).willReturn(activeMemberIds);
         given(dailyCheckRecordRepository.existsSuccessfulRecordByMemberIdAndDate(anyLong(), any(LocalDate.class)))
                 .willReturn(false);
         given(notificationService.sendPushNotification(anyLong(), anyString(), anyString()))

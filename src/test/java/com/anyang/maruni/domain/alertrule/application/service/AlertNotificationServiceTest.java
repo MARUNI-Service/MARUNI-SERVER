@@ -7,8 +7,8 @@ import com.anyang.maruni.domain.alertrule.application.service.util.AlertServiceU
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertHistory;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertLevel;
 import com.anyang.maruni.domain.alertrule.domain.repository.AlertHistoryRepository;
-import com.anyang.maruni.domain.guardian.domain.entity.GuardianEntity;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
+import com.anyang.maruni.domain.guardian.domain.entity.GuardianRelation;
 import com.anyang.maruni.domain.member.domain.repository.MemberRepository;
 import com.anyang.maruni.domain.notification.domain.service.NotificationService;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,278 +40,278 @@ import static org.mockito.Mockito.times;
 @DisplayName("AlertNotificationService 테스트")
 class AlertNotificationServiceTest {
 
-    @Mock
-    private MemberRepository memberRepository;
+	@Mock
+	private MemberRepository memberRepository;
 
-    @Mock
-    private NotificationService notificationService;
+	@Mock
+	private NotificationService notificationService;
 
-    @Mock
-    private AlertConfigurationProperties alertConfig;
+	@Mock
+	private AlertConfigurationProperties alertConfig;
 
-    @Mock
-    private AlertServiceUtils alertServiceUtils;
+	@Mock
+	private AlertServiceUtils alertServiceUtils;
 
-    @Mock
-    private AlertHistoryRepository alertHistoryRepository;
+	@Mock
+	private AlertHistoryRepository alertHistoryRepository;
 
-    @InjectMocks
-    private AlertNotificationService alertNotificationService;
+	@InjectMocks
+	private AlertNotificationService alertNotificationService;
 
-    private MemberEntity testMember;
-    private GuardianEntity testGuardian;
-    private AlertResult testAlertResult;
-    private AlertHistory testAlertHistory;
+	private MemberEntity testMember;
+	private MemberEntity testGuardian;
+	private AlertResult testAlertResult;
+	private AlertHistory testAlertHistory;
 
-    @BeforeEach
-    void setUp() {
-        testGuardian = GuardianEntity.builder()
-                .id(2L)
-                .guardianName("테스트보호자")
-                .guardianEmail("guardian@example.com")
-                .guardianPhone("010-1234-5678")
-                .build();
+	@BeforeEach
+	void setUp() {
+		testGuardian = MemberEntity.builder()
+			.id(2L)
+			.memberName("테스트보호자")
+			.memberEmail("guardian@example.com")
+			.memberPassword("password123")
+			.pushToken("guardian_push_token")
+			.build();
 
-        testMember = MemberEntity.builder()
-                .id(1L)
-                .memberName("테스트회원")
-                .memberEmail("test@example.com")
-                .memberPassword("password123")
-                .guardian(testGuardian)
-                .build();
+		testMember = MemberEntity.builder()
+			.id(1L)
+			.memberName("테스트회원")
+			.memberEmail("test@example.com")
+			.memberPassword("password123")
+			.build();
+		testMember.assignGuardian(testGuardian, GuardianRelation.FAMILY);
 
-        testAlertResult = AlertResult.createAlert(
-                AlertLevel.HIGH, "3일 연속 부정감정 감지", null);
+		testAlertResult = AlertResult.createAlert(
+			AlertLevel.HIGH, "3일 연속 부정감정 감지", null);
 
-        testAlertHistory = AlertHistory.builder()
-                .id(123L)
-                .alertRule(null)
-                .member(testMember)
-                .alertLevel(AlertLevel.HIGH)
-                .alertMessage("테스트 알림")
-                .detectionDetails("{\"details\":\"test\"}")
-                .isNotificationSent(false)
-                .build();
-    }
+		testAlertHistory = AlertHistory.builder()
+			.id(123L)
+			.alertRule(null)
+			.member(testMember)
+			.alertLevel(AlertLevel.HIGH)
+			.alertMessage("테스트 알림")
+			.detectionDetails("{\"details\":\"test\"}")
+			.isNotificationSent(false)
+			.build();
+	}
 
-    @Test
-    @DisplayName("알림 발생 처리 - 성공")
-    void triggerAlert_Success() {
-        // Given
-        Long memberId = 1L;
-        Long expectedHistoryId = 123L;
+	@Test
+	@DisplayName("알림 발생 처리 - 성공")
+	void triggerAlert_Success() {
+		// Given
+		Long memberId = 1L;
+		Long expectedHistoryId = 123L;
 
-        AlertConfigurationProperties.Notification notificationConfig =
-                new AlertConfigurationProperties.Notification();
-        notificationConfig.setTitleTemplate("[%s] 알림");
+		AlertConfigurationProperties.Notification notificationConfig =
+			new AlertConfigurationProperties.Notification();
+		notificationConfig.setTitleTemplate("[%s] 알림");
 
-        given(alertServiceUtils.validateAndGetMember(memberId))
-                .willReturn(testMember);
-        given(alertServiceUtils.createDetectionDetailsJson(testAlertResult))
-                .willReturn("{\"alertLevel\":\"HIGH\",\"message\":\"3일 연속 부정감정 감지\"}");
-        given(alertHistoryRepository.save(any(AlertHistory.class)))
-                .willReturn(testAlertHistory);
-        given(alertConfig.getNotification())
-                .willReturn(notificationConfig);
-        given(notificationService.sendPushNotification(anyLong(), anyString(), anyString()))
-                .willReturn(true);
+		given(alertServiceUtils.validateAndGetMember(memberId))
+			.willReturn(testMember);
+		given(alertServiceUtils.createDetectionDetailsJson(testAlertResult))
+			.willReturn("{\"alertLevel\":\"HIGH\",\"message\":\"3일 연속 부정감정 감지\"}");
+		given(alertHistoryRepository.save(any(AlertHistory.class)))
+			.willReturn(testAlertHistory);
+		given(alertConfig.getNotification())
+			.willReturn(notificationConfig);
+		given(notificationService.sendPushNotification(anyLong(), anyString(), anyString()))
+			.willReturn(true);
 
-        // When
-        Long result = alertNotificationService.triggerAlert(memberId, testAlertResult);
+		// When
+		Long result = alertNotificationService.triggerAlert(memberId, testAlertResult);
 
-        // Then
-        assertThat(result).isEqualTo(expectedHistoryId);
+		// Then
+		assertThat(result).isEqualTo(expectedHistoryId);
 
-        verify(alertServiceUtils, times(2)).validateAndGetMember(memberId);
-        verify(alertServiceUtils).createDetectionDetailsJson(testAlertResult);
-        verify(alertHistoryRepository).save(any(AlertHistory.class));
-        // triggerAlert는 내부적으로 sendGuardianNotification을 호출하므로 알림 발송도 검증
-        verify(notificationService).sendPushNotification(
-                testGuardian.getId(), "[HIGH] 알림", testAlertResult.getMessage());
-    }
+		verify(alertServiceUtils, times(2)).validateAndGetMember(memberId);
+		verify(alertServiceUtils).createDetectionDetailsJson(testAlertResult);
+		verify(alertHistoryRepository).save(any(AlertHistory.class));
+		// triggerAlert는 내부적으로 sendGuardianNotification을 호출하므로 알림 발송도 검증
+		verify(notificationService).sendPushNotification(
+			testGuardian.getId(), "[HIGH] 알림", testAlertResult.getMessage());
+	}
 
-    @Test
-    @DisplayName("보호자 알림 발송 - 성공")
-    void sendGuardianNotification_Success() {
-        // Given
-        Long memberId = 1L;
-        AlertLevel alertLevel = AlertLevel.HIGH;
-        String alertMessage = "테스트 알림 메시지";
+	@Test
+	@DisplayName("보호자 알림 발송 - 성공")
+	void sendGuardianNotification_Success() {
+		// Given
+		Long memberId = 1L;
+		AlertLevel alertLevel = AlertLevel.HIGH;
+		String alertMessage = "테스트 알림 메시지";
 
-        AlertConfigurationProperties.Notification notificationConfig =
-                new AlertConfigurationProperties.Notification();
-        notificationConfig.setTitleTemplate("[%s] 알림");
-        notificationConfig.setNotificationFailureLog("알림 발송 실패: 회원 ID %d");
-        notificationConfig.setNotificationErrorLog("알림 발송 오류: %s");
+		AlertConfigurationProperties.Notification notificationConfig =
+			new AlertConfigurationProperties.Notification();
+		notificationConfig.setTitleTemplate("[%s] 알림");
+		notificationConfig.setNotificationFailureLog("알림 발송 실패: 회원 ID %d");
+		notificationConfig.setNotificationErrorLog("알림 발송 오류: %s");
 
-        given(alertServiceUtils.validateAndGetMember(memberId))
-                .willReturn(testMember);
-        given(alertConfig.getNotification())
-                .willReturn(notificationConfig);
-        given(notificationService.sendPushNotification(anyLong(), anyString(), anyString()))
-                .willReturn(true);
+		given(alertServiceUtils.validateAndGetMember(memberId))
+			.willReturn(testMember);
+		given(alertConfig.getNotification())
+			.willReturn(notificationConfig);
+		given(notificationService.sendPushNotification(anyLong(), anyString(), anyString()))
+			.willReturn(true);
 
-        // When
-        alertNotificationService.sendGuardianNotification(memberId, alertLevel, alertMessage);
+		// When
+		alertNotificationService.sendGuardianNotification(memberId, alertLevel, alertMessage);
 
-        // Then
-        verify(alertServiceUtils).validateAndGetMember(memberId);
-        verify(notificationService).sendPushNotification(
-                testGuardian.getId(), "[HIGH] 알림", alertMessage);
-    }
+		// Then
+		verify(alertServiceUtils).validateAndGetMember(memberId);
+		verify(notificationService).sendPushNotification(
+			testGuardian.getId(), "[HIGH] 알림", alertMessage);
+	}
 
-    @Test
-    @DisplayName("보호자 알림 발송 - 보호자 없음")
-    void sendGuardianNotification_NoGuardian() {
-        // Given
-        Long memberId = 1L;
-        AlertLevel alertLevel = AlertLevel.HIGH;
-        String alertMessage = "테스트 알림 메시지";
+	@Test
+	@DisplayName("보호자 알림 발송 - 보호자 없음")
+	void sendGuardianNotification_NoGuardian() {
+		// Given
+		Long memberId = 1L;
+		AlertLevel alertLevel = AlertLevel.HIGH;
+		String alertMessage = "테스트 알림 메시지";
 
-        MemberEntity memberWithoutGuardian = MemberEntity.builder()
-                .id(1L)
-                .memberName("테스트회원")
-                .memberEmail("test@example.com")
-                .memberPassword("password123")
-                .guardian(null)
-                .build();
+		MemberEntity memberWithoutGuardian = MemberEntity.builder()
+			.id(1L)
+			.memberName("테스트회원")
+			.memberEmail("test@example.com")
+			.memberPassword("password123")
+			.build();
 
-        given(alertServiceUtils.validateAndGetMember(memberId))
-                .willReturn(memberWithoutGuardian);
+		given(alertServiceUtils.validateAndGetMember(memberId))
+			.willReturn(memberWithoutGuardian);
 
-        // When
-        alertNotificationService.sendGuardianNotification(memberId, alertLevel, alertMessage);
+		// When
+		alertNotificationService.sendGuardianNotification(memberId, alertLevel, alertMessage);
 
-        // Then
-        verify(alertServiceUtils).validateAndGetMember(memberId);
-        verifyNoInteractions(notificationService);
-    }
+		// Then
+		verify(alertServiceUtils).validateAndGetMember(memberId);
+		verifyNoInteractions(notificationService);
+	}
 
-    @Test
-    @DisplayName("보호자 알림 발송 - 발송 실패")
-    void sendGuardianNotification_SendFailure() {
-        // Given
-        Long memberId = 1L;
-        AlertLevel alertLevel = AlertLevel.HIGH;
-        String alertMessage = "테스트 알림 메시지";
+	@Test
+	@DisplayName("보호자 알림 발송 - 발송 실패")
+	void sendGuardianNotification_SendFailure() {
+		// Given
+		Long memberId = 1L;
+		AlertLevel alertLevel = AlertLevel.HIGH;
+		String alertMessage = "테스트 알림 메시지";
 
-        AlertConfigurationProperties.Notification notificationConfig =
-                new AlertConfigurationProperties.Notification();
-        notificationConfig.setTitleTemplate("[%s] 알림");
-        notificationConfig.setNotificationFailureLog("알림 발송 실패: 회원 ID %d");
-        notificationConfig.setNotificationErrorLog("알림 발송 오류: %s");
+		AlertConfigurationProperties.Notification notificationConfig =
+			new AlertConfigurationProperties.Notification();
+		notificationConfig.setTitleTemplate("[%s] 알림");
+		notificationConfig.setNotificationFailureLog("알림 발송 실패: 회원 ID %d");
+		notificationConfig.setNotificationErrorLog("알림 발송 오류: %s");
 
-        given(alertServiceUtils.validateAndGetMember(memberId))
-                .willReturn(testMember);
-        given(alertConfig.getNotification())
-                .willReturn(notificationConfig);
-        given(notificationService.sendPushNotification(anyLong(), anyString(), anyString()))
-                .willReturn(false);
+		given(alertServiceUtils.validateAndGetMember(memberId))
+			.willReturn(testMember);
+		given(alertConfig.getNotification())
+			.willReturn(notificationConfig);
+		given(notificationService.sendPushNotification(anyLong(), anyString(), anyString()))
+			.willReturn(false);
 
-        // When
-        alertNotificationService.sendGuardianNotification(memberId, alertLevel, alertMessage);
+		// When
+		alertNotificationService.sendGuardianNotification(memberId, alertLevel, alertMessage);
 
-        // Then
-        verify(alertServiceUtils).validateAndGetMember(memberId);
-        verify(notificationService).sendPushNotification(
-                testGuardian.getId(), "[HIGH] 알림", alertMessage);
-    }
+		// Then
+		verify(alertServiceUtils).validateAndGetMember(memberId);
+		verify(notificationService).sendPushNotification(
+			testGuardian.getId(), "[HIGH] 알림", alertMessage);
+	}
 
-    @Test
-    @DisplayName("보호자 알림 발송 - 예외 발생")
-    void sendGuardianNotification_Exception() {
-        // Given
-        Long memberId = 1L;
-        AlertLevel alertLevel = AlertLevel.HIGH;
-        String alertMessage = "테스트 알림 메시지";
+	@Test
+	@DisplayName("보호자 알림 발송 - 예외 발생")
+	void sendGuardianNotification_Exception() {
+		// Given
+		Long memberId = 1L;
+		AlertLevel alertLevel = AlertLevel.HIGH;
+		String alertMessage = "테스트 알림 메시지";
 
-        AlertConfigurationProperties.Notification notificationConfig =
-                new AlertConfigurationProperties.Notification();
-        notificationConfig.setTitleTemplate("[%s] 알림");
-        notificationConfig.setNotificationFailureLog("알림 발송 실패: 회원 ID %d");
-        notificationConfig.setNotificationErrorLog("알림 발송 오류: %s");
+		AlertConfigurationProperties.Notification notificationConfig =
+			new AlertConfigurationProperties.Notification();
+		notificationConfig.setTitleTemplate("[%s] 알림");
+		notificationConfig.setNotificationFailureLog("알림 발송 실패: 회원 ID %d");
+		notificationConfig.setNotificationErrorLog("알림 발송 오류: %s");
 
-        given(alertServiceUtils.validateAndGetMember(memberId))
-                .willReturn(testMember);
-        given(alertConfig.getNotification())
-                .willReturn(notificationConfig);
-        given(notificationService.sendPushNotification(anyLong(), anyString(), anyString()))
-                .willThrow(new RuntimeException("네트워크 오류"));
+		given(alertServiceUtils.validateAndGetMember(memberId))
+			.willReturn(testMember);
+		given(alertConfig.getNotification())
+			.willReturn(notificationConfig);
+		given(notificationService.sendPushNotification(anyLong(), anyString(), anyString()))
+			.willThrow(new RuntimeException("네트워크 오류"));
 
-        // When
-        alertNotificationService.sendGuardianNotification(memberId, alertLevel, alertMessage);
+		// When
+		alertNotificationService.sendGuardianNotification(memberId, alertLevel, alertMessage);
 
-        // Then
-        verify(alertServiceUtils).validateAndGetMember(memberId);
-        verify(notificationService).sendPushNotification(
-                testGuardian.getId(), "[HIGH] 알림", alertMessage);
-    }
+		// Then
+		verify(alertServiceUtils).validateAndGetMember(memberId);
+		verify(notificationService).sendPushNotification(
+			testGuardian.getId(), "[HIGH] 알림", alertMessage);
+	}
 
-    @Test
-    @DisplayName("긴급 알림 발송 - EMERGENCY 레벨")
-    void sendGuardianNotification_Emergency() {
-        // Given
-        Long memberId = 1L;
-        AlertLevel alertLevel = AlertLevel.EMERGENCY;
-        String alertMessage = "긴급 상황 발생";
+	@Test
+	@DisplayName("긴급 알림 발송 - EMERGENCY 레벨")
+	void sendGuardianNotification_Emergency() {
+		// Given
+		Long memberId = 1L;
+		AlertLevel alertLevel = AlertLevel.EMERGENCY;
+		String alertMessage = "긴급 상황 발생";
 
-        AlertConfigurationProperties.Notification notificationConfig =
-                new AlertConfigurationProperties.Notification();
-        notificationConfig.setTitleTemplate("[%s] 긴급 알림");
-        notificationConfig.setNotificationFailureLog("알림 발송 실패: 회원 ID %d");
-        notificationConfig.setNotificationErrorLog("알림 발송 오류: %s");
+		AlertConfigurationProperties.Notification notificationConfig =
+			new AlertConfigurationProperties.Notification();
+		notificationConfig.setTitleTemplate("[%s] 긴급 알림");
+		notificationConfig.setNotificationFailureLog("알림 발송 실패: 회원 ID %d");
+		notificationConfig.setNotificationErrorLog("알림 발송 오류: %s");
 
-        given(alertServiceUtils.validateAndGetMember(memberId))
-                .willReturn(testMember);
-        given(alertConfig.getNotification())
-                .willReturn(notificationConfig);
-        given(notificationService.sendPushNotification(anyLong(), anyString(), anyString()))
-                .willReturn(true);
+		given(alertServiceUtils.validateAndGetMember(memberId))
+			.willReturn(testMember);
+		given(alertConfig.getNotification())
+			.willReturn(notificationConfig);
+		given(notificationService.sendPushNotification(anyLong(), anyString(), anyString()))
+			.willReturn(true);
 
-        // When
-        alertNotificationService.sendGuardianNotification(memberId, alertLevel, alertMessage);
+		// When
+		alertNotificationService.sendGuardianNotification(memberId, alertLevel, alertMessage);
 
-        // Then
-        verify(alertServiceUtils).validateAndGetMember(memberId);
-        verify(notificationService).sendPushNotification(
-                testGuardian.getId(), "[EMERGENCY] 긴급 알림", alertMessage);
-    }
+		// Then
+		verify(alertServiceUtils).validateAndGetMember(memberId);
+		verify(notificationService).sendPushNotification(
+			testGuardian.getId(), "[EMERGENCY] 긴급 알림", alertMessage);
+	}
 
-    @Test
-    @DisplayName("알림 발생 처리와 보호자 알림 통합 - 성공")
-    void triggerAlert_WithGuardianNotification_Success() {
-        // Given
-        Long memberId = 1L;
-        Long expectedHistoryId = 123L;
+	@Test
+	@DisplayName("알림 발생 처리와 보호자 알림 통합 - 성공")
+	void triggerAlert_WithGuardianNotification_Success() {
+		// Given
+		Long memberId = 1L;
+		Long expectedHistoryId = 123L;
 
-        given(alertServiceUtils.validateAndGetMember(memberId))
-                .willReturn(testMember);
-        given(alertServiceUtils.createDetectionDetailsJson(testAlertResult))
-                .willReturn("{\"alertLevel\":\"HIGH\",\"message\":\"3일 연속 부정감정 감지\"}");
-        given(alertHistoryRepository.save(any(AlertHistory.class)))
-                .willReturn(testAlertHistory);
+		given(alertServiceUtils.validateAndGetMember(memberId))
+			.willReturn(testMember);
+		given(alertServiceUtils.createDetectionDetailsJson(testAlertResult))
+			.willReturn("{\"alertLevel\":\"HIGH\",\"message\":\"3일 연속 부정감정 감지\"}");
+		given(alertHistoryRepository.save(any(AlertHistory.class)))
+			.willReturn(testAlertHistory);
 
-        AlertConfigurationProperties.Notification notificationConfig =
-                new AlertConfigurationProperties.Notification();
-        notificationConfig.setTitleTemplate("[%s] 알림");
+		AlertConfigurationProperties.Notification notificationConfig =
+			new AlertConfigurationProperties.Notification();
+		notificationConfig.setTitleTemplate("[%s] 알림");
 
-        given(alertConfig.getNotification())
-                .willReturn(notificationConfig);
-        given(notificationService.sendPushNotification(anyLong(), anyString(), anyString()))
-                .willReturn(true);
+		given(alertConfig.getNotification())
+			.willReturn(notificationConfig);
+		given(notificationService.sendPushNotification(anyLong(), anyString(), anyString()))
+			.willReturn(true);
 
-        // When
-        Long result = alertNotificationService.triggerAlert(memberId, testAlertResult);
+		// When
+		Long result = alertNotificationService.triggerAlert(memberId, testAlertResult);
 
-        // Then
-        assertThat(result).isEqualTo(expectedHistoryId);
+		// Then
+		assertThat(result).isEqualTo(expectedHistoryId);
 
-        // AlertHistory 저장 확인 (validateAndGetMember는 두 번 호출됨: triggerAlert + sendGuardianNotification)
-        verify(alertServiceUtils, times(2)).validateAndGetMember(memberId);
-        verify(alertHistoryRepository).save(any(AlertHistory.class));
+		// AlertHistory 저장 확인 (validateAndGetMember는 두 번 호출됨: triggerAlert + sendGuardianNotification)
+		verify(alertServiceUtils, times(2)).validateAndGetMember(memberId);
+		verify(alertHistoryRepository).save(any(AlertHistory.class));
 
-        // 보호자 알림 발송 확인
-        verify(notificationService).sendPushNotification(
-                testGuardian.getId(), "[HIGH] 알림", testAlertResult.getMessage());
-    }
+		// 보호자 알림 발송 확인
+		verify(notificationService).sendPushNotification(
+			testGuardian.getId(), "[HIGH] 알림", testAlertResult.getMessage());
+	}
 }
