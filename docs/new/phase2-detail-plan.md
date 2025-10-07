@@ -31,6 +31,7 @@
 **Phase 1 완료 상태** (98%):
 - ✅ MemberEntity 스키마 확장 (자기참조, dailyCheckEnabled)
 - ✅ Member CRUD API 구현
+- 
 - ✅ Auth 로그인 응답 수정 (역할 정보 포함)
 - ✅ API 경로 통일 (`/api/members`)
 
