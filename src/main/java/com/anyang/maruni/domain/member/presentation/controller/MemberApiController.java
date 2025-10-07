@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.anyang.maruni.domain.member.application.dto.request.DailyCheckUpdateRequest;
 import com.anyang.maruni.domain.member.application.dto.request.MemberUpdateRequest;
 import com.anyang.maruni.domain.member.application.dto.response.MemberResponse;
 import com.anyang.maruni.domain.member.application.service.MemberService;
@@ -29,7 +28,6 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -114,11 +112,12 @@ public class MemberApiController {
 	@CustomExceptionDescription(SwaggerResponseDescription.MEMBER_ERROR)
 	@SuccessCodeAnnotation(SuccessCode.MEMBER_UPDATED)
 	public MemberResponse updateDailyCheckEnabled(
-			@Valid @RequestBody DailyCheckUpdateRequest request,
+			@Parameter(description = "안부 메시지 수신 여부", required = true)
+			@RequestParam Boolean enabled,
 			@Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails) {
 		return memberService.updateDailyCheckEnabled(
 				userDetails.getMemberId(),
-				request.getDailyCheckEnabled()
+				enabled
 		);
 	}
 

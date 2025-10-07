@@ -12,10 +12,17 @@ import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
 public class MemberMapper {
 
 	/**
-	 * MemberEntity를 MemberResponse로 변환
+	 * MemberEntity를 MemberResponse로 변환 (기본)
 	 */
 	public MemberResponse toResponse(MemberEntity entity) {
 		return MemberResponse.from(entity);
+	}
+
+	/**
+	 * MemberEntity를 MemberResponse로 변환 (역할 정보 포함)
+	 */
+	public MemberResponse toResponseWithRoles(MemberEntity entity) {
+		return MemberResponse.fromWithRoles(entity);
 	}
 
 	/**

@@ -128,7 +128,7 @@ public class MemberService {
 			.orElseThrow(() -> memberNotFound());
 
 		// MemberResponse에 guardian, managedMembers 정보 포함
-		return MemberResponse.fromWithRoles(member);
+		return memberMapper.toResponseWithRoles(member);
 	}
 
 	// ========== Private Helper Methods ==========
