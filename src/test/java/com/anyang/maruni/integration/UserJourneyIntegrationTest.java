@@ -1,10 +1,18 @@
 package com.anyang.maruni.integration;
 
+import com.anyang.maruni.domain.alertrule.application.service.core.AlertRuleService;
+import com.anyang.maruni.domain.alertrule.domain.entity.AlertLevel;
+import com.anyang.maruni.domain.alertrule.domain.repository.AlertHistoryRepository;
+import com.anyang.maruni.domain.conversation.domain.entity.ConversationEntity;
+import com.anyang.maruni.domain.conversation.domain.entity.EmotionType;
+import com.anyang.maruni.domain.conversation.domain.entity.MessageEntity;
+import com.anyang.maruni.domain.conversation.domain.repository.ConversationRepository;
 import com.anyang.maruni.domain.guardian.application.dto.GuardianRequestDto;
 import com.anyang.maruni.domain.guardian.domain.entity.GuardianRelation;
 import com.anyang.maruni.domain.guardian.domain.repository.GuardianRequestRepository;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
 import com.anyang.maruni.domain.member.domain.repository.MemberRepository;
+import com.anyang.maruni.domain.notification.domain.service.NotificationService;
 import com.anyang.maruni.global.security.JWTUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,13 +21,19 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -52,10 +66,22 @@ public class UserJourneyIntegrationTest {
 	private GuardianRequestRepository guardianRequestRepository;
 
 	@Autowired
+	private ConversationRepository conversationRepository;
+
+	@Autowired
+	private AlertRuleService alertRuleService;
+
+	@Autowired
+	private AlertHistoryRepository alertHistoryRepository;
+
+	@Autowired
 	private JWTUtil jwtUtil;
 
 	@Autowired
 	private PasswordEncoder passwordEncoder;
+
+	@MockBean
+	private NotificationService notificationService;
 
 	// 테스트 데이터
 	private MemberEntity soonja;  // 김순자 할머니 (노인)
