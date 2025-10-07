@@ -44,8 +44,8 @@ public class DailyCheckOrchestrator {
      */
     @Transactional
     public void processAllActiveMembers() {
-        List<Long> activeMemberIds = memberRepository.findActiveMemberIds();
-        log.info("Found {} active members", activeMemberIds.size());
+        List<Long> activeMemberIds = memberRepository.findDailyCheckEnabledMemberIds();
+        log.info("Found {} daily check enabled members", activeMemberIds.size());
 
         for (Long memberId : activeMemberIds) {
             processMemberDailyCheck(memberId);

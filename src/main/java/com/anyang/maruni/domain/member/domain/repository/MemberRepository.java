@@ -8,30 +8,55 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.anyang.maruni.domain.guardian.domain.entity.GuardianEntity;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
 
 @Repository
 public interface MemberRepository extends JpaRepository<MemberEntity, Long> {
 
-	Optional<MemberEntity> findByMemberEmail(String memberEmail);
+	// ========== 기존 메서드 (재사용) ==========
 
+	Optional<MemberEntity> findByMemberEmail(String memberEmail);
 
 	Boolean existsByMemberEmail(String memberEmail);
 
+	// ========== 신규 메서드 (Phase 1) ==========
+
 	/**
-	 * 활성 상태인 모든 회원의 ID 목록 조회
-	 * Phase 2: DailyCheckService에서 안부 메시지 발송 대상 조회용
-	 * 현재는 모든 회원을 활성 상태로 간주
+	 * 안부 메시지 수신자 ID 목록 조회 (DailyCheck용)
 	 */
-	@Query("SELECT m.id FROM MemberEntity m")
-	List<Long> findActiveMemberIds();
+	@Query("SELECT m.id FROM MemberEntity m WHERE m.dailyCheckEnabled = true")
+	List<Long> findDailyCheckEnabledMemberIds();
 
-	// Guardian 관련 메서드 추가
-	List<MemberEntity> findByGuardian(GuardianEntity guardian);
+	/**
+	 * 보호자의 돌봄 대상 조회 (자기 참조)
+	 * @param guardian 보호자 MemberEntity
+	 * @return 돌봄 대상 목록
+	 */
+	@Query("SELECT m FROM MemberEntity m WHERE m.guardian = :guardian")
+	List<MemberEntity> findByGuardian(@Param("guardian") MemberEntity guardian);
 
+	/**
+	 * 회원 검색 (이메일 기반)
+	 * @param email 검색할 이메일
+	 * @return 회원 정보
+	 */
+	@Query("SELECT m FROM MemberEntity m WHERE m.memberEmail = :email")
+	Optional<MemberEntity> searchByEmail(@Param("email") String email);
+
+	/**
+	 * 안부 메시지 수신자 전체 조회 (엔티티)
+	 */
+	@Query("SELECT m FROM MemberEntity m WHERE m.dailyCheckEnabled = true")
+	List<MemberEntity> findAllByDailyCheckEnabled();
+
+	/**
+	 * 보호자 ID로 돌봄 대상 조회 (성능 최적화)
+	 */
+	@Query("SELECT m FROM MemberEntity m WHERE m.guardian.id = :guardianId")
+	List<MemberEntity> findManagedMembersByGuardianId(@Param("guardianId") Long guardianId);
+
+	/**
+	 * 보호자가 없는 회원 조회
+	 */
 	List<MemberEntity> findByGuardianIsNull();
-
-	@Query("SELECT m.id FROM MemberEntity m WHERE m.guardian.id = :guardianId")
-	List<Long> findMemberIdsByGuardianId(@Param("guardianId") Long guardianId);
 }

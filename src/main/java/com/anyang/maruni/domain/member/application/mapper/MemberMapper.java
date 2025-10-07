@@ -12,14 +12,17 @@ import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
 public class MemberMapper {
 
 	/**
-	 * MemberEntity를 MemberResponse로 변환
+	 * MemberEntity를 MemberResponse로 변환 (기본)
 	 */
 	public MemberResponse toResponse(MemberEntity entity) {
-		return MemberResponse.builder()
-			.id(entity.getId())
-			.memberName(entity.getMemberName())
-			.memberEmail(entity.getMemberEmail())
-			.build();
+		return MemberResponse.from(entity);
+	}
+
+	/**
+	 * MemberEntity를 MemberResponse로 변환 (역할 정보 포함)
+	 */
+	public MemberResponse toResponseWithRoles(MemberEntity entity) {
+		return MemberResponse.fromWithRoles(entity);
 	}
 
 	/**
@@ -32,14 +35,15 @@ public class MemberMapper {
 	}
 
 	/**
-	 * MemberSaveRequest를 MemberEntity로 변환
+	 * MemberSaveRequest를 MemberEntity로 변환 (Phase 1 수정)
 	 * 주의: 비밀번호 암호화는 Service 레이어에서 처리
 	 */
 	public MemberEntity toEntity(MemberSaveRequest request, String encodedPassword) {
 		return MemberEntity.createMember(
 			request.getMemberEmail(),
 			request.getMemberName(),
-			encodedPassword
+			encodedPassword,
+			request.getDailyCheckEnabled()
 		);
 	}
 }
