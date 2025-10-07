@@ -116,13 +116,4 @@ public class GuardianRequest extends BaseTimeEntity {
 		}
 		this.status = RequestStatus.REJECTED;
 	}
-
-	/**
-	 * 취소 가능 여부 확인
-	 *
-	 * @return PENDING 상태이면 true
-	 */
-	public boolean canBeCancelled() {
-		return this.status == RequestStatus.PENDING;
-	}
 }

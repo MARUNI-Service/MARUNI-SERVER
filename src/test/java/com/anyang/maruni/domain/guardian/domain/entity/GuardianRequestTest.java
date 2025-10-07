@@ -83,47 +83,6 @@ class GuardianRequestTest {
 			.hasMessageContaining("Only PENDING requests can be rejected");
 	}
 
-	@Test
-	@DisplayName("취소 가능 여부 확인 - PENDING 상태이면 true")
-	void canBeCancelled_PendingStatus_ReturnsTrue() {
-		// given
-		GuardianRequest request = createPendingRequest();
-
-		// when
-		boolean canCancel = request.canBeCancelled();
-
-		// then
-		assertThat(canCancel).isTrue();
-	}
-
-	@Test
-	@DisplayName("취소 가능 여부 확인 - ACCEPTED 상태이면 false")
-	void canBeCancelled_AcceptedStatus_ReturnsFalse() {
-		// given
-		GuardianRequest request = createPendingRequest();
-		request.accept();
-
-		// when
-		boolean canCancel = request.canBeCancelled();
-
-		// then
-		assertThat(canCancel).isFalse();
-	}
-
-	@Test
-	@DisplayName("취소 가능 여부 확인 - REJECTED 상태이면 false")
-	void canBeCancelled_RejectedStatus_ReturnsFalse() {
-		// given
-		GuardianRequest request = createPendingRequest();
-		request.reject();
-
-		// when
-		boolean canCancel = request.canBeCancelled();
-
-		// then
-		assertThat(canCancel).isFalse();
-	}
-
 	// ========== Helper Methods ==========
 
 	private MemberEntity createMember(Long id, String email, String name) {
