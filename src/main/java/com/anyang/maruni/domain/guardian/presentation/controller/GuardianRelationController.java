@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.anyang.maruni.domain.guardian.application.dto.GuardianRequestDto;
 import com.anyang.maruni.domain.guardian.application.dto.GuardianRequestResponse;
 import com.anyang.maruni.domain.guardian.application.service.GuardianRelationService;
-import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
+import com.anyang.maruni.domain.member.infrastructure.security.CustomUserDetails;
 import com.anyang.maruni.global.response.annotation.AutoApiResponse;
 import com.anyang.maruni.global.response.annotation.SuccessCodeAnnotation;
 import com.anyang.maruni.global.response.success.SuccessCode;
@@ -61,11 +61,11 @@ public class GuardianRelationController {
 	@PostMapping("/requests")
 	@SuccessCodeAnnotation(SuccessCode.GUARDIAN_REQUEST_CREATED)
 	public GuardianRequestResponse sendRequest(
-		@AuthenticationPrincipal MemberEntity requester,
+		@AuthenticationPrincipal CustomUserDetails userDetails,
 		@Valid @RequestBody GuardianRequestDto request
 	) {
 		return guardianRelationService.sendRequest(
-			requester.getId(),
+			userDetails.getMemberId(),
 			request.getGuardianId(),
 			request.getRelation()
 		);
@@ -86,9 +86,9 @@ public class GuardianRelationController {
 	@GetMapping("/requests")
 	@SuccessCodeAnnotation(SuccessCode.GUARDIAN_REQUESTS_VIEW)
 	public List<GuardianRequestResponse> getReceivedRequests(
-		@AuthenticationPrincipal MemberEntity guardian
+		@AuthenticationPrincipal CustomUserDetails userDetails
 	) {
-		return guardianRelationService.getReceivedRequests(guardian.getId());
+		return guardianRelationService.getReceivedRequests(userDetails.getMemberId());
 	}
 
 	/**
@@ -112,9 +112,9 @@ public class GuardianRelationController {
 	@SuccessCodeAnnotation(SuccessCode.GUARDIAN_REQUEST_ACCEPTED)
 	public void acceptRequest(
 		@PathVariable Long requestId,
-		@AuthenticationPrincipal MemberEntity guardian
+		@AuthenticationPrincipal CustomUserDetails userDetails
 	) {
-		guardianRelationService.acceptRequest(requestId, guardian.getId());
+		guardianRelationService.acceptRequest(requestId, userDetails.getMemberId());
 	}
 
 	/**
@@ -131,8 +131,8 @@ public class GuardianRelationController {
 	@SuccessCodeAnnotation(SuccessCode.GUARDIAN_REQUEST_REJECTED)
 	public void rejectRequest(
 		@PathVariable Long requestId,
-		@AuthenticationPrincipal MemberEntity guardian
+		@AuthenticationPrincipal CustomUserDetails userDetails
 	) {
-		guardianRelationService.rejectRequest(requestId, guardian.getId());
+		guardianRelationService.rejectRequest(requestId, userDetails.getMemberId());
 	}
 }
