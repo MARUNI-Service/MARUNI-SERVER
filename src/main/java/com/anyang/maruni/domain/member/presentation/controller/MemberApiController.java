@@ -33,10 +33,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api/members")
 @RequiredArgsConstructor
 @AutoApiResponse
-@Tag(name = "회원 관리 API", description = "JWT 기반 본인 정보 관리 API")
+@Tag(name = "회원 관리 API", description = "JWT 기반 본인 정보 관리 및 검색 API")
 public class MemberApiController {
 
 	private final MemberService memberService;
