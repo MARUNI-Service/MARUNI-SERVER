@@ -79,6 +79,60 @@ public class MemberService {
 		return !memberRepository.existsByMemberEmail(memberEmail);
 	}
 
+	// ========== 신규 메서드 (Phase 1) ==========
+
+	/**
+	 * 회원 검색 (이메일 기반)
+	 */
+	public MemberResponse searchByEmail(String email) {
+		MemberEntity member = memberRepository.searchByEmail(email)
+			.orElseThrow(() -> new BaseException(ErrorCode.MEMBER_NOT_FOUND));
+
+		return memberMapper.toResponse(member);
+	}
+
+	/**
+	 * 내가 돌보는 사람들 목록 조회
+	 */
+	public List<MemberResponse> getManagedMembers(Long guardianId) {
+		MemberEntity guardian = memberRepository.findById(guardianId)
+			.orElseThrow(() -> memberNotFound());
+
+		List<MemberEntity> managedMembers = memberRepository.findByGuardian(guardian);
+
+		return memberMapper.toResponseList(managedMembers);
+	}
+
+	/**
+	 * 안부 메시지 설정 변경
+	 */
+	@Transactional
+	public MemberResponse updateDailyCheckEnabled(Long memberId, Boolean enabled) {
+		MemberEntity member = memberRepository.findById(memberId)
+			.orElseThrow(() -> memberNotFound());
+
+		member.updateDailyCheckEnabled(enabled);
+		memberRepository.save(member);
+
+		log.info("Daily check enabled updated: memberId={}, enabled={}", memberId, enabled);
+
+		return memberMapper.toResponse(member);
+	}
+
+	/**
+	 * 내 프로필 조회 (역할 정보 포함)
+	 * API 명세서의 GET /members/me 응답 형식
+	 */
+	public MemberResponse getMyProfile(Long memberId) {
+		MemberEntity member = memberRepository.findById(memberId)
+			.orElseThrow(() -> memberNotFound());
+
+		// MemberResponse에 guardian, managedMembers 정보 포함
+		return MemberResponse.fromWithRoles(member);
+	}
+
+	// ========== Private Helper Methods ==========
+
 	private BaseException memberNotFound() {
 		return new BaseException(ErrorCode.MEMBER_NOT_FOUND);
 	}
