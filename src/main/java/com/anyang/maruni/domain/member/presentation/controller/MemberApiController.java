@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.anyang.maruni.domain.guardian.application.service.GuardianRelationService;
 import com.anyang.maruni.domain.member.application.dto.request.MemberUpdateRequest;
 import com.anyang.maruni.domain.member.application.dto.response.MemberResponse;
 import com.anyang.maruni.domain.member.application.service.MemberService;
@@ -38,6 +39,7 @@ import lombok.RequiredArgsConstructor;
 public class MemberApiController {
 
 	private final MemberService memberService;
+	private final GuardianRelationService guardianRelationService;
 
 	// ========== 신규 API (Phase 1) ==========
 
@@ -161,6 +163,24 @@ public class MemberApiController {
 	public void deleteMyAccount(
 			@Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails) {
 		memberService.deleteById(userDetails.getMemberId());
+	}
+
+	// 내 보호자 관계 해제
+	@Operation(
+		summary = "내 보호자 관계 해제",
+		description = "현재 설정된 보호자와의 관계를 해제합니다."
+	)
+	@ApiResponses(value = {
+		@ApiResponse(responseCode = "200", description = "해제 성공"),
+		@ApiResponse(responseCode = "401", description = "인증 실패", content = @Content),
+		@ApiResponse(responseCode = "404", description = "보호자가 설정되어 있지 않음", content = @Content)
+	})
+	@DeleteMapping("/me/guardian")
+	@CustomExceptionDescription(SwaggerResponseDescription.MEMBER_ERROR)
+	@SuccessCodeAnnotation(SuccessCode.GUARDIAN_REMOVED)
+	public void removeMyGuardian(
+			@Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails) {
+		guardianRelationService.removeGuardian(userDetails.getMemberId());
 	}
 
 }
