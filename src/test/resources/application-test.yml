@@ -128,3 +128,30 @@ maruni:
   encryption:
     algorithm: "AES/GCM/NoPadding"
     key: "test_encryption_key_32_bytes_long"
+
+  # AlertRule 설정 (테스트용 - 3일 분석 기간)
+  alert:
+    analysis:
+      default-days: 3  # 테스트에서는 3일만 분석
+    emotion:
+      high-risk-consecutive-days: 3
+      high-risk-negative-ratio: 0.7
+      medium-risk-consecutive-days: 2
+      medium-risk-negative-ratio: 0.5
+    keyword:
+      emergency:
+        - "도와주세요"
+        - "아파요"
+      warning:
+        - "우울해"
+        - "외로워"
+    notification:
+      title-template: "[MARUNI 알림] %s 단계 이상징후 감지"
+      detection-details-json-template: "{\"alertLevel\":\"%s\",\"analysisDetails\":\"%s\"}"
+      notification-failure-log: "Guardian notification failed for member: %d"
+      notification-error-log: "Error sending guardian notification: %s"
+    no-response:
+      high-risk-consecutive-no-response-days: 2
+      high-risk-min-response-rate: 0.3
+      medium-risk-consecutive-no-response-days: 1
+      medium-risk-min-response-rate: 0.5
