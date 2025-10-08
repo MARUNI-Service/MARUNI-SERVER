@@ -26,14 +26,18 @@ import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
+import org.springframework.data.domain.Pageable;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -82,6 +86,9 @@ public class UserJourneyIntegrationTest {
 
 	@MockBean
 	private NotificationService notificationService;
+
+	@PersistenceContext
+	private EntityManager entityManager;
 
 	// 테스트 데이터
 	private MemberEntity soonja;  // 김순자 할머니 (노인)
@@ -403,5 +410,143 @@ public class UserJourneyIntegrationTest {
 		// Then: 관계가 설정되지 않았는지 확인
 		MemberEntity updatedSoonja = memberRepository.findById(soonja.getId()).get();
 		assertThat(updatedSoonja.getGuardian()).isNull();
+	}
+
+	/**
+	 * Journey 4 Phase 6-7: 이상징후 감지 및 Guardian 알림
+	 *
+	 * 시나리오:
+	 * 1. 김순자-김영희 보호자 관계 설정
+	 * 2. 김순자가 3개 NEGATIVE 감정 메시지 생성
+	 * 3. AlertRule 이상징후 감지 트리거
+	 * 4. 김영희(Guardian)에게 알림 발송 검증
+	 * 5. AlertHistory 저장 확인
+	 *
+	 * Phase 3 핵심 통합 테스트 (최소 복잡도)
+	 */
+	@Test
+	@DisplayName("Journey 4 Phase 6-7: 이상징후 감지 및 Guardian 알림 발송")
+	void journey4_phase6to7_alertDetection_guardianNotification() throws Exception {
+		// === Arrange: 김순자-김영희 보호자 관계 설정 ===
+		GuardianRequestDto request = new GuardianRequestDto();
+		request.setGuardianId(younghee.getId());
+		request.setRelation(GuardianRelation.FAMILY);
+
+		String response = mockMvc.perform(post("/api/guardians/requests")
+				.header("Authorization", "Bearer " + soonjaToken)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(request)))
+			.andReturn().getResponse().getContentAsString();
+
+		Long requestId = objectMapper.readTree(response).get("data").get("id").asLong();
+
+		mockMvc.perform(post("/api/guardians/requests/{requestId}/accept", requestId)
+				.header("Authorization", "Bearer " + youngheeToken))
+			.andExpect(status().isOk())
+			.andDo(print());
+
+		// === Act 1: 3일 연속 NEGATIVE 감정 메시지 생성 ===
+		// Day 1: 3일 전
+		createMessageWithEmotion(soonja.getId(), "외로워요", EmotionType.NEGATIVE,
+			LocalDateTime.now().minusDays(2));
+
+		// Day 2: 2일 전
+		createMessageWithEmotion(soonja.getId(), "아무도 안 찾아와요", EmotionType.NEGATIVE,
+			LocalDateTime.now().minusDays(1));
+
+		// Day 3: 오늘
+		createMessageWithEmotion(soonja.getId(), "혼자 있으니 우울해요", EmotionType.NEGATIVE,
+			LocalDateTime.now());
+
+		// === 디버깅: 저장된 메시지 확인 ===
+		var messages = entityManager.createQuery(
+			"SELECT m FROM MessageEntity m WHERE m.conversationId IN " +
+			"(SELECT c.id FROM ConversationEntity c WHERE c.memberId = :memberId) " +
+			"ORDER BY m.createdAt DESC",
+			MessageEntity.class
+		)
+		.setParameter("memberId", soonja.getId())
+		.getResultList();
+
+		System.out.println("=== Saved Messages ===");
+		messages.forEach(m -> {
+			System.out.println("ID: " + m.getId() + ", Type: " + m.getType() +
+				", Emotion: " + m.getEmotion() + ", CreatedAt: " + m.getCreatedAt() +
+				", Content: " + m.getContent());
+		});
+
+		// === Act 2: NotificationService Mock 초기화 및 AlertRule 감지 트리거 ===
+		reset(notificationService);
+		var results = alertRuleService.detectAnomalies(soonja.getId());
+
+		System.out.println("=== Detection Results ===");
+		System.out.println("Results count: " + results.size());
+		results.forEach(r -> {
+			System.out.println("Type: " + r.getAlertType() + ", Detected: " + r.isDetected() +
+				", Level: " + r.getAlertLevel() + ", Message: " + r.getMessage());
+		});
+
+		// === Assert 1: Guardian 알림 발송 검증 ===
+		verify(notificationService, times(1)).sendPushNotification(
+			eq(younghee.getId()),
+			anyString(),
+			anyString()
+		);
+
+		// === Assert 2: AlertHistory 저장 확인 ===
+		var alertHistory = alertHistoryRepository.findByMemberIdOrderByCreatedAtDesc(
+			soonja.getId(), Pageable.unpaged()
+		);
+		assertThat(alertHistory.getContent()).isNotEmpty();
+		assertThat(alertHistory.getContent().get(0).getAlertLevel())
+			.isIn(AlertLevel.LOW, AlertLevel.MEDIUM, AlertLevel.HIGH);
+	}
+
+	// ========== Helper Methods ==========
+
+	/**
+	 * Helper: 특정 날짜의 NEGATIVE 감정 메시지 생성
+	 *
+	 * ConversationEntity와 MessageEntity를 생성하여 저장합니다.
+	 *
+	 * 근본 해결책: EmotionPatternAnalyzer는 "연속된 일수"를 체크하므로
+	 * 서로 다른 날짜에 메시지를 생성해야 함
+	 *
+	 * JPA Auditing 우회:
+	 * 1. 먼저 엔티티를 저장 (JPA Auditing이 createdAt 설정)
+	 * 2. flush로 DB에 반영
+	 * 3. Reflection으로 createdAt 변경
+	 * 4. native query로 직접 UPDATE
+	 *
+	 * @param memberId 회원 ID
+	 * @param content 메시지 내용
+	 * @param emotion 감정 타입
+	 * @param createdAt 메시지 생성 시간 (날짜 조작용)
+	 */
+	private void createMessageWithEmotion(Long memberId, String content, EmotionType emotion, LocalDateTime createdAt) {
+		// 최근 대화 조회 또는 새로 생성
+		ConversationEntity conversation = conversationRepository
+			.findTopByMemberIdOrderByCreatedAtDesc(memberId)
+			.orElseGet(() -> conversationRepository.save(
+				ConversationEntity.createNew(memberId)
+			));
+
+		// 메시지 추가 (ConversationEntity가 알아서 처리)
+		MessageEntity message = conversation.addUserMessage(content, emotion);
+
+		// 먼저 저장 (JPA Auditing 적용)
+		conversationRepository.save(conversation);
+		entityManager.flush();
+
+		// Native Query로 createdAt 직접 UPDATE (JPA Auditing 우회)
+		entityManager.createNativeQuery(
+			"UPDATE messages SET created_at = :createdAt WHERE id = :messageId"
+		)
+		.setParameter("createdAt", createdAt)
+		.setParameter("messageId", message.getId())
+		.executeUpdate();
+
+		entityManager.flush();
+		entityManager.clear();
 	}
 }
