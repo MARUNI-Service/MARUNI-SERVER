@@ -45,4 +45,19 @@ public interface MessageRepository extends JpaRepository<MessageEntity, Long> {
             @Param("memberId") Long memberId,
             @Param("messageType") MessageType messageType,
             @Param("startDate") LocalDateTime startDate);
+
+    /**
+     * 특정 회원의 대화 내역 조회 (보호자용)
+     *
+     * @param memberId 회원 ID
+     * @param startDate 조회 시작 날짜
+     * @return 회원의 대화 메시지 목록 (시간순)
+     */
+    @Query("SELECT m FROM MessageEntity m " +
+           "WHERE m.conversationId IN (SELECT c.id FROM ConversationEntity c WHERE c.memberId = :memberId) " +
+           "AND m.createdAt >= :startDate " +
+           "ORDER BY m.createdAt ASC")
+    List<MessageEntity> findConversationHistoryByMemberId(
+            @Param("memberId") Long memberId,
+            @Param("startDate") LocalDateTime startDate);
 }

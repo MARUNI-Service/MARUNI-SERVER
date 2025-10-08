@@ -38,6 +38,7 @@ public enum ErrorCode implements ErrorType {
 	GUARDIAN_REQUEST_NOT_FOUND("GR404", "보호자 요청을 찾을 수 없습니다", HttpStatus.NOT_FOUND.value()),
 	GUARDIAN_REQUEST_ALREADY_PROCESSED("GR400", "이미 처리된 요청입니다", HttpStatus.BAD_REQUEST.value()),
 	GUARDIAN_REQUEST_DUPLICATE("GR409", "이미 대기 중인 요청이 있습니다", HttpStatus.CONFLICT.value()),
+	GUARDIAN_ACCESS_DENIED("GR403", "보호자 권한이 없습니다", HttpStatus.FORBIDDEN.value()),
 
 	// ============ Conversation Domain ============
 	CONVERSATION_NOT_FOUND("C404", "대화를 찾을 수 없습니다", HttpStatus.NOT_FOUND.value()),

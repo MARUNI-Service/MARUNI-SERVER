@@ -1,14 +1,22 @@
 package com.anyang.maruni.domain.conversation.application.service;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.anyang.maruni.domain.conversation.application.dto.MessageDto;
 import com.anyang.maruni.domain.conversation.application.dto.MessageExchangeResult;
 import com.anyang.maruni.domain.conversation.application.dto.response.ConversationResponseDto;
 import com.anyang.maruni.domain.conversation.application.mapper.ConversationMapper;
 import com.anyang.maruni.domain.conversation.domain.entity.ConversationEntity;
 import com.anyang.maruni.domain.conversation.domain.entity.MessageEntity;
 import com.anyang.maruni.domain.conversation.domain.repository.MessageRepository;
+import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
+import com.anyang.maruni.domain.member.domain.repository.MemberRepository;
+import com.anyang.maruni.global.exception.BaseException;
+import com.anyang.maruni.global.response.error.ErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +37,7 @@ public class SimpleConversationService {
     private final MessageProcessor messageProcessor;
     private final ConversationMapper mapper;
     private final MessageRepository messageRepository;
+    private final MemberRepository memberRepository;
 
     /**
      * 사용자 메시지 처리 및 AI 응답 생성 (간소화됨)
@@ -64,5 +73,28 @@ public class SimpleConversationService {
         messageRepository.save(systemMessageEntity);
 
         log.debug("System message saved as AI message for conversation {}", conversation.getId());
+    }
+
+    /**
+     * 내 대화 전체보기
+     *
+     * 본인의 대화 내역을 조회합니다.
+     *
+     * @param memberId 회원 ID
+     * @param days 조회 기간 (최근 N일)
+     * @return 메시지 목록
+     */
+    public List<MessageDto> getMyConversationHistory(Long memberId, int days) {
+        log.info("Getting conversation history for member {} (days: {})", memberId, days);
+
+        // 최근 N일간 메시지 조회
+        LocalDateTime startDate = LocalDateTime.now().minusDays(days);
+        List<MessageEntity> messages = messageRepository.findConversationHistoryByMemberId(
+            memberId, startDate);
+
+        // DTO 변환
+        return messages.stream()
+            .map(MessageDto::from)
+            .toList();
     }
 }

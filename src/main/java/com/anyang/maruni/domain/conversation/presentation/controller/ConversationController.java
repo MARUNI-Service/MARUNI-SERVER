@@ -1,11 +1,17 @@
 package com.anyang.maruni.domain.conversation.presentation.controller;
 
+import java.util.List;
+
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.anyang.maruni.domain.conversation.application.dto.MessageDto;
 import com.anyang.maruni.domain.conversation.application.dto.request.ConversationRequestDto;
 import com.anyang.maruni.domain.conversation.application.dto.response.ConversationResponseDto;
 import com.anyang.maruni.domain.conversation.application.service.SimpleConversationService;
@@ -66,5 +72,31 @@ public class ConversationController {
             @Valid @RequestBody ConversationRequestDto request) {
 
         return conversationService.processUserMessage(userDetails.getMemberId(), request.getContent());
+    }
+
+    /**
+     * 내 대화 전체보기
+     *
+     * @param days 조회 기간 (기본값: 7일)
+     * @param userDetails 인증된 사용자 정보
+     * @return 메시지 목록
+     */
+    @GetMapping("/history")
+    @Operation(
+        summary = "내 대화 전체보기",
+        description = "본인의 대화 내역을 조회합니다. 최근 N일간의 메시지를 시간순으로 반환합니다."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "조회 성공"),
+        @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content)
+    })
+    @CustomExceptionDescription(SwaggerResponseDescription.CONVERSATION_ERROR)
+    @SuccessCodeAnnotation(SuccessCode.SUCCESS)
+    public List<MessageDto> getMyConversationHistory(
+            @Parameter(description = "조회 기간 (일)", example = "7")
+            @RequestParam(defaultValue = "7") int days,
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        return conversationService.getMyConversationHistory(userDetails.getMemberId(), days);
     }
 }

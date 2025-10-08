@@ -1,17 +1,18 @@
 package com.anyang.maruni.domain.member.application.dto.response;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import com.anyang.maruni.domain.guardian.domain.entity.GuardianRelation;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Getter
 @ToString
@@ -29,8 +30,6 @@ public class MemberResponse {
 
 	@Schema(description = "회원 이메일", example = "hong@example.com")
 	private String memberEmail;
-
-	// ========== 신규 필드 (Phase 1) ==========
 
 	@Schema(description = "안부 메시지 수신 여부", example = "true")
 	private Boolean dailyCheckEnabled;
