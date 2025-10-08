@@ -711,7 +711,7 @@ if (guardian != null) {
 **사용자 행동**: 알림 클릭
 
 **API 요구사항**:
-- `GET /api/alerts/{alertId}` (알림 상세 조회)
+- `GET /api/alert-rules/history/{alertId}` (알림 상세 조회) ✅ 구현 완료
 
 ---
 
@@ -742,7 +742,9 @@ if (guardian != null) {
 **결과**: 김순자 할머니에게 전화 연결
 
 **API 요구사항**:
-- `GET /api/conversations/{memberId}/history` (대화 전체 보기)
+- `GET /api/conversations/history?days=7` (내 대화 전체보기) ✅ 구현 완료
+  - JWT 인증으로 본인의 대화만 조회
+  - 기본값: 최근 7일
 
 ---
 
