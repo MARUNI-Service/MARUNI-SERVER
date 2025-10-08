@@ -7,11 +7,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.anyang.maruni.domain.alertrule.application.analyzer.vo.AlertResult;
+import com.anyang.maruni.domain.alertrule.application.dto.response.AlertHistoryResponseDto;
 import com.anyang.maruni.domain.alertrule.application.service.util.AlertServiceUtils;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertHistory;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertRule;
 import com.anyang.maruni.domain.alertrule.domain.repository.AlertHistoryRepository;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
+import com.anyang.maruni.global.exception.BaseException;
+import com.anyang.maruni.global.response.error.ErrorCode;
 
 import lombok.RequiredArgsConstructor;
 
@@ -65,6 +68,28 @@ public class AlertHistoryService {
         LocalDateTime startDate = LocalDateTime.now().minusDays(days);
         LocalDateTime endDate = LocalDateTime.now();
         return alertHistoryRepository.findByMemberIdAndDateRange(memberId, startDate, endDate);
+    }
+
+    /**
+     * 알림 이력 상세 조회
+     *
+     * @param alertId 알림 이력 ID
+     * @param memberId 조회하는 회원 ID (본인 확인용)
+     * @return 알림 이력 상세 정보
+     * @throws BaseException ALERT_RULE_NOT_FOUND, ALERT_RULE_ACCESS_DENIED
+     */
+    public AlertHistoryResponseDto getAlertDetail(Long alertId, Long memberId) {
+        // 1. 알림 이력 조회
+        AlertHistory alertHistory = alertHistoryRepository.findById(alertId)
+            .orElseThrow(() -> new BaseException(ErrorCode.ALERT_RULE_NOT_FOUND));
+
+        // 2. 본인 확인 (본인의 알림만 조회 가능)
+        if (!alertHistory.getMember().getId().equals(memberId)) {
+            throw new BaseException(ErrorCode.ALERT_RULE_ACCESS_DENIED);
+        }
+
+        // 3. DTO 변환
+        return AlertHistoryResponseDto.from(alertHistory);
     }
 
     // ========== Private 메서드들 (Phase 2에서 구현) ==========

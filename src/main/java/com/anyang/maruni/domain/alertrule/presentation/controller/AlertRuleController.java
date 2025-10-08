@@ -50,6 +50,7 @@ import lombok.RequiredArgsConstructor;
 public class AlertRuleController {
 
     private final AlertRuleService alertRuleService;
+    private final com.anyang.maruni.domain.alertrule.application.service.core.AlertHistoryService alertHistoryService;
 
     @Operation(
         summary = "알림 규칙 생성",
@@ -226,6 +227,26 @@ public class AlertRuleController {
                 .stream()
                 .map(AlertHistoryResponseDto::from)
                 .collect(Collectors.toList());
+    }
+
+    @Operation(
+        summary = "알림 상세 조회",
+        description = "특정 알림 이력의 상세 정보를 조회합니다."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "알림 상세 조회 성공"),
+        @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content),
+        @ApiResponse(responseCode = "403", description = "접근 권한 없음", content = @Content),
+        @ApiResponse(responseCode = "404", description = "알림을 찾을 수 없음", content = @Content)
+    })
+    @GetMapping("/history/{alertId}")
+    @CustomExceptionDescription(SwaggerResponseDescription.COMMON_ERROR)
+    @SuccessCodeAnnotation(SuccessCode.SUCCESS)
+    public AlertHistoryResponseDto getAlertDetail(
+            @PathVariable Long alertId,
+            @Parameter(hidden = true) @AuthenticationPrincipal MemberEntity member) {
+
+        return alertHistoryService.getAlertDetail(alertId, member.getId());
     }
 
     @Operation(
