@@ -20,6 +20,7 @@ import com.anyang.maruni.domain.alertrule.application.dto.request.AlertRuleUpdat
 import com.anyang.maruni.domain.alertrule.application.dto.response.AlertDetectionResultDto;
 import com.anyang.maruni.domain.alertrule.application.dto.response.AlertHistoryResponseDto;
 import com.anyang.maruni.domain.alertrule.application.dto.response.AlertRuleResponseDto;
+import com.anyang.maruni.domain.alertrule.application.service.core.AlertHistoryService;
 import com.anyang.maruni.domain.alertrule.application.service.core.AlertRuleService;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertCondition;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertRule;
@@ -50,7 +51,7 @@ import lombok.RequiredArgsConstructor;
 public class AlertRuleController {
 
     private final AlertRuleService alertRuleService;
-    private final com.anyang.maruni.domain.alertrule.application.service.core.AlertHistoryService alertHistoryService;
+    private final AlertHistoryService alertHistoryService;
 
     @Operation(
         summary = "알림 규칙 생성",

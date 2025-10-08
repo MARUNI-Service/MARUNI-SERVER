@@ -91,25 +91,4 @@ public class AlertHistoryService {
         // 3. DTO 변환
         return AlertHistoryResponseDto.from(alertHistory);
     }
-
-    // ========== Private 메서드들 (Phase 2에서 구현) ==========
-
-    /**
-     * MVP용 AlertHistory 생성 (AlertRule 없이)
-     */
-    private AlertHistory createAlertHistoryForMVP(MemberEntity member, AlertResult alertResult) {
-        // 알림 결과를 JSON 형태로 저장할 상세 정보 구성
-        String detectionDetails = alertServiceUtils.createDetectionDetailsJson(alertResult);
-
-        // AlertHistory 빌더를 사용하여 직접 생성 (MVP용)
-        return AlertHistory.builder()
-                .alertRule(null) // MVP에서는 AlertRule 없이 생성
-                .member(member)
-                .alertLevel(alertResult.getAlertLevel())
-                .alertMessage(alertResult.getMessage())
-                .detectionDetails(detectionDetails)
-                .alertDate(LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0))
-                .isNotificationSent(false)
-                .build();
-    }
 }

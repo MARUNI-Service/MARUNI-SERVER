@@ -13,10 +13,7 @@ import com.anyang.maruni.domain.conversation.application.mapper.ConversationMapp
 import com.anyang.maruni.domain.conversation.domain.entity.ConversationEntity;
 import com.anyang.maruni.domain.conversation.domain.entity.MessageEntity;
 import com.anyang.maruni.domain.conversation.domain.repository.MessageRepository;
-import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
 import com.anyang.maruni.domain.member.domain.repository.MemberRepository;
-import com.anyang.maruni.global.exception.BaseException;
-import com.anyang.maruni.global.response.error.ErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

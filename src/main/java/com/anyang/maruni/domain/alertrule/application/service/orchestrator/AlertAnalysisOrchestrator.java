@@ -7,9 +7,9 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.anyang.maruni.domain.alertrule.application.analyzer.strategy.AnomalyAnalyzer;
 import com.anyang.maruni.domain.alertrule.application.analyzer.vo.AlertResult;
 import com.anyang.maruni.domain.alertrule.application.analyzer.vo.AnalysisContext;
-import com.anyang.maruni.domain.alertrule.application.analyzer.strategy.AnomalyAnalyzer;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertType;
 import com.anyang.maruni.domain.alertrule.domain.exception.UnsupportedAlertTypeException;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
@@ -77,48 +77,6 @@ public class AlertAnalysisOrchestrator {
     }
 
     /**
-     * 모든 등록된 분석기로 종합 분석을 수행합니다.
-     * 각 분석기별로 결과를 수집하여 반환합니다.
-     *
-     * @param member 분석 대상 회원
-     * @param contextMap 알림 타입별 분석 컨텍스트 맵
-     * @return 알림 타입별 분석 결과 맵
-     */
-    public Map<AlertType, AlertResult> analyzeAll(MemberEntity member, Map<AlertType, AnalysisContext> contextMap) {
-        return analyzers.entrySet().stream()
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        entry -> {
-                            AlertType alertType = entry.getKey();
-                            AnomalyAnalyzer analyzer = entry.getValue();
-                            AnalysisContext context = contextMap.get(alertType);
-
-                            if (context == null) {
-                                log.warn("No context provided for alert type: {}. Skipping analysis.", alertType);
-                                return AlertResult.noAlert();
-                            }
-
-                            try {
-                                return analyzer.analyze(member, context);
-                            } catch (Exception e) {
-                                log.error("Error analyzing for type: {} with analyzer: {}",
-                                        alertType, analyzer.getClass().getSimpleName(), e);
-                                return AlertResult.noAlert();
-                            }
-                        }
-                ));
-    }
-
-    /**
-     * 지원되는 알림 타입 목록을 반환합니다.
-     *
-     * @return 지원되는 AlertType 목록
-     */
-    public List<AlertType> getSupportedTypes() {
-        return List.copyOf(analyzers.keySet());
-    }
-
-    /**
      * 특정 알림 타입이 지원되는지 확인합니다.
      *
      * @param alertType 확인할 알림 타입
@@ -126,14 +84,5 @@ public class AlertAnalysisOrchestrator {
      */
     public boolean isSupported(AlertType alertType) {
         return analyzers.containsKey(alertType);
-    }
-
-    /**
-     * 등록된 분석기 개수를 반환합니다.
-     *
-     * @return 분석기 개수
-     */
-    public int getAnalyzerCount() {
-        return analyzers.size();
     }
 }
