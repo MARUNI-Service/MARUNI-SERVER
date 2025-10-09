@@ -1,106 +1,183 @@
-# MARUNI 기술 규격서
+# 기술 규격서
 
-**프로젝트 전반의 기술 표준 및 개발 컨벤션 통합 가이드**
+**MARUNI 프로젝트 기술 문서 통합 가이드**
 
----
+## 📚 문서 구조 (7개 문서)
 
-## 📝 기술 규격 문서 구조
+### ⭐⭐⭐ 일상 참조 (매일 확인)
+| 문서 | 용도 |
+|------|------|
+| **[coding-standards](./coding-standards.md)** | 코딩 컨벤션 + 전체 템플릿 (Entity, Service, Controller, DTO, Test) |
 
-### **📂 `specifications/` 폴더 (9개 문서)**
+### ⭐⭐ 기능 개발 시
+| 문서 | 용도 |
+|------|------|
+| **[api-design-guide](./api-design-guide.md)** | REST API 설계, Swagger 문서화, Controller 패턴 |
 
-1. **[coding-standards.md](coding-standards.md)** ⭐⭐⭐ **(매일 참조)**
-   - Java 코딩 컨벤션 및 네이밍 규칙
-   - Entity/Service/Controller/DTO 표준 패턴
-   - Import 순서 및 어노테이션 순서
+### ⭐ 특정 작업 시
+| 문서 | 용도 |
+|------|------|
+| **[database-design-guide](./database-design-guide.md)** | JPA Entity 설계, 인덱스, 복합키, JPA 설정 |
+| **[testing-guide](./testing-guide.md)** | TDD Red-Green-Blue 사이클, 테스트 패턴 |
 
-2. **[architecture-guide.md](architecture-guide.md)** ⭐⭐ **(새 기능 개발)**
-   - DDD 계층 구조 및 의존성 규칙
-   - 도메인 간 상호작용 패턴
-   - Package 구조 및 조직화 표준
-
-3. **[api-design-guide.md](api-design-guide.md)** ⭐⭐ **(API 개발)**
-   - REST API 설계 원칙
-   - Controller 구현 표준
-   - 응답 래핑 및 예외 처리
-
-4. **[database-design-guide.md](database-design-guide.md)** ⭐ **(Entity 작업)**
-   - Entity 설계 원칙 (BaseTimeEntity 상속)
-   - JPA 관계 매핑 패턴
-   - Repository 쿼리 작성법
-
-5. **[testing-guide.md](testing-guide.md)** ⭐ **(테스트 작성)**
-   - TDD Red-Green-Blue 사이클
-   - 테스트 구조 및 명명 규칙
-   - Mock 활용 패턴
-
-6. **[security-guide.md](security-guide.md)** 🔒 **(보안 설정)**
-   - JWT 인증 시스템 구현
-   - Spring Security 설정
-   - 데이터 암호화 및 보안 모범사례
-
-7. **[performance-guide.md](performance-guide.md)** ⚡ **(성능 최적화)**
-   - JPA N+1 쿼리 해결
-   - 캐싱 전략
-   - 데이터베이스 인덱스 설계
-
-8. **[tech-stack.md](tech-stack.md)** 🛠️ **(기술 스택 정보)**
-   - 전체 기술 스택 및 버전 정보
-   - 환경 설정 및 Docker 구성
-   - 개발 환경 설정
-
-9. **[quick-reference.md](quick-reference.md)** 🚀 **(빠른 참조)**
-   - 자주 사용하는 템플릿 모음
-   - 체크리스트 및 어노테이션 모음
-   - 트러블슈팅 가이드
+### 🔒 시스템 설정
+| 문서 | 용도 |
+|------|------|
+| **[security-guide](./security-guide.md)** | JWT Stateless 인증 구현 |
+| **[performance-guide](./performance-guide.md)** | JPA 성능 최적화 (N+1, 캐시) |
+| **[tech-stack](./tech-stack.md)** | 전체 기술 스택, 환경 변수, Docker 설정 |
 
 ---
 
-## 🎯 문서 활용 가이드
+## 📖 DDD 아키텍처 (핵심 개념)
 
-### **일반적인 개발 흐름에 따른 문서 순서:**
-
+### 계층 구조
 ```
-1. 새 기능 개발 시작
-   └─ architecture-guide.md (도메인 구조 설계)
-
-2. Entity 설계
-   └─ database-design-guide.md (엔티티 패턴)
-
-3. Service/Controller 구현
-   └─ coding-standards.md (코딩 컨벤션)
-   └─ api-design-guide.md (API 설계)
-
-4. 테스트 작성
-   └─ testing-guide.md (TDD 사이클)
-
-5. 보안/성능 검토
-   └─ security-guide.md (보안 점검)
-   └─ performance-guide.md (최적화)
-
-6. 막혔을 때
-   └─ quick-reference.md (템플릿/트러블슈팅)
+Presentation Layer (Controller)
+    ↓
+Application Layer (Service, DTO)
+    ↓
+Domain Layer (Entity, Repository 인터페이스)
+    ↓
+Infrastructure Layer (외부 연동: OpenAI, Firebase)
 ```
 
-### **자주 참조하는 문서 (우선순위)**
+### 계층별 역할
+- **Presentation**: REST API 엔드포인트, 요청/응답 검증
+- **Application**: 비즈니스 로직, @Transactional 관리
+- **Domain**: 핵심 비즈니스 규칙, Entity, Repository 인터페이스
+- **Infrastructure**: 외부 시스템 연동 (OpenAI, Firebase, JWT)
 
-- ⭐⭐⭐ **`coding-standards.md`** - 매일 개발 시 참조
-- ⭐⭐⭐ **`quick-reference.md`** - 빠른 템플릿 참조
-- ⭐⭐ **`architecture-guide.md`** - 새 도메인 개발 시
-- ⭐⭐ **`api-design-guide.md`** - Controller 작성 시
-- ⭐ **`database-design-guide.md`** - Entity 설계 시
-- ⭐ **`testing-guide.md`** - 테스트 작성 시
-
----
-
-## 🔄 문서 업데이트 정책
-
-- **실제 코드 변경 시**: 해당 문서도 함께 업데이트
-- **새 패턴 발견 시**: 관련 문서에 추가
-- **버전 업데이트**: 각 문서 하단의 Version 정보 갱신
-- **문서 충돌 시**: 실제 코드를 기준으로 문서 수정
+### 의존 방향
+- ✅ **Presentation → Application → Domain** (상위 → 하위)
+- ✅ **Infrastructure → Domain** (인터페이스 구현)
+- ❌ **Domain → Application** (금지)
+- ❌ **Domain → Infrastructure** (금지)
 
 ---
 
-**📍 이 폴더의 9개 문서가 MARUNI 프로젝트의 모든 기술 표준을 정의합니다.**
+## 🎯 작업 시나리오별 가이드
 
-**Version**: v2.0.0 | **Updated**: 2025-09-16
+### 1. 새 도메인 추가
+```
+1. coding-standards.md → 전체 템플릿 복사
+2. database-design-guide.md → Entity 설계 패턴 확인
+3. api-design-guide.md → REST API 설계
+4. testing-guide.md → TDD 사이클 적용
+5. docs/domains/{domain}.md → 도메인 가이드 작성
+```
+
+### 2. 기존 기능 확장
+```
+1. docs/domains/{해당도메인}.md → 기존 구현 파악
+2. coding-standards.md → 템플릿 참조
+3. testing-guide.md → 테스트 추가
+```
+
+### 3. 성능 문제 해결
+```
+1. performance-guide.md → N+1 쿼리, Fetch 전략 확인
+2. database-design-guide.md → 인덱스 최적화
+```
+
+### 4. 보안 설정 변경
+```
+1. security-guide.md → JWT 인증 시스템 이해
+2. docs/domains/auth.md → 인증 도메인 구현 확인
+```
+
+---
+
+## 📊 문서별 핵심 내용
+
+### coding-standards.md (필수 ⭐⭐⭐)
+- 패키지 구조 및 네이밍 규칙
+- **전체 템플릿** (Entity, Repository, Service, Controller, DTO, Test)
+- BaseException 예외 처리
+- 자주 쓰는 쿼리 패턴
+- 필수/금지 어노테이션
+
+### api-design-guide.md
+- RESTful API 설계 원칙 (URL, HTTP 메서드, 상태 코드)
+- CommonApiResponse 표준 구조
+- Swagger 문서화 방법
+- JWT 인증 헤더 사용법
+- Bean Validation
+
+### database-design-guide.md
+- BaseTimeEntity 상속 패턴
+- 정적 팩토리 메서드
+- 연관관계 매핑 (@ManyToOne, Enum)
+- 인덱스 및 복합키 설계
+
+### testing-guide.md
+- TDD Red-Green-Blue 사이클
+- Unit/Integration/Controller 테스트 패턴
+- AssertJ 사용법
+- Mock 사용 패턴 (given-when-then)
+
+### security-guide.md
+- JWT Stateless 인증 시스템
+- Access Token Only (1시간 유효)
+- 주요 컴포넌트 (JWTUtil, Filter, SecurityConfig)
+- 로그인/API 요청/로그아웃 플로우
+
+### performance-guide.md
+- N+1 쿼리 문제 방지 (Fetch Join)
+- @Transactional(readOnly = true) 사용
+- Batch Size 설정
+- DTO Projection 및 Bulk 연산
+
+### tech-stack.md
+- 전체 기술 스택 (Spring Boot 3.5.x, Java 21, PostgreSQL)
+- 핵심 의존성 (Spring AI, JWT, Firebase)
+- 환경 변수 (.env)
+- Docker 설정 및 개발 명령어
+
+---
+
+## 🔄 문서 업데이트 원칙
+
+### 업데이트 시점
+```
+✅ 새 도메인 추가: coding-standards.md 업데이트
+✅ 새 환경변수 추가: tech-stack.md 업데이트
+✅ 새 개발 패턴 발견: coding-standards.md 업데이트
+✅ 새 문제 해결법: performance-guide.md, security-guide.md 업데이트
+```
+
+### 업데이트 금지
+```
+❌ 완성된 시스템 구조 임의 변경
+❌ 기존 패턴 무시한 새로운 방식 추가
+❌ 실제 코드와 일치하지 않는 예시
+```
+
+---
+
+## 🎓 학습 순서 (신규 개발자)
+
+### 1단계: 프로젝트 이해
+```
+1. docs/README.md → 전체 프로젝트 개요
+2. tech-stack.md → 기술 스택 확인
+3. DDD 아키텍처 (이 문서 위 섹션) → 계층 구조 이해
+```
+
+### 2단계: 개발 준비
+```
+1. coding-standards.md → 코딩 컨벤션 + 템플릿 숙지
+2. docs/domains/README.md → 도메인 구조 파악
+3. api-design-guide.md → API 패턴 학습
+```
+
+### 3단계: 실습
+```
+1. 간단한 CRUD API 구현 (coding-standards.md 템플릿 사용)
+2. TDD 사이클 적용 (testing-guide.md)
+3. 실제 도메인 가이드 참조 (docs/domains/{domain}.md)
+```
+
+---
+
+**프로젝트 전체 개요: `docs/README.md` 참조**
