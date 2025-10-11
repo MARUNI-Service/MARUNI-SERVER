@@ -122,7 +122,8 @@ Content-Type: application/json
 {
   "memberEmail": "elderly@test.com",
   "memberName": "김순자",
-  "memberPassword": "password123"
+  "memberPassword": "password123",
+  "dailyCheckEnabled": true
 }
 ```
 
