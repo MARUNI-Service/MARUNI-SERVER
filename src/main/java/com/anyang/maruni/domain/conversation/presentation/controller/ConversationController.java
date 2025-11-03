@@ -99,4 +99,27 @@ public class ConversationController {
 
         return conversationService.getMyConversationHistory(userDetails.getMemberId(), days);
     }
+
+    /**
+     * 최신 메시지 조회
+     *
+     * @param userDetails 인증된 사용자 정보
+     * @return 최신 메시지 (없으면 null)
+     */
+    @GetMapping("/messages/latest")
+    @Operation(
+        summary = "최신 메시지 조회",
+        description = "본인의 가장 최신 메시지 1개를 조회합니다. 메시지가 없으면 data: null을 반환합니다."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "조회 성공"),
+        @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content)
+    })
+    @CustomExceptionDescription(SwaggerResponseDescription.CONVERSATION_ERROR)
+    @SuccessCodeAnnotation(SuccessCode.SUCCESS)
+    public MessageDto getLatestMessage(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        return conversationService.getLatestMessage(userDetails.getMemberId());
+    }
 }

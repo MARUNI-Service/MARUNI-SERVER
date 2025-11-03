@@ -60,4 +60,15 @@ public interface MessageRepository extends JpaRepository<MessageEntity, Long> {
     List<MessageEntity> findConversationHistoryByMemberId(
             @Param("memberId") Long memberId,
             @Param("startDate") LocalDateTime startDate);
+
+    /**
+     * 특정 회원의 최신 메시지 1개 조회
+     *
+     * @param memberId 회원 ID
+     * @return 최신 메시지 (없으면 null)
+     */
+    @Query("SELECT m FROM MessageEntity m " +
+           "WHERE m.conversationId IN (SELECT c.id FROM ConversationEntity c WHERE c.memberId = :memberId) " +
+           "ORDER BY m.createdAt DESC LIMIT 1")
+    MessageEntity findLatestMessageByMemberId(@Param("memberId") Long memberId);
 }

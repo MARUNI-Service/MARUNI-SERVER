@@ -94,4 +94,25 @@ public class SimpleConversationService {
             .map(MessageDto::from)
             .toList();
     }
+
+    /**
+     * 최신 메시지 조회
+     *
+     * 본인의 가장 최신 메시지 1개를 조회합니다.
+     *
+     * @param memberId 회원 ID
+     * @return 최신 메시지 (없으면 null)
+     */
+    public MessageDto getLatestMessage(Long memberId) {
+        log.info("Getting latest message for member {}", memberId);
+
+        MessageEntity latestMessage = messageRepository.findLatestMessageByMemberId(memberId);
+
+        if (latestMessage == null) {
+            log.debug("No messages found for member {}", memberId);
+            return null;
+        }
+
+        return MessageDto.from(latestMessage);
+    }
 }
