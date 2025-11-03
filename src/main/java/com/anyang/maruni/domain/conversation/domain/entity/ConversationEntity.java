@@ -166,14 +166,17 @@ public class ConversationEntity extends BaseTimeEntity {
 
     /**
      * 메시지 추가 가능 여부 검증
+     *
+     * MVP 데모용: 활성/비활성 및 일일 한도 검증 비활성화
      */
     private void validateCanAddMessage() {
-        if (!isActive()) {
-            throw MessageLimitExceededException.inactiveConversation();
-        }
-        if (getDailyMessageCount() >= MAX_DAILY_MESSAGES) {
-            throw MessageLimitExceededException.dailyLimitExceeded();
-        }
+        // MVP 데모를 위해 검증 로직 주석 처리
+        // if (!isActive()) {
+        //     throw MessageLimitExceededException.inactiveConversation();
+        // }
+        // if (getDailyMessageCount() >= MAX_DAILY_MESSAGES) {
+        //     throw MessageLimitExceededException.dailyLimitExceeded();
+        // }
     }
 
     /**
