@@ -72,7 +72,6 @@ class AlertNotificationServiceTest {
 			.memberName("테스트보호자")
 			.memberEmail("guardian@example.com")
 			.memberPassword("password123")
-			.pushToken("guardian_push_token")
 			.build();
 
 		testMember = MemberEntity.builder()

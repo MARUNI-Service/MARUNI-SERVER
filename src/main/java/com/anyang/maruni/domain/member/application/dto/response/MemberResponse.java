@@ -34,9 +34,6 @@ public class MemberResponse {
 	@Schema(description = "안부 메시지 수신 여부", example = "true")
 	private Boolean dailyCheckEnabled;
 
-	@Schema(description = "푸시 토큰 등록 여부", example = "true")
-	private Boolean hasPushToken;
-
 	@Schema(description = "보호자 정보 (없으면 null)")
 	private GuardianInfo guardian;
 
@@ -106,7 +103,6 @@ public class MemberResponse {
 			.memberName(entity.getMemberName())
 			.memberEmail(entity.getMemberEmail())
 			.dailyCheckEnabled(entity.getDailyCheckEnabled())
-			.hasPushToken(entity.hasPushToken())
 			.createdAt(entity.getCreatedAt())
 			.updatedAt(entity.getUpdatedAt())
 			.build();
@@ -121,7 +117,6 @@ public class MemberResponse {
 			.memberName(entity.getMemberName())
 			.memberEmail(entity.getMemberEmail())
 			.dailyCheckEnabled(entity.getDailyCheckEnabled())
-			.hasPushToken(entity.hasPushToken())
 			.guardian(toGuardianInfo(entity))
 			.managedMembers(toManagedMemberInfoList(entity))
 			.createdAt(entity.getCreatedAt())
