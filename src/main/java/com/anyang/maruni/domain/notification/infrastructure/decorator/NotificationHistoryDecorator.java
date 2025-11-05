@@ -1,7 +1,7 @@
 package com.anyang.maruni.domain.notification.infrastructure.decorator;
 
 import com.anyang.maruni.domain.notification.domain.entity.NotificationHistory;
-import com.anyang.maruni.domain.notification.domain.service.NotificationHistoryService;
+import com.anyang.maruni.domain.notification.domain.repository.NotificationHistoryRepository;
 import com.anyang.maruni.domain.notification.domain.service.NotificationService;
 import com.anyang.maruni.domain.notification.domain.vo.NotificationChannelType;
 
@@ -9,20 +9,19 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 알림 서비스 이력 저장 데코레이터
+ * 알림 서비스 이력 저장 데코레이터 (MVP 단순화 버전)
  *
  * Decorator 패턴을 적용하여 기존 NotificationService 구현체를 감싸서
  * 모든 알림 발송 시도를 자동으로 이력에 저장합니다.
  *
- * 이를 통해 어떤 NotificationService 구현체든 이력 저장 기능을
- * 투명하게 추가할 수 있습니다.
+ * MVP 변경사항: NotificationHistoryService 대신 Repository 직접 사용
  */
 @RequiredArgsConstructor
 @Slf4j
 public class NotificationHistoryDecorator implements NotificationService {
 
     private final NotificationService delegate;
-    private final NotificationHistoryService historyService;
+    private final NotificationHistoryRepository repository;
 
     @Override
     public boolean sendPushNotification(Long memberId, String title, String message) {
@@ -33,12 +32,12 @@ public class NotificationHistoryDecorator implements NotificationService {
             boolean success = delegate.sendPushNotification(memberId, title, message);
 
             if (success) {
-                // 성공 이력 저장
+                // 성공 이력 저장 (Repository 직접 사용)
                 try {
-                    NotificationHistory history = historyService.recordSuccess(
+                    NotificationHistory history = NotificationHistory.createSuccess(
                             memberId, title, message, getChannelType());
-                    log.info("✅ Notification sent and recorded - historyId: {}",
-                            history != null ? history.getId() : "unknown");
+                    repository.save(history);
+                    log.info("✅ Notification sent and recorded - historyId: {}", history.getId());
                 } catch (Exception historyException) {
                     log.warn("⚠️ Failed to record success history, but notification was sent - error: {}",
                             historyException.getMessage());
@@ -47,11 +46,11 @@ public class NotificationHistoryDecorator implements NotificationService {
             } else {
                 // 실패 이력 저장 (일반적인 실패)
                 try {
-                    NotificationHistory history = historyService.recordFailure(
+                    NotificationHistory history = NotificationHistory.createFailure(
                             memberId, title, message, getChannelType(),
                             "Notification service returned false");
-                    log.warn("❌ Notification failed and recorded - historyId: {}",
-                            history != null ? history.getId() : "unknown");
+                    repository.save(history);
+                    log.warn("❌ Notification failed and recorded - historyId: {}", history.getId());
                 } catch (Exception historyException) {
                     log.warn("⚠️ Failed to record failure history - error: {}",
                             historyException.getMessage());
@@ -62,10 +61,11 @@ public class NotificationHistoryDecorator implements NotificationService {
             // 예외 발생 시 실패 이력 저장
             String errorMessage = "Exception occurred: " + e.getMessage();
             try {
-                NotificationHistory history = historyService.recordFailure(
+                NotificationHistory history = NotificationHistory.createFailure(
                         memberId, title, message, getChannelType(), errorMessage);
+                repository.save(history);
                 log.error("💥 Notification exception and recorded - historyId: {}, error: {}",
-                        history != null ? history.getId() : "unknown", e.getMessage(), e);
+                        history.getId(), e.getMessage(), e);
             } catch (Exception historyException) {
                 log.error("💥 Notification exception and failed to record history - original error: {}, history error: {}",
                         e.getMessage(), historyException.getMessage(), e);
