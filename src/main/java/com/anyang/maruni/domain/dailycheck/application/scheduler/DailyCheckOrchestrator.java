@@ -6,6 +6,8 @@ import com.anyang.maruni.domain.dailycheck.domain.entity.RetryRecord;
 import com.anyang.maruni.domain.dailycheck.domain.repository.DailyCheckRecordRepository;
 import com.anyang.maruni.domain.member.domain.repository.MemberRepository;
 import com.anyang.maruni.domain.notification.domain.service.NotificationService;
+import com.anyang.maruni.domain.notification.domain.vo.NotificationType;
+import com.anyang.maruni.domain.notification.domain.vo.NotificationSourceType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -80,11 +82,18 @@ public class DailyCheckOrchestrator {
                 return;
             }
 
-            // 안부 메시지 발송
+            // 안부 메시지 발송 (MVP: 타입 정보 포함)
             String title = DAILY_CHECK_TITLE;
             String message = DAILY_CHECK_MESSAGE;
 
-            boolean success = notificationService.sendPushNotification(memberId, title, message);
+            boolean success = notificationService.sendNotificationWithType(
+                memberId,
+                title,
+                message,
+                NotificationType.DAILY_CHECK,
+                NotificationSourceType.DAILY_CHECK,
+                null  // MVP: DailyCheckRecord ID는 발송 후 생성되므로 null
+            );
 
             if (success) {
                 handleSuccessfulSending(memberId, message);
