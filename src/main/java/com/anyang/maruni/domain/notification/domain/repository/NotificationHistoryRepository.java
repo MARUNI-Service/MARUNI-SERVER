@@ -107,4 +107,12 @@ public interface NotificationHistoryRepository extends JpaRepository<Notificatio
      */
     @Query("SELECT h FROM NotificationHistory h WHERE h.memberId = :memberId ORDER BY h.createdAt DESC LIMIT :limit")
     List<NotificationHistory> findRecentNotificationsByMemberId(@Param("memberId") Long memberId, @Param("limit") int limit);
+
+    /**
+     * 특정 회원의 안읽은 알림 개수 조회 (MVP 추가)
+     *
+     * @param memberId 회원 ID
+     * @return 안읽은 알림 개수
+     */
+    Long countByMemberIdAndIsReadFalse(Long memberId);
 }
