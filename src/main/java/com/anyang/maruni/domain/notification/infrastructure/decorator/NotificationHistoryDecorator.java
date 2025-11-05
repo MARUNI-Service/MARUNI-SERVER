@@ -4,6 +4,8 @@ import com.anyang.maruni.domain.notification.domain.entity.NotificationHistory;
 import com.anyang.maruni.domain.notification.domain.repository.NotificationHistoryRepository;
 import com.anyang.maruni.domain.notification.domain.service.NotificationService;
 import com.anyang.maruni.domain.notification.domain.vo.NotificationChannelType;
+import com.anyang.maruni.domain.notification.domain.vo.NotificationType;
+import com.anyang.maruni.domain.notification.domain.vo.NotificationSourceType;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -86,6 +88,79 @@ public class NotificationHistoryDecorator implements NotificationService {
     public NotificationChannelType getChannelType() {
         // 델리게이트의 채널 타입을 그대로 반환
         return delegate.getChannelType();
+    }
+
+    /**
+     * 타입 정보를 포함한 알림 발송 (MVP 추가)
+     *
+     * @param memberId 알림 수신 회원 ID
+     * @param title 알림 제목
+     * @param message 알림 내용
+     * @param notificationType 알림 타입
+     * @param sourceType 알림 출처 타입
+     * @param sourceEntityId 출처 엔티티 ID
+     * @return 발송 성공 여부
+     */
+    @Override
+    public boolean sendNotificationWithType(
+            Long memberId,
+            String title,
+            String message,
+            NotificationType notificationType,
+            NotificationSourceType sourceType,
+            Long sourceEntityId
+    ) {
+        log.debug("📝 Recording notification with type - memberId: {}, type: {}", memberId, notificationType);
+
+        try {
+            // 실제 알림 발송 시도 (delegate 사용)
+            boolean success = delegate.sendPushNotification(memberId, title, message);
+
+            if (success) {
+                // 성공 이력 저장 (타입 정보 포함)
+                try {
+                    NotificationHistory history = NotificationHistory.createSuccessWithType(
+                            memberId, title, message, getChannelType(),
+                            notificationType, sourceType, sourceEntityId, null
+                    );
+                    repository.save(history);
+                    log.info("✅ Notification sent and recorded with type - historyId: {}, type: {}",
+                            history.getId(), notificationType);
+                } catch (Exception historyException) {
+                    log.warn("⚠️ Failed to record success history, but notification was sent");
+                }
+                return true;
+            } else {
+                // 실패 이력 저장 (타입 정보 포함)
+                try {
+                    NotificationHistory history = NotificationHistory.createFailureWithType(
+                            memberId, title, message, getChannelType(),
+                            notificationType, sourceType, sourceEntityId,
+                            "Notification service returned false"
+                    );
+                    repository.save(history);
+                    log.warn("❌ Notification failed and recorded with type - type: {}", notificationType);
+                } catch (Exception historyException) {
+                    log.warn("⚠️ Failed to record failure history");
+                }
+                return false;
+            }
+        } catch (Exception e) {
+            // 예외 발생 시 실패 이력 저장 (타입 정보 포함)
+            String errorMessage = "Exception occurred: " + e.getMessage();
+            try {
+                NotificationHistory history = NotificationHistory.createFailureWithType(
+                        memberId, title, message, getChannelType(),
+                        notificationType, sourceType, sourceEntityId,
+                        errorMessage
+                );
+                repository.save(history);
+                log.error("💥 Notification exception and recorded with type - type: {}", notificationType, e);
+            } catch (Exception historyException) {
+                log.error("💥 Notification exception and failed to record history", e);
+            }
+            return false;
+        }
     }
 
     /**
