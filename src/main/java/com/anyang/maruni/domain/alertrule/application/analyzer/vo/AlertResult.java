@@ -1,6 +1,7 @@
 package com.anyang.maruni.domain.alertrule.application.analyzer.vo;
 
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertLevel;
+import com.anyang.maruni.domain.alertrule.domain.entity.AlertType;
 
 import lombok.Getter;
 
@@ -15,12 +16,14 @@ public class AlertResult {
 	// Getter 메서드들
 	private final boolean isAlert;
     private final AlertLevel alertLevel;
+    private final AlertType alertType;
     private final String message;
     private final Object analysisDetails;
 
-    private AlertResult(boolean isAlert, AlertLevel alertLevel, String message, Object analysisDetails) {
+    private AlertResult(boolean isAlert, AlertLevel alertLevel, AlertType alertType, String message, Object analysisDetails) {
         this.isAlert = isAlert;
         this.alertLevel = alertLevel;
+        this.alertType = alertType;
         this.message = message;
         this.analysisDetails = analysisDetails;
     }
@@ -28,12 +31,13 @@ public class AlertResult {
     /**
      * 알림 발생 결과 생성
      * @param alertLevel 알림 레벨
+     * @param alertType 알림 타입
      * @param message 알림 메시지
      * @param analysisDetails 분석 상세 정보
      * @return AlertResult
      */
-    public static AlertResult createAlert(AlertLevel alertLevel, String message, Object analysisDetails) {
-        return new AlertResult(true, alertLevel, message, analysisDetails);
+    public static AlertResult createAlert(AlertLevel alertLevel, AlertType alertType, String message, Object analysisDetails) {
+        return new AlertResult(true, alertLevel, alertType, message, analysisDetails);
     }
 
     /**
@@ -41,7 +45,7 @@ public class AlertResult {
      * @return AlertResult
      */
     public static AlertResult noAlert() {
-        return new AlertResult(false, null, null, null);
+        return new AlertResult(false, null, null, null, null);
     }
 
 	@Override

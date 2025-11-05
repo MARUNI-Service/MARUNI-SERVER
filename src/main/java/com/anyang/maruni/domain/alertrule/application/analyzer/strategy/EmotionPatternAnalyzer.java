@@ -138,7 +138,7 @@ public class EmotionPatternAnalyzer implements AnomalyAnalyzer {
             && negativeRatio >= alertConfig.getEmotion().getHighRiskNegativeRatio()) {
             String message = AnalyzerUtils.createConsecutiveDaysMessage(
                     consecutiveNegativeDays, negativeRatio, "부정감정");
-            return AlertResult.createAlert(AlertLevel.HIGH, message, emotionTrend);
+            return AlertResult.createAlert(AlertLevel.HIGH, AlertType.EMOTION_PATTERN, message, emotionTrend);
         }
 
         // 중위험: 연속 부정감정 + 부정비율 기준 초과
@@ -146,7 +146,7 @@ public class EmotionPatternAnalyzer implements AnomalyAnalyzer {
             && negativeRatio >= alertConfig.getEmotion().getMediumRiskNegativeRatio()) {
             String message = AnalyzerUtils.createConsecutiveDaysMessage(
                     consecutiveNegativeDays, negativeRatio, "부정감정");
-            return AlertResult.createAlert(AlertLevel.MEDIUM, message, emotionTrend);
+            return AlertResult.createAlert(AlertLevel.MEDIUM, AlertType.EMOTION_PATTERN, message, emotionTrend);
         }
 
         // 저위험 또는 알림 없음
