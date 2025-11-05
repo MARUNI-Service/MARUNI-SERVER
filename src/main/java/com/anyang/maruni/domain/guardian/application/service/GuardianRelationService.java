@@ -8,6 +8,8 @@ import com.anyang.maruni.domain.guardian.domain.repository.GuardianRequestReposi
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
 import com.anyang.maruni.domain.member.domain.repository.MemberRepository;
 import com.anyang.maruni.domain.notification.domain.service.NotificationService;
+import com.anyang.maruni.domain.notification.domain.vo.NotificationType;
+import com.anyang.maruni.domain.notification.domain.vo.NotificationSourceType;
 import com.anyang.maruni.global.exception.BaseException;
 import com.anyang.maruni.global.response.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -62,10 +64,17 @@ public class GuardianRelationService {
 			requester, guardian, relation);
 		GuardianRequest savedRequest = guardianRequestRepository.save(request);
 
-		// 4. 보호자에게 푸시 알림 발송
+		// 4. 보호자에게 푸시 알림 발송 (MVP: 타입 정보 포함)
 		String message = String.format("%s님이 보호자로 등록을 요청했습니다",
 			requester.getMemberName());
-		notificationService.sendPushNotification(guardianId, "보호자 등록 요청", message);
+		notificationService.sendNotificationWithType(
+			guardianId,
+			"보호자 등록 요청",
+			message,
+			NotificationType.GUARDIAN_REQUEST,
+			NotificationSourceType.GUARDIAN_REQUEST,
+			savedRequest.getId()
+		);
 
 		log.info("Guardian request sent: requester={}, guardian={}, relation={}",
 			requesterId, guardianId, relation);
@@ -112,11 +121,17 @@ public class GuardianRelationService {
 		MemberEntity guardian = request.getGuardian();
 		requester.assignGuardian(guardian, request.getRelation());
 
-		// 4. 요청자에게 푸시 알림 발송
+		// 4. 요청자에게 푸시 알림 발송 (MVP: 타입 정보 포함)
 		String message = String.format("%s님이 보호자 요청을 수락했습니다",
 			guardian.getMemberName());
-		notificationService.sendPushNotification(
-			requester.getId(), "보호자 요청 수락", message);
+		notificationService.sendNotificationWithType(
+			requester.getId(),
+			"보호자 요청 수락",
+			message,
+			NotificationType.GUARDIAN_ACCEPT,
+			NotificationSourceType.GUARDIAN_REQUEST,
+			requestId
+		);
 
 		log.info("Guardian request accepted: requestId={}, guardianId={}",
 			requestId, guardianId);
@@ -137,10 +152,16 @@ public class GuardianRelationService {
 		// 2. 요청 거절 (상태: REJECTED)
 		request.reject();
 
-		// 3. 요청자에게 푸시 알림 발송
+		// 3. 요청자에게 푸시 알림 발송 (MVP: 타입 정보 포함)
 		String message = "보호자 요청이 거절되었습니다";
-		notificationService.sendPushNotification(
-			request.getRequester().getId(), "보호자 요청 거절", message);
+		notificationService.sendNotificationWithType(
+			request.getRequester().getId(),
+			"보호자 요청 거절",
+			message,
+			NotificationType.GUARDIAN_REJECT,
+			NotificationSourceType.GUARDIAN_REQUEST,
+			requestId
+		);
 
 		log.info("Guardian request rejected: requestId={}, guardianId={}",
 			requestId, guardianId);
