@@ -33,7 +33,7 @@ Architecture: DDD (Domain-Driven Design)
 - **스케줄링**: 매일 오전 9시 안부 메시지 자동 발송 + 재시도
 - **보호자 관리**: 관계 설정, 알림 설정, 7개 REST API
 - **이상징후 감지**: 3종 알고리즘 (감정/무응답/키워드)
-- **알림 시스템**: Firebase FCM + 3중 안전망 (Retry/History/Fallback)
+- **알림 시스템**: 알림 타입 시스템 (5종) + 이력 관리 + 조회 API
 
 ### 🚀 Phase 3 계획
 - 고급 건강 분석 시스템 (ML 기반)
@@ -115,4 +115,4 @@ PostgreSQL + OpenAI GPT-4o + Firebase FCM
 
 **MARUNI는 TDD + DDD로 구축된 완전한 노인 돌봄 플랫폼입니다.** 🚀
 
-**Updated**: 2025-10-09 | **Version**: 2.0.0
+**Updated**: 2025-11-05 | **Version**: 2.1.0

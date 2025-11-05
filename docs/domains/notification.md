@@ -1,25 +1,34 @@
 # Notification 도메인
 
-**최종 업데이트**: 2025-10-09
-**상태**: ✅ Firebase FCM 연동 + 3중 안전망 완성
+**최종 업데이트**: 2025-11-05
+**상태**: ✅ MVP 알림 타입 시스템 완성
 
 ## 📋 개요
 
-Firebase FCM 기반 푸시 알림 시스템입니다. 데코레이터 패턴으로 재시도, 이력 저장, Fallback 기능을 제공합니다.
+알림 타입별 분류 및 이력 관리 시스템입니다. 5종의 알림 타입으로 구조화된 알림을 제공하고, 이력 조회 API를 지원합니다.
 
 ### 핵심 기능
-- Firebase FCM 실제 연동
-- 3중 안전망: Retry + History + Fallback
-- 알림 이력 영속화
-- 다중 채널 확장 가능 구조
+- **알림 타입 시스템**: 5종 타입별 분류 (DAILY_CHECK, GUARDIAN_REQUEST, ALERT, SYSTEM, CHAT)
+- **알림 이력 관리**: 메타데이터 포함 영속화
+- **조회 API**: 읽지 않은 개수, 이력 조회, 읽음 처리
+- 다중 채널 확장 가능 구조 (FCM 등 추후 추가)
 
 ## 🏗️ 주요 구조
 
 ### NotificationService 인터페이스 (Domain Layer)
 ```java
-- sendPushNotification(memberId, title, message): 푸시 알림 발송
-- isAvailable(): 서비스 사용 가능 여부
-- getChannelType(): 알림 채널 타입
+// 알림 타입 포함 발송
+boolean sendNotificationWithType(
+    Long memberId,
+    String title,
+    String message,
+    NotificationType type,
+    Map<String, String> metadata,
+    Long referenceId
+);
+
+// 기본 푸시 알림 (레거시)
+boolean sendPushNotification(Long memberId, String title, String message);
 ```
 
 ### NotificationHistory Entity (Domain Layer)
@@ -28,117 +37,230 @@ Firebase FCM 기반 푸시 알림 시스템입니다. 데코레이터 패턴으�
 - memberId: Long
 - title: String
 - message: String
-- channelType: NotificationChannelType
-- success: Boolean
-- errorMessage: String
-- externalMessageId: String    // Firebase messageId
+- notificationType: NotificationType      // 알림 타입
+- metadata: String (JSON)                 // 메타데이터
+- referenceId: Long                       // 참조 ID (선택)
+- isRead: Boolean                         // 읽음 여부
+- readAt: LocalDateTime                   // 읽은 시간
+- sentAt: LocalDateTime                   // 발송 시간
 ```
 
-### 3중 안전망 구조 (데코레이터 패턴)
-```
-StabilityEnhancedNotificationService
-├── RetryableNotificationService       # 재시도 (최대 3회)
-│   ├── NotificationHistoryDecorator   # 이력 자동 저장
-│   │   ├── FallbackNotificationService # 장애 복구
-│   │   │   ├── Primary: FirebaseService
-│   │   │   └── Fallback: MockService
+### NotificationType Enum (5종)
+```java
+DAILY_CHECK         // 안부 확인 알림
+GUARDIAN_REQUEST    // 보호자 요청 관련
+ALERT              // 긴급 알림 (이상징후)
+SYSTEM             // 시스템 알림
+CHAT               // 대화 알림
 ```
 
 ## 🔧 핵심 서비스
 
-### FirebasePushNotificationService (Infrastructure Layer)
-- `sendPushNotification()`: Firebase FCM 실제 발송
-- `FirebaseMessagingWrapper` 인터페이스를 통한 테스트 가능한 구조
+### NotificationQueryService (Application Layer)
+**알림 조회 전담 서비스**
 
-### PushTokenService (Domain Layer)
-- `getPushTokenByMemberId()`: 회원별 푸시 토큰 조회
-- `hasPushToken()`: 푸시 토큰 보유 여부 확인
+```java
+// 읽지 않은 알림 개수
+int getUnreadNotificationCount(Long memberId);
 
-### NotificationHistoryService (Domain Layer)
-- `recordSuccess()`: 성공 이력 저장
-- `recordFailure()`: 실패 이력 저장
-- `getStatisticsForMember()`: 회원별 통계
-- `getOverallStatistics()`: 전체 통계
+// 알림 이력 조회
+List<NotificationHistoryResponseDto> getNotificationHistory(Long memberId);
 
-## 🛡️ 안전망 시스템
+// 알림 읽음 처리
+void markAsRead(Long notificationId, Long memberId);
 
-### 1. RetryableNotificationService (재시도)
-- 최대 3회 재시도
-- 점진적 지연 (1초 → 2초 → 4초)
-- 재시도 통계 수집
-
-### 2. NotificationHistoryDecorator (이력)
-- 성공/실패 모든 시도 기록
-- DB 영속화
-- 통계 분석 지원
-
-### 3. FallbackNotificationService (장애 복구)
-- Primary 실패 시 Fallback으로 자동 전환
-- Firebase 장애 시 Mock 서비스로 우회
-
-## ⚙️ 설정
-
-### application.yml
-```yaml
-notification:
-  stability:
-    enabled: true                    # 3중 안전망 활성화
-  fallback:
-    enabled: true                    # Fallback 활성화
-  retry:
-    max-attempts: 3                  # 최대 재시도 횟수
-    initial-delay: 1000             # 초기 지연 (ms)
-    multiplier: 2.0                 # 지연 배수
-
-firebase:
-  enabled: true                      # Firebase 활성화 (prod)
-  credentials:
-    path: classpath:firebase-service-account-key.json
+// 모든 알림 읽음 처리
+void markAllAsRead(Long memberId);
 ```
 
-### 환경 변수 (.env)
-```bash
-FIREBASE_PROJECT_ID=maruni-project
-FIREBASE_PRIVATE_KEY_PATH=config/firebase-service-account.json
+### NotificationHistoryService (Domain Layer)
+**알림 이력 관리 전담 서비스**
+
+```java
+// 이력 기록
+NotificationHistory recordNotification(
+    Long memberId,
+    String title,
+    String message,
+    NotificationType type,
+    Map<String, String> metadata,
+    Long referenceId,
+    boolean success
+);
+
+// 메타데이터 JSON 변환
+String convertMetadataToJson(Map<String, String> metadata);
+Map<String, String> convertJsonToMetadata(String json);
+```
+
+### MockPushNotificationService (Infrastructure Layer)
+**MVP용 Mock 구현체**
+
+```java
+// 알림 타입 포함 발송
+boolean sendNotificationWithType(...) {
+    log.info("🔔 [{}] 알림 발송: {}", type, title);
+    // 이력 자동 저장
+    return true;
+}
+```
+
+## 📊 메타데이터 활용
+
+### 알림 타입별 메타데이터 예시
+```java
+// DAILY_CHECK
+{
+  "conversationId": "123",
+  "scheduledTime": "09:00"
+}
+
+// GUARDIAN_REQUEST
+{
+  "requestId": "456",
+  "requesterName": "김순자",
+  "relation": "FAMILY"
+}
+
+// ALERT
+{
+  "alertHistoryId": "789",
+  "alertLevel": "HIGH",
+  "alertType": "EMOTION_PATTERN"
+}
 ```
 
 ## 🔗 도메인 연동
 
-- **DailyCheck**: 매일 안부 메시지 발송
-- **AlertRule**: 보호자 긴급 알림 발송
-- **Member**: 푸시 토큰 관리 (`pushToken` 필드)
+### DailyCheck → Notification
+```java
+// 안부 메시지 발송
+notificationService.sendNotificationWithType(
+    memberId,
+    "안부 메시지",
+    message,
+    NotificationType.DAILY_CHECK,
+    Map.of("conversationId", conversationId.toString()),
+    conversationId
+);
+```
+
+### Guardian → Notification
+```java
+// 보호자 요청 알림
+notificationService.sendNotificationWithType(
+    guardianId,
+    "보호자 요청",
+    message,
+    NotificationType.GUARDIAN_REQUEST,
+    Map.of("requestId", requestId.toString(), "requesterName", name),
+    requestId
+);
+```
+
+### AlertRule → Notification
+```java
+// 긴급 알림 발송
+notificationService.sendNotificationWithType(
+    guardianId,
+    "[HIGH] 알림",
+    alertMessage,
+    NotificationType.ALERT,
+    Map.of("alertHistoryId", historyId.toString(), "alertLevel", "HIGH"),
+    historyId
+);
+```
 
 ## 📁 패키지 구조
 
 ```
 notification/
 ├── domain/
-│   ├── service/              # NotificationService, NotificationHistoryService, PushTokenService
+│   ├── service/              # NotificationService (인터페이스)
 │   ├── entity/               # NotificationHistory
 │   ├── repository/           # NotificationHistoryRepository
-│   └── vo/                   # NotificationChannelType, NotificationStatistics
+│   └── vo/                   # NotificationType
+├── application/
+│   ├── service/              # NotificationQueryService
+│   └── dto/                  # NotificationHistoryResponseDto
+├── presentation/
+│   └── controller/           # NotificationController
 └── infrastructure/
-    ├── service/              # FirebasePushNotificationService, MockPushNotificationService
-    ├── decorator/            # RetryableNotificationService, NotificationHistoryDecorator, FallbackNotificationService
-    ├── firebase/             # FirebaseMessagingWrapper (인터페이스)
-    └── config/               # StabilityEnhancedNotificationConfig
+    └── service/              # MockPushNotificationService
 ```
 
-## 📈 운영 성과
+## 🎯 REST API
 
-- ✅ **Firebase 연동 성공률**: 95%+
-- ✅ **Fallback 전환 성공률**: 100%
-- ✅ **재시도 성공률**: 85%+
-- ✅ **이력 저장 성공률**: 100%
-- ✅ **응답 시간**: 평균 500ms (Firebase) / 즉시 (Mock)
+### 1. 읽지 않은 알림 개수
+```http
+GET /api/notifications/unread/count
+Authorization: Bearer {token}
+
+Response: 5
+```
+
+### 2. 알림 이력 조회
+```http
+GET /api/notifications/history
+Authorization: Bearer {token}
+
+Response: [
+  {
+    "id": 1,
+    "title": "안부 메시지",
+    "message": "안녕하세요",
+    "notificationType": "DAILY_CHECK",
+    "metadata": {"conversationId": "123"},
+    "referenceId": 123,
+    "isRead": false,
+    "sentAt": "2025-11-05T09:00:00"
+  }
+]
+```
+
+### 3. 알림 읽음 처리
+```http
+POST /api/notifications/{id}/read
+Authorization: Bearer {token}
+
+Response: { "message": "알림을 읽음 처리했습니다." }
+```
+
+### 4. 모든 알림 읽음 처리
+```http
+POST /api/notifications/read-all
+Authorization: Bearer {token}
+
+Response: { "message": "모든 알림을 읽음 처리했습니다." }
+```
 
 ## ✅ 완성도
 
-- [x] Firebase FCM 실제 연동
-- [x] 3중 안전망 (Retry + History + Fallback)
+- [x] 알림 타입 시스템 (5종)
 - [x] 알림 이력 영속화
-- [x] 데코레이터 패턴 적용
-- [x] 통계 및 모니터링
-- [x] 테스트 가능한 구조
+- [x] 메타데이터 JSON 저장
+- [x] 읽음 여부 추적
+- [x] 조회 API (4개)
+- [x] Mock 구현체 (MVP)
+- [ ] Firebase FCM 연동 (Phase 3)
+- [ ] 재시도 메커니즘 (Phase 3)
+- [ ] 통계 및 모니터링 (Phase 3)
 
-**상용 서비스 수준 완성**
+**MVP 알림 시스템 완성**
+
+## 🚀 향후 계획 (Phase 3)
+
+### FCM 연동
+- Firebase Admin SDK 통합
+- 실제 푸시 알림 발송
+- 토큰 관리 시스템
+
+### 안정성 강화
+- 재시도 메커니즘
+- Fallback 전략
+- 통계 및 모니터링
+
+### 고도화
+- 알림 설정 관리
+- 알림 스케줄링
+- 다중 채널 지원

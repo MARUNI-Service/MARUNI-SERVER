@@ -55,14 +55,14 @@ docs/
     ↓
 이상징후 감지 (3종 알고리즘)
     ↓
-보호자 알림 발송 (Firebase FCM)
+보호자 알림 발송 (알림 타입 시스템)
 ```
 
-### 🏆 현재 상태: Phase 2 MVP 100% 완성 (2025-10-09)
+### 🏆 현재 상태: Phase 2 MVP 100% 완성 (2025-11-05)
 - ✅ 7개 핵심 도메인 완성 (TDD + DDD)
 - ✅ 25+ REST API (JWT 인증 + Swagger)
 - ✅ OpenAI GPT-4o 실제 연동
-- ✅ Firebase FCM 푸시 알림
+- ✅ 알림 타입 시스템 (5종) + 이력 관리
 - ✅ 상용 서비스 준비 완료
 
 ### 🛠️ 기술 스택
@@ -71,7 +71,7 @@ Backend: Spring Boot 3.5.x + Java 21
 Database: PostgreSQL (단일 DB)
 AI: OpenAI GPT-4o (Spring AI)
 Auth: JWT Stateless (Access Token Only, 1시간)
-Notification: Firebase FCM + 3중 안전망
+Notification: 알림 타입 시스템 (5종) + Mock 구현체
 Testing: TDD Red-Green-Blue
 Architecture: DDD
 Docs: Swagger/OpenAPI 3.0
@@ -92,10 +92,6 @@ JWT_ACCESS_EXPIRATION=3600000  # 1시간
 
 # OpenAI
 OPENAI_API_KEY=your_openai_api_key
-
-# Firebase
-FIREBASE_PROJECT_ID=maruni-project
-FIREBASE_PRIVATE_KEY_PATH=config/firebase-service-account.json
 ```
 
 ### 개발 명령어
@@ -297,13 +293,13 @@ docker-compose logs -f app                  # 로그 확인
 - 새 개발 패턴 → 작업 가이드라인
 - 새 문제 해결법 → 문제 해결 가이드
 
-## 📋 프로젝트 현황 (2025-10-09)
+## 📋 프로젝트 현황 (2025-11-05)
 
 ### 🎉 Phase 2 MVP 100% 완성
 - 7개 도메인 100% 완성 (TDD + DDD)
 - 25+ REST API (JWT + Swagger)
 - OpenAI GPT-4o 실제 연동
-- Firebase FCM + 3중 안전망
+- 알림 타입 시스템 (5종) + 이력 관리
 - PostgreSQL 단일 DB
 - Stateless JWT (Access Token Only)
 
@@ -314,7 +310,7 @@ docker-compose logs -f app                  # 로그 확인
 🚨 이상징후: 3종 알고리즘 + 50% 코드 품질 향상
 👥 보호자: 7개 REST API + 알림 연동
 🔐 JWT: Access Token Only, Stateless, 클라이언트 로그아웃
-🔔 알림: Firebase FCM + Retry/History/Fallback 3중 안전망
+🔔 알림: 알림 타입 시스템 (5종) + 이력 관리 + 조회 API (4개)
 ```
 
 ### 📚 상세 구현 내용은 문서 참조
@@ -326,4 +322,4 @@ docker-compose logs -f app                  # 로그 확인
 
 **⚠️ 중요: 모든 작업은 docs/ 폴더의 해당 문서를 반드시 확인하세요.**
 
-**Updated**: 2025-10-09 | **Version**: 2.0.0 | **Status**: Phase 2 MVP Complete
+**Updated**: 2025-11-05 | **Version**: 2.1.0 | **Status**: Phase 2 MVP Complete
