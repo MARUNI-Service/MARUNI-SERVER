@@ -13,7 +13,7 @@ import com.anyang.maruni.domain.alertrule.domain.entity.AlertLevel;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertType;
 import com.anyang.maruni.domain.alertrule.domain.repository.AlertHistoryRepository;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
-import com.anyang.maruni.domain.notification.domain.service.NotificationService;
+import com.anyang.maruni.domain.notification.domain.service.NotificationHistoryService;
 import com.anyang.maruni.domain.notification.domain.vo.NotificationType;
 import com.anyang.maruni.domain.notification.domain.vo.NotificationSourceType;
 
@@ -30,7 +30,7 @@ import lombok.RequiredArgsConstructor;
 @Transactional(readOnly = true)
 public class AlertNotificationService {
 
-    private final NotificationService notificationService;
+    private final NotificationHistoryService notificationHistoryService;
     private final AlertConfigurationProperties alertConfig;
     private final AlertServiceUtils alertServiceUtils;
     private final AlertHistoryRepository alertHistoryRepository;
@@ -143,13 +143,13 @@ public class AlertNotificationService {
         String alertTitle = String.format(alertConfig.getNotification().getTitleTemplate(), alertLevel.name());
 
         try {
-            boolean notificationSent = notificationService.sendPushNotification(
+            var notificationHistory = notificationHistoryService.recordNotification(
                     member.getGuardian().getId(),
                     alertTitle,
                     alertMessage
             );
 
-            handleNotificationResult(memberId, notificationSent, null);
+            handleNotificationResult(memberId, notificationHistory != null, null);
         } catch (Exception e) {
             handleNotificationResult(memberId, false, e.getMessage());
         }
@@ -172,7 +172,7 @@ public class AlertNotificationService {
         NotificationType notificationType = mapAlertTypeToNotificationType(alertType);
 
         try {
-            boolean notificationSent = notificationService.sendNotificationWithType(
+            var notificationHistory = notificationHistoryService.recordNotificationWithType(
                     member.getGuardian().getId(),
                     alertTitle,
                     alertMessage,
@@ -181,7 +181,7 @@ public class AlertNotificationService {
                     alertHistoryId
             );
 
-            handleNotificationResult(memberId, notificationSent, null);
+            handleNotificationResult(memberId, notificationHistory != null, null);
         } catch (Exception e) {
             handleNotificationResult(memberId, false, e.getMessage());
         }

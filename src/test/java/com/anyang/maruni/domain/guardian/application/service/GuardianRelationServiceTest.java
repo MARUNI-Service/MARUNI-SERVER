@@ -7,7 +7,7 @@ import com.anyang.maruni.domain.guardian.domain.entity.RequestStatus;
 import com.anyang.maruni.domain.guardian.domain.repository.GuardianRequestRepository;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
 import com.anyang.maruni.domain.member.domain.repository.MemberRepository;
-import com.anyang.maruni.domain.notification.domain.service.NotificationService;
+import com.anyang.maruni.domain.notification.domain.service.NotificationHistoryService;
 import com.anyang.maruni.global.exception.BaseException;
 import com.anyang.maruni.global.response.error.ErrorCode;
 import org.junit.jupiter.api.DisplayName;
@@ -42,7 +42,7 @@ class GuardianRelationServiceTest {
 	private MemberRepository memberRepository;
 
 	@Mock
-	private NotificationService notificationService;
+	private NotificationHistoryService notificationHistoryService;
 
 	@InjectMocks
 	private GuardianRelationService guardianRelationService;
@@ -78,7 +78,7 @@ class GuardianRelationServiceTest {
 
 		// then
 		verify(guardianRequestRepository).save(any(GuardianRequest.class));
-		verify(notificationService).sendNotificationWithType(
+		verify(notificationHistoryService).recordNotificationWithType(
 			eq(guardianId), anyString(), anyString(), any(), any(), anyLong());
 		assertThat(response.getRelation()).isEqualTo(GuardianRelation.FAMILY);
 		assertThat(response.getStatus()).isEqualTo(RequestStatus.PENDING);
@@ -181,7 +181,7 @@ class GuardianRelationServiceTest {
 		// then
 		assertThat(request.getStatus()).isEqualTo(RequestStatus.ACCEPTED);
 		assertThat(requester.getGuardian()).isEqualTo(guardian);
-		verify(notificationService).sendNotificationWithType(
+		verify(notificationHistoryService).recordNotificationWithType(
 			eq(requester.getId()), anyString(), anyString(), any(), any(), anyLong());
 	}
 
@@ -219,7 +219,7 @@ class GuardianRelationServiceTest {
 
 		// then
 		assertThat(request.getStatus()).isEqualTo(RequestStatus.REJECTED);
-		verify(notificationService).sendNotificationWithType(
+		verify(notificationHistoryService).recordNotificationWithType(
 			eq(requester.getId()), anyString(), anyString(), any(), any(), anyLong());
 	}
 
@@ -239,7 +239,7 @@ class GuardianRelationServiceTest {
 
 		// then
 		assertThat(member.getGuardian()).isNull();
-		verify(notificationService).sendPushNotification(
+		verify(notificationHistoryService).recordNotification(
 			eq(guardian.getId()), anyString(), anyString());
 	}
 
