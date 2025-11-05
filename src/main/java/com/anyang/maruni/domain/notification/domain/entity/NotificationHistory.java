@@ -69,7 +69,7 @@ public class NotificationHistory extends BaseTimeEntity {
 
     /**
      * 외부 시스템에서 반환한 메시지 ID
-     * (예: Firebase의 messageId, SMS 발송 ID 등)
+     * (예: 푸시 알림 서비스의 messageId, SMS 발송 ID 등)
      */
     @Column
     private String externalMessageId;

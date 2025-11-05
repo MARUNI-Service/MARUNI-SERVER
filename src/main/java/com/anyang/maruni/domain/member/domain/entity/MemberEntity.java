@@ -38,7 +38,7 @@ public class MemberEntity extends BaseTimeEntity {
 
 	// ========== 기존 필드 ==========
 
-	// 푸시 알림 토큰 (Firebase FCM 토큰)
+	// 푸시 알림 토큰 (푸시 알림 서비스용 토큰)
 	@Column(name = "push_token", length = 1000)
 	private String pushToken;
 
