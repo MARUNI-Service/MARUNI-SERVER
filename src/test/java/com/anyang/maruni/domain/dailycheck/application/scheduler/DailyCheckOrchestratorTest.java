@@ -57,7 +57,7 @@ class DailyCheckOrchestratorTest {
         given(memberRepository.findDailyCheckEnabledMemberIds()).willReturn(activeMemberIds);
         given(dailyCheckRecordRepository.existsSuccessfulRecordByMemberIdAndDate(anyLong(), any(LocalDate.class)))
                 .willReturn(false);  // 모든 회원에게 아직 발송하지 않음
-        given(notificationService.sendPushNotification(anyLong(), anyString(), anyString()))
+        given(notificationService.sendNotificationWithType(anyLong(), anyString(), anyString(), any(), any(), any()))
                 .willReturn(true);
 
         // When
@@ -65,7 +65,7 @@ class DailyCheckOrchestratorTest {
 
         // Then
         verify(notificationService, times(3))
-                .sendPushNotification(anyLong(), eq("안부 메시지"), contains("안녕하세요"));
+                .sendNotificationWithType(anyLong(), eq("안부 메시지"), contains("안녕하세요"), any(), any(), any());
         verify(conversationService, times(3))
                 .processSystemMessage(anyLong(), anyString());
         verify(dailyCheckRecordRepository, times(3))
@@ -82,7 +82,7 @@ class DailyCheckOrchestratorTest {
                 .willReturn(true);   // 1번 회원은 이미 발송됨
         given(dailyCheckRecordRepository.existsSuccessfulRecordByMemberIdAndDate(eq(2L), any(LocalDate.class)))
                 .willReturn(false);  // 2번 회원은 발송되지 않음
-        given(notificationService.sendPushNotification(anyLong(), anyString(), anyString()))
+        given(notificationService.sendNotificationWithType(anyLong(), anyString(), anyString(), any(), any(), any()))
                 .willReturn(true);
 
         // When
@@ -90,9 +90,9 @@ class DailyCheckOrchestratorTest {
 
         // Then
         verify(notificationService, times(1))
-                .sendPushNotification(eq(2L), anyString(), anyString());
+                .sendNotificationWithType(eq(2L), anyString(), anyString(), any(), any(), any());
         verify(notificationService, never())
-                .sendPushNotification(eq(1L), anyString(), anyString());
+                .sendNotificationWithType(eq(1L), anyString(), anyString(), any(), any(), any());
     }
 
     @Test
@@ -115,7 +115,7 @@ class DailyCheckOrchestratorTest {
         given(memberRepository.findDailyCheckEnabledMemberIds()).willReturn(activeMemberIds);
         given(dailyCheckRecordRepository.existsSuccessfulRecordByMemberIdAndDate(anyLong(), any(LocalDate.class)))
                 .willReturn(false);
-        given(notificationService.sendPushNotification(anyLong(), anyString(), anyString()))
+        given(notificationService.sendNotificationWithType(anyLong(), anyString(), anyString(), any(), any(), any()))
                 .willReturn(false); // 실패 시나리오
 
         // When
@@ -138,7 +138,7 @@ class DailyCheckOrchestratorTest {
 
         // Then - 빈 목록이므로 알림 발송은 없어야 함
         verify(notificationService, never())
-                .sendPushNotification(anyLong(), anyString(), anyString());
+                .sendNotificationWithType(anyLong(), anyString(), anyString(), any(), any(), any());
     }
 
     @Test

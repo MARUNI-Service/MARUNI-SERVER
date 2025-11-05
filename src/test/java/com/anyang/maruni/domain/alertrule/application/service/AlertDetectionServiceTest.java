@@ -79,7 +79,7 @@ class AlertDetectionServiceTest {
         );
 
         testAlertResult = AlertResult.createAlert(
-                AlertLevel.HIGH, "3일 연속 부정감정 감지", null);
+                AlertLevel.HIGH, AlertType.EMOTION_PATTERN, "3일 연속 부정감정 감지", null);
 
         // AlertConfigurationProperties.AnalysisConfig Mock 설정
         analysisConfig = new AlertConfigurationProperties.Analysis();
@@ -153,7 +153,7 @@ class AlertDetectionServiceTest {
         // Given
         Long memberId = 1L;
         AlertResult emergencyAlert = AlertResult.createAlert(
-                AlertLevel.EMERGENCY, "긴급 키워드 감지: 자살", null);
+                AlertLevel.EMERGENCY, AlertType.KEYWORD_DETECTION, "긴급 키워드 감지: 자살", null);
 
         given(alertServiceUtils.validateAndGetMember(memberId))
                 .willReturn(testMember);

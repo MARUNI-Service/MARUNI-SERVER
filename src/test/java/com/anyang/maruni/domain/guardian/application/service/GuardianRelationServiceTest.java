@@ -78,8 +78,8 @@ class GuardianRelationServiceTest {
 
 		// then
 		verify(guardianRequestRepository).save(any(GuardianRequest.class));
-		verify(notificationService).sendPushNotification(
-			eq(guardianId), anyString(), anyString());
+		verify(notificationService).sendNotificationWithType(
+			eq(guardianId), anyString(), anyString(), any(), any(), anyLong());
 		assertThat(response.getRelation()).isEqualTo(GuardianRelation.FAMILY);
 		assertThat(response.getStatus()).isEqualTo(RequestStatus.PENDING);
 	}
@@ -181,8 +181,8 @@ class GuardianRelationServiceTest {
 		// then
 		assertThat(request.getStatus()).isEqualTo(RequestStatus.ACCEPTED);
 		assertThat(requester.getGuardian()).isEqualTo(guardian);
-		verify(notificationService).sendPushNotification(
-			eq(requester.getId()), anyString(), anyString());
+		verify(notificationService).sendNotificationWithType(
+			eq(requester.getId()), anyString(), anyString(), any(), any(), anyLong());
 	}
 
 	@Test
@@ -219,8 +219,8 @@ class GuardianRelationServiceTest {
 
 		// then
 		assertThat(request.getStatus()).isEqualTo(RequestStatus.REJECTED);
-		verify(notificationService).sendPushNotification(
-			eq(requester.getId()), anyString(), anyString());
+		verify(notificationService).sendNotificationWithType(
+			eq(requester.getId()), anyString(), anyString(), any(), any(), anyLong());
 	}
 
 	@Test
