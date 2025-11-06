@@ -133,7 +133,7 @@ public class NoResponseAnalyzer implements AnomalyAnalyzer {
             || responseRate < alertConfig.getNoResponse().getHighRiskMinResponseRate()) {
             String message = AnalyzerUtils.createConsecutiveDaysMessage(
                     consecutiveNoResponseDays, responseRate, "무응답");
-            return AlertResult.createAlert(AlertLevel.HIGH, message, responsePattern);
+            return AlertResult.createAlert(AlertLevel.HIGH, AlertType.NO_RESPONSE, message, responsePattern);
         }
 
         // 중위험: 연속 무응답 또는 낮은 응답률
@@ -141,7 +141,7 @@ public class NoResponseAnalyzer implements AnomalyAnalyzer {
             || responseRate < alertConfig.getNoResponse().getMediumRiskMinResponseRate()) {
             String message = AnalyzerUtils.createConsecutiveDaysMessage(
                     consecutiveNoResponseDays, responseRate, "무응답");
-            return AlertResult.createAlert(AlertLevel.MEDIUM, message, responsePattern);
+            return AlertResult.createAlert(AlertLevel.MEDIUM, AlertType.NO_RESPONSE, message, responsePattern);
         }
 
         // 저위험 또는 알림 없음

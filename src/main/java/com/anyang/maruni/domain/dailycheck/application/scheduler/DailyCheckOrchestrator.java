@@ -5,7 +5,9 @@ import com.anyang.maruni.domain.dailycheck.domain.entity.DailyCheckRecord;
 import com.anyang.maruni.domain.dailycheck.domain.entity.RetryRecord;
 import com.anyang.maruni.domain.dailycheck.domain.repository.DailyCheckRecordRepository;
 import com.anyang.maruni.domain.member.domain.repository.MemberRepository;
-import com.anyang.maruni.domain.notification.domain.service.NotificationService;
+import com.anyang.maruni.domain.notification.domain.service.NotificationHistoryService;
+import com.anyang.maruni.domain.notification.domain.vo.NotificationType;
+import com.anyang.maruni.domain.notification.domain.vo.NotificationSourceType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -35,7 +37,7 @@ public class DailyCheckOrchestrator {
 
     private final MemberRepository memberRepository;
     private final SimpleConversationService conversationService;
-    private final NotificationService notificationService;
+    private final NotificationHistoryService notificationHistoryService;
     private final DailyCheckRecordRepository dailyCheckRecordRepository;
     private final RetryService retryService;
 
@@ -80,13 +82,20 @@ public class DailyCheckOrchestrator {
                 return;
             }
 
-            // 안부 메시지 발송
+            // 안부 메시지 발송 (MVP: 타입 정보 포함)
             String title = DAILY_CHECK_TITLE;
             String message = DAILY_CHECK_MESSAGE;
 
-            boolean success = notificationService.sendPushNotification(memberId, title, message);
+            var notificationHistory = notificationHistoryService.recordNotificationWithType(
+                memberId,
+                title,
+                message,
+                NotificationType.DAILY_CHECK,
+                NotificationSourceType.DAILY_CHECK,
+                null  // MVP: DailyCheckRecord ID는 발송 후 생성되므로 null
+            );
 
-            if (success) {
+            if (notificationHistory != null) {
                 handleSuccessfulSending(memberId, message);
             } else {
                 handleFailedSending(memberId, message);
@@ -103,13 +112,13 @@ public class DailyCheckOrchestrator {
      */
     private void processRetryRecord(RetryRecord retryRecord) {
         try {
-            boolean success = notificationService.sendPushNotification(
+            var notificationHistory = notificationHistoryService.recordNotification(
                     retryRecord.getMemberId(),
                     DAILY_CHECK_TITLE,
                     retryRecord.getMessage()
             );
 
-            if (success) {
+            if (notificationHistory != null) {
                 handleSuccessfulRetry(retryRecord);
             } else {
                 retryService.handleFailedRetry(retryRecord);

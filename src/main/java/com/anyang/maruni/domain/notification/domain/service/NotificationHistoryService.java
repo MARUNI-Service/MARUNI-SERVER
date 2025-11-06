@@ -3,6 +3,8 @@ package com.anyang.maruni.domain.notification.domain.service;
 import com.anyang.maruni.domain.notification.domain.entity.NotificationHistory;
 import com.anyang.maruni.domain.notification.domain.vo.NotificationChannelType;
 import com.anyang.maruni.domain.notification.domain.vo.NotificationStatistics;
+import com.anyang.maruni.domain.notification.domain.vo.NotificationType;
+import com.anyang.maruni.domain.notification.domain.vo.NotificationSourceType;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -118,4 +120,38 @@ public interface NotificationHistoryService {
      * @return 삭제된 이력 개수
      */
     long cleanupOldHistory(LocalDateTime before);
+
+    /**
+     * MVP: 타입 정보를 포함한 알림 이력 저장
+     *
+     * @param memberId 회원 ID
+     * @param title 알림 제목
+     * @param message 알림 내용
+     * @param notificationType 알림 타입
+     * @param sourceType 알림 출처 타입
+     * @param sourceEntityId 출처 엔티티 ID
+     * @return 저장된 이력 엔티티
+     */
+    NotificationHistory recordNotificationWithType(
+            Long memberId,
+            String title,
+            String message,
+            NotificationType notificationType,
+            NotificationSourceType sourceType,
+            Long sourceEntityId
+    );
+
+    /**
+     * MVP: 기본 알림 이력 저장 (타입 정보 없음)
+     *
+     * @param memberId 회원 ID
+     * @param title 알림 제목
+     * @param message 알림 내용
+     * @return 저장된 이력 엔티티
+     */
+    NotificationHistory recordNotification(
+            Long memberId,
+            String title,
+            String message
+    );
 }

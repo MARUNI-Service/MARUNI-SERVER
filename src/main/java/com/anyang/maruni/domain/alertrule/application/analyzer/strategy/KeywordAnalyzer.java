@@ -85,7 +85,7 @@ public class KeywordAnalyzer implements AnomalyAnalyzer {
                 KeywordMatch keywordMatch = alertLevel == AlertLevel.EMERGENCY ?
                         KeywordMatch.emergency(keyword, originalContent) :
                         KeywordMatch.warning(keyword, originalContent);
-                return AlertResult.createAlert(alertLevel, alertMessage, keywordMatch);
+                return AlertResult.createAlert(alertLevel, AlertType.KEYWORD_DETECTION, alertMessage, keywordMatch);
             }
         }
         return AlertResult.noAlert();

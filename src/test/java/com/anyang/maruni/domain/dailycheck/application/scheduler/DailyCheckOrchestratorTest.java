@@ -4,7 +4,9 @@ import com.anyang.maruni.domain.conversation.application.service.SimpleConversat
 import com.anyang.maruni.domain.dailycheck.domain.entity.RetryRecord;
 import com.anyang.maruni.domain.dailycheck.domain.repository.DailyCheckRecordRepository;
 import com.anyang.maruni.domain.member.domain.repository.MemberRepository;
-import com.anyang.maruni.domain.notification.domain.service.NotificationService;
+import com.anyang.maruni.domain.notification.domain.service.NotificationHistoryService;
+import com.anyang.maruni.domain.notification.domain.entity.NotificationHistory;
+import com.anyang.maruni.domain.notification.domain.vo.NotificationChannelType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,7 +40,7 @@ class DailyCheckOrchestratorTest {
     private SimpleConversationService conversationService;
 
     @Mock
-    private NotificationService notificationService;
+    private NotificationHistoryService notificationHistoryService;
 
     @Mock
     private DailyCheckRecordRepository dailyCheckRecordRepository;
@@ -49,6 +51,15 @@ class DailyCheckOrchestratorTest {
     @InjectMocks
     private DailyCheckOrchestrator dailyCheckOrchestrator;
 
+    private NotificationHistory testNotificationHistory = NotificationHistory.builder()
+            .id(1L)
+            .memberId(1L)
+            .title("안부 메시지")
+            .message("안녕하세요! 오늘 하루는 어떻게 지내고 계신가요?")
+            .channelType(NotificationChannelType.PUSH)
+            .success(true)
+            .build();
+
     @Test
     @DisplayName("매일 9시 안부 메시지를 모든 활성 회원에게 발송한다")
     void processAllActiveMembers_shouldSendToAllActiveMembers() {
@@ -57,15 +68,15 @@ class DailyCheckOrchestratorTest {
         given(memberRepository.findDailyCheckEnabledMemberIds()).willReturn(activeMemberIds);
         given(dailyCheckRecordRepository.existsSuccessfulRecordByMemberIdAndDate(anyLong(), any(LocalDate.class)))
                 .willReturn(false);  // 모든 회원에게 아직 발송하지 않음
-        given(notificationService.sendPushNotification(anyLong(), anyString(), anyString()))
-                .willReturn(true);
+        given(notificationHistoryService.recordNotificationWithType(anyLong(), anyString(), anyString(), any(), any(), any()))
+                .willReturn(testNotificationHistory);
 
         // When
         dailyCheckOrchestrator.processAllActiveMembers();
 
         // Then
-        verify(notificationService, times(3))
-                .sendPushNotification(anyLong(), eq("안부 메시지"), contains("안녕하세요"));
+        verify(notificationHistoryService, times(3))
+                .recordNotificationWithType(anyLong(), eq("안부 메시지"), contains("안녕하세요"), any(), any(), any());
         verify(conversationService, times(3))
                 .processSystemMessage(anyLong(), anyString());
         verify(dailyCheckRecordRepository, times(3))
@@ -82,17 +93,17 @@ class DailyCheckOrchestratorTest {
                 .willReturn(true);   // 1번 회원은 이미 발송됨
         given(dailyCheckRecordRepository.existsSuccessfulRecordByMemberIdAndDate(eq(2L), any(LocalDate.class)))
                 .willReturn(false);  // 2번 회원은 발송되지 않음
-        given(notificationService.sendPushNotification(anyLong(), anyString(), anyString()))
-                .willReturn(true);
+        given(notificationHistoryService.recordNotificationWithType(anyLong(), anyString(), anyString(), any(), any(), any()))
+                .willReturn(testNotificationHistory);
 
         // When
         dailyCheckOrchestrator.processAllActiveMembers();
 
         // Then
-        verify(notificationService, times(1))
-                .sendPushNotification(eq(2L), anyString(), anyString());
-        verify(notificationService, never())
-                .sendPushNotification(eq(1L), anyString(), anyString());
+        verify(notificationHistoryService, times(1))
+                .recordNotificationWithType(eq(2L), anyString(), anyString(), any(), any(), any());
+        verify(notificationHistoryService, never())
+                .recordNotificationWithType(eq(1L), anyString(), anyString(), any(), any(), any());
     }
 
     @Test
@@ -115,8 +126,8 @@ class DailyCheckOrchestratorTest {
         given(memberRepository.findDailyCheckEnabledMemberIds()).willReturn(activeMemberIds);
         given(dailyCheckRecordRepository.existsSuccessfulRecordByMemberIdAndDate(anyLong(), any(LocalDate.class)))
                 .willReturn(false);
-        given(notificationService.sendPushNotification(anyLong(), anyString(), anyString()))
-                .willReturn(false); // 실패 시나리오
+        given(notificationHistoryService.recordNotificationWithType(anyLong(), anyString(), anyString(), any(), any(), any()))
+                .willReturn(null); // 실패 시나리오
 
         // When
         dailyCheckOrchestrator.processAllActiveMembers();
@@ -137,8 +148,8 @@ class DailyCheckOrchestratorTest {
         dailyCheckOrchestrator.processAllRetries();
 
         // Then - 빈 목록이므로 알림 발송은 없어야 함
-        verify(notificationService, never())
-                .sendPushNotification(anyLong(), anyString(), anyString());
+        verify(notificationHistoryService, never())
+                .recordNotificationWithType(anyLong(), anyString(), anyString(), any(), any(), any());
     }
 
     @Test

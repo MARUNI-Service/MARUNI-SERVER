@@ -72,20 +72,14 @@ public enum ErrorCode implements ErrorType {
 	TOO_MANY_REQUESTS("R429", "너무 많은 요청입니다. 잠시 후 다시 시도해주세요.", HttpStatus.TOO_MANY_REQUESTS.value()),
 
 	// ============ Notification Domain ============
-	FIREBASE_CONNECTION_FAILED("N500", "Firebase 연결에 실패했습니다", HttpStatus.INTERNAL_SERVER_ERROR.value()),
 	PUSH_TOKEN_INVALID("N400", "유효하지 않은 푸시 토큰입니다", HttpStatus.BAD_REQUEST.value()),
 	NOTIFICATION_SEND_FAILED("N501", "알림 발송에 실패했습니다", HttpStatus.INTERNAL_SERVER_ERROR.value()),
 	TEMPLATE_NOT_FOUND("N404", "알림 템플릿을 찾을 수 없습니다", HttpStatus.NOT_FOUND.value()),
-	FIREBASE_SEND_FAILED("N502", "Firebase 메시지 발송에 실패했습니다", HttpStatus.INTERNAL_SERVER_ERROR.value()),
+	NOTIFICATION_NOT_FOUND("N407", "알림을 찾을 수 없습니다", HttpStatus.NOT_FOUND.value()),
 	NOTIFICATION_SERVICE_UNAVAILABLE("N503", "알림 서비스를 사용할 수 없습니다", HttpStatus.SERVICE_UNAVAILABLE.value()),
-	FIREBASE_CONFIG_ERROR("N504", "Firebase 설정 오류입니다", HttpStatus.INTERNAL_SERVER_ERROR.value()),
-
-	// Phase 1 Week 4-5: Stability Enhancement errors
-	FIREBASE_INVALID_TOKEN("N401", "Firebase 토큰이 유효하지 않습니다", HttpStatus.BAD_REQUEST.value()),
 	PUSH_TOKEN_NOT_FOUND("N405", "푸시 토큰을 찾을 수 없습니다", HttpStatus.NOT_FOUND.value()),
 	TEMPLATE_VARIABLE_MISSING("N402", "템플릿 변수가 누락되었습니다", HttpStatus.BAD_REQUEST.value()),
 	NOTIFICATION_HISTORY_SAVE_FAILED("N505", "알림 이력 저장에 실패했습니다", HttpStatus.INTERNAL_SERVER_ERROR.value()),
-	NOTIFICATION_FALLBACK_FAILED("N506", "모든 알림 서비스가 실패했습니다", HttpStatus.INTERNAL_SERVER_ERROR.value()),
 
 	// ============ Server Errors ============
 	ENCRYPTION_ERROR("S500", "암호화 처리 중 오류가 발생했습니다", HttpStatus.INTERNAL_SERVER_ERROR.value()),

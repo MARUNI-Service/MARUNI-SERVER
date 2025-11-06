@@ -6,6 +6,7 @@ import com.anyang.maruni.domain.alertrule.application.service.util.AlertServiceU
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertHistory;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertLevel;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertRule;
+import com.anyang.maruni.domain.alertrule.domain.entity.AlertType;
 import com.anyang.maruni.domain.alertrule.domain.repository.AlertHistoryRepository;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
 import com.anyang.maruni.domain.member.domain.repository.MemberRepository;
@@ -68,7 +69,7 @@ class AlertHistoryServiceTest {
         testRule = AlertRule.createEmotionPatternRule(testMember, 3, AlertLevel.HIGH);
 
         testAlertResult = AlertResult.createAlert(
-                AlertLevel.HIGH, "3일 연속 부정감정 감지", null);
+                AlertLevel.HIGH, AlertType.EMOTION_PATTERN, "3일 연속 부정감정 감지", null);
 
         testAlertHistory = AlertHistory.builder()
                 .id(1L)
@@ -150,7 +151,7 @@ class AlertHistoryServiceTest {
     void recordAlertHistory_Emergency() {
         // Given
         AlertResult emergencyResult = AlertResult.createAlert(
-                AlertLevel.EMERGENCY, "긴급 키워드 감지: 자살", null);
+                AlertLevel.EMERGENCY, AlertType.KEYWORD_DETECTION, "긴급 키워드 감지: 자살", null);
 
         AlertHistory emergencyHistory = AlertHistory.builder()
                 .id(2L)
@@ -186,7 +187,7 @@ class AlertHistoryServiceTest {
     void recordAlertHistory_MultipleTypes() {
         // Given - 감정 패턴 알림
         AlertResult emotionResult = AlertResult.createAlert(
-                AlertLevel.MEDIUM, "감정 패턴 이상 감지", null);
+                AlertLevel.MEDIUM, AlertType.EMOTION_PATTERN, "감정 패턴 이상 감지", null);
 
         AlertHistory emotionHistory = AlertHistory.builder()
                 .id(3L)
@@ -252,7 +253,7 @@ class AlertHistoryServiceTest {
     void recordAlertHistory_WithoutAlertRule_ThrowsException() {
         // Given
         AlertResult mvpResult = AlertResult.createAlert(
-                AlertLevel.HIGH, "MVP 테스트 알림", null);
+                AlertLevel.HIGH, AlertType.EMOTION_PATTERN, "MVP 테스트 알림", null);
 
         given(alertServiceUtils.createDetectionDetailsJson(mvpResult))
                 .willReturn("{\"alertLevel\":\"HIGH\",\"message\":\"MVP 테스트 알림\"}");

@@ -11,4 +11,3 @@ spring:
       - classpath:application-security.yml
       - classpath:application-swagger.yml
       - classpath:application-maruni.yml
-      - classpath:application-firebase.yml

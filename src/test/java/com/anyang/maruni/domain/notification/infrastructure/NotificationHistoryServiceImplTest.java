@@ -85,7 +85,7 @@ class NotificationHistoryServiceImplTest {
         String title = "안부 메시지";
         String message = "오늘 하루는 어떻게 지내고 계신가요?";
         NotificationChannelType channelType = NotificationChannelType.PUSH;
-        String externalMessageId = "firebase_msg_12345";
+        String externalMessageId = "push_msg_12345";
 
         NotificationHistory expectedHistory = NotificationHistory.builder()
                 .id(1L)
@@ -120,7 +120,7 @@ class NotificationHistoryServiceImplTest {
         String title = "안부 메시지";
         String message = "오늘 하루는 어떻게 지내고 계신가요?";
         NotificationChannelType channelType = NotificationChannelType.PUSH;
-        String errorMessage = "Firebase connection failed";
+        String errorMessage = "Push notification service connection failed";
 
         NotificationHistory expectedHistory = NotificationHistory.builder()
                 .id(1L)

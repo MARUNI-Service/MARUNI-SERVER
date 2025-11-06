@@ -15,21 +15,7 @@ maruni:
 
   notification:
     push:
-      enabled: true # MVP에서는 푸시 알림만 활성화
-      provider: "firebase"
-      project-id: ${FIREBASE_PROJECT_ID:maruni-project}
-    # Phase 1 Week 4-5: 안정성 강화 시스템 설정
-    stability:
-      enabled: ${NOTIFICATION_STABILITY_ENABLED:true}  # 기본값: true (전체 안정성 시스템 활성화)
-    fallback:
-      enabled: ${NOTIFICATION_FALLBACK_ENABLED:true}   # 기본값: true (Fallback 시스템 활성화)
-    history:
-      enabled: ${NOTIFICATION_HISTORY_ENABLED:true}    # 기본값: true (History 시스템 활성화)
-    retry:
-      enabled: ${NOTIFICATION_RETRY_ENABLED:true}      # 기본값: true (Retry 시스템 활성화)
-      max-attempts: ${NOTIFICATION_RETRY_MAX_ATTEMPTS:3}        # 최대 재시도 횟수
-      initial-delay-ms: ${NOTIFICATION_RETRY_INITIAL_DELAY:1000} # 초기 지연시간 (1초)
-      multiplier: ${NOTIFICATION_RETRY_MULTIPLIER:2.0}          # 백오프 배수 (지수적 증가)
+      enabled: true # MVP: Mock 푸시 알림 사용
 
   # AlertRule 도메인 설정 (Phase 1 리팩토링)
   alert:

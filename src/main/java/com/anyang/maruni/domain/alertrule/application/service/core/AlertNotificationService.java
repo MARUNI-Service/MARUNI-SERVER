@@ -10,9 +10,12 @@ import com.anyang.maruni.domain.alertrule.application.config.AlertConfigurationP
 import com.anyang.maruni.domain.alertrule.application.service.util.AlertServiceUtils;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertHistory;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertLevel;
+import com.anyang.maruni.domain.alertrule.domain.entity.AlertType;
 import com.anyang.maruni.domain.alertrule.domain.repository.AlertHistoryRepository;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
-import com.anyang.maruni.domain.notification.domain.service.NotificationService;
+import com.anyang.maruni.domain.notification.domain.service.NotificationHistoryService;
+import com.anyang.maruni.domain.notification.domain.vo.NotificationType;
+import com.anyang.maruni.domain.notification.domain.vo.NotificationSourceType;
 
 import lombok.RequiredArgsConstructor;
 
@@ -27,7 +30,7 @@ import lombok.RequiredArgsConstructor;
 @Transactional(readOnly = true)
 public class AlertNotificationService {
 
-    private final NotificationService notificationService;
+    private final NotificationHistoryService notificationHistoryService;
     private final AlertConfigurationProperties alertConfig;
     private final AlertServiceUtils alertServiceUtils;
     private final AlertHistoryRepository alertHistoryRepository;
@@ -48,8 +51,14 @@ public class AlertNotificationService {
         AlertHistory alertHistory = createAlertHistoryForMVP(member, alertResult);
         AlertHistory savedHistory = alertHistoryRepository.save(alertHistory);
 
-        // 3. 보호자 알림 발송 트리거
-        sendGuardianNotification(memberId, alertResult.getAlertLevel(), alertResult.getMessage());
+        // 3. 보호자 알림 발송 트리거 (MVP: AlertHistory ID 전달)
+        sendGuardianNotificationWithType(
+            memberId,
+            alertResult.getAlertLevel(),
+            alertResult.getMessage(),
+            alertResult.getAlertType(),
+            savedHistory.getId()
+        );
 
         return savedHistory.getId();
     }
@@ -91,6 +100,32 @@ public class AlertNotificationService {
         performNotificationSending(member, alertLevel, alertMessage, memberId);
     }
 
+    /**
+     * 보호자들에게 알림 발송 (MVP: 타입 정보 포함)
+     *
+     * @param memberId 회원 ID
+     * @param alertLevel 알림 레벨
+     * @param alertMessage 알림 메시지
+     * @param alertType 알림 타입 (EMOTION_PATTERN, NO_RESPONSE, KEYWORD)
+     * @param alertHistoryId AlertHistory ID
+     */
+    @Transactional
+    public void sendGuardianNotificationWithType(
+            Long memberId,
+            AlertLevel alertLevel,
+            String alertMessage,
+            AlertType alertType,
+            Long alertHistoryId
+    ) {
+        MemberEntity member = alertServiceUtils.validateAndGetMember(memberId);
+
+        if (!hasGuardian(member)) {
+            return;
+        }
+
+        performNotificationSendingWithType(member, alertLevel, alertMessage, alertType, alertHistoryId, memberId);
+    }
+
     // ========== Private 메서드들 (Phase 2에서 구현) ==========
 
     /**
@@ -108,16 +143,60 @@ public class AlertNotificationService {
         String alertTitle = String.format(alertConfig.getNotification().getTitleTemplate(), alertLevel.name());
 
         try {
-            boolean notificationSent = notificationService.sendPushNotification(
+            var notificationHistory = notificationHistoryService.recordNotification(
                     member.getGuardian().getId(),
                     alertTitle,
                     alertMessage
             );
 
-            handleNotificationResult(memberId, notificationSent, null);
+            handleNotificationResult(memberId, notificationHistory != null, null);
         } catch (Exception e) {
             handleNotificationResult(memberId, false, e.getMessage());
         }
+    }
+
+    /**
+     * 실제 알림 발송 수행 (MVP: 타입 정보 포함)
+     */
+    private void performNotificationSendingWithType(
+            MemberEntity member,
+            AlertLevel alertLevel,
+            String alertMessage,
+            AlertType alertType,
+            Long alertHistoryId,
+            Long memberId
+    ) {
+        String alertTitle = String.format(alertConfig.getNotification().getTitleTemplate(), alertLevel.name());
+
+        // AlertType → NotificationType 매핑
+        NotificationType notificationType = mapAlertTypeToNotificationType(alertType);
+
+        try {
+            var notificationHistory = notificationHistoryService.recordNotificationWithType(
+                    member.getGuardian().getId(),
+                    alertTitle,
+                    alertMessage,
+                    notificationType,
+                    NotificationSourceType.ALERT_RULE,
+                    alertHistoryId
+            );
+
+            handleNotificationResult(memberId, notificationHistory != null, null);
+        } catch (Exception e) {
+            handleNotificationResult(memberId, false, e.getMessage());
+        }
+    }
+
+    /**
+     * AlertType을 NotificationType으로 매핑
+     */
+    private NotificationType mapAlertTypeToNotificationType(AlertType alertType) {
+        return switch (alertType) {
+            case EMOTION_PATTERN -> NotificationType.EMOTION_ALERT;
+            case NO_RESPONSE -> NotificationType.NO_RESPONSE_ALERT;
+            case KEYWORD_DETECTION -> NotificationType.KEYWORD_ALERT;
+            default -> NotificationType.SYSTEM; // HEALTH_CONCERN, EMERGENCY 등 기타 타입
+        };
     }
 
     /**

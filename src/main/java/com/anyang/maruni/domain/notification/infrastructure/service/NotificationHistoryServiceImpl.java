@@ -5,6 +5,8 @@ import com.anyang.maruni.domain.notification.domain.repository.NotificationHisto
 import com.anyang.maruni.domain.notification.domain.vo.NotificationChannelType;
 import com.anyang.maruni.domain.notification.domain.service.NotificationHistoryService;
 import com.anyang.maruni.domain.notification.domain.vo.NotificationStatistics;
+import com.anyang.maruni.domain.notification.domain.vo.NotificationType;
+import com.anyang.maruni.domain.notification.domain.vo.NotificationSourceType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -162,6 +164,90 @@ public class NotificationHistoryServiceImpl implements NotificationHistoryServic
                 countBefore, before);
 
         return countBefore;
+    }
+
+    @Override
+    @Transactional
+    public NotificationHistory recordNotificationWithType(
+            Long memberId,
+            String title,
+            String message,
+            NotificationType notificationType,
+            NotificationSourceType sourceType,
+            Long sourceEntityId
+    ) {
+        validateMemberId(memberId);
+
+        if (title == null || title.trim().isEmpty()) {
+            throw new IllegalArgumentException("Title cannot be null or empty");
+        }
+
+        if (message == null || message.trim().isEmpty()) {
+            throw new IllegalArgumentException("Message cannot be null or empty");
+        }
+
+        if (notificationType == null) {
+            throw new IllegalArgumentException("NotificationType cannot be null");
+        }
+
+        if (sourceType == null) {
+            throw new IllegalArgumentException("NotificationSourceType cannot be null");
+        }
+
+        NotificationHistory history = NotificationHistory.createSuccessWithType(
+                memberId,
+                title,
+                message,
+                NotificationChannelType.PUSH,  // MVP: PUSH만 사용
+                notificationType,
+                sourceType,
+                sourceEntityId,
+                null  // externalMessageId는 실제 푸시 발송 시 설정
+        );
+
+        NotificationHistory savedHistory = historyRepository.save(history);
+
+        log.info("✅ Notification recorded - memberId: {}, type: {}, source: {}, historyId: {}",
+                memberId, notificationType, sourceType, savedHistory.getId());
+
+        return savedHistory;
+    }
+
+    @Override
+    @Transactional
+    public NotificationHistory recordNotification(
+            Long memberId,
+            String title,
+            String message
+    ) {
+        validateMemberId(memberId);
+
+        if (title == null || title.trim().isEmpty()) {
+            throw new IllegalArgumentException("Title cannot be null or empty");
+        }
+
+        if (message == null || message.trim().isEmpty()) {
+            throw new IllegalArgumentException("Message cannot be null or empty");
+        }
+
+        // 타입 정보 없는 기본 알림은 SYSTEM 타입으로 저장
+        NotificationHistory history = NotificationHistory.createSuccessWithType(
+                memberId,
+                title,
+                message,
+                NotificationChannelType.PUSH,
+                NotificationType.SYSTEM,
+                NotificationSourceType.SYSTEM,
+                null,
+                null
+        );
+
+        NotificationHistory savedHistory = historyRepository.save(history);
+
+        log.info("✅ Basic notification recorded - memberId: {}, historyId: {}",
+                memberId, savedHistory.getId());
+
+        return savedHistory;
     }
 
     /**

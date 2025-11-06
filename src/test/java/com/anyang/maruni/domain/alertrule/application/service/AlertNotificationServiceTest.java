@@ -6,11 +6,14 @@ import com.anyang.maruni.domain.alertrule.application.service.core.AlertNotifica
 import com.anyang.maruni.domain.alertrule.application.service.util.AlertServiceUtils;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertHistory;
 import com.anyang.maruni.domain.alertrule.domain.entity.AlertLevel;
+import com.anyang.maruni.domain.alertrule.domain.entity.AlertType;
 import com.anyang.maruni.domain.alertrule.domain.repository.AlertHistoryRepository;
 import com.anyang.maruni.domain.member.domain.entity.MemberEntity;
 import com.anyang.maruni.domain.guardian.domain.entity.GuardianRelation;
 import com.anyang.maruni.domain.member.domain.repository.MemberRepository;
-import com.anyang.maruni.domain.notification.domain.service.NotificationService;
+import com.anyang.maruni.domain.notification.domain.service.NotificationHistoryService;
+import com.anyang.maruni.domain.notification.domain.entity.NotificationHistory;
+import com.anyang.maruni.domain.notification.domain.vo.NotificationChannelType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -23,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -44,7 +48,7 @@ class AlertNotificationServiceTest {
 	private MemberRepository memberRepository;
 
 	@Mock
-	private NotificationService notificationService;
+	private NotificationHistoryService notificationHistoryService;
 
 	@Mock
 	private AlertConfigurationProperties alertConfig;
@@ -62,6 +66,7 @@ class AlertNotificationServiceTest {
 	private MemberEntity testGuardian;
 	private AlertResult testAlertResult;
 	private AlertHistory testAlertHistory;
+	private NotificationHistory testNotificationHistory;
 
 	@BeforeEach
 	void setUp() {
@@ -70,7 +75,6 @@ class AlertNotificationServiceTest {
 			.memberName("테스트보호자")
 			.memberEmail("guardian@example.com")
 			.memberPassword("password123")
-			.pushToken("guardian_push_token")
 			.build();
 
 		testMember = MemberEntity.builder()
@@ -82,7 +86,7 @@ class AlertNotificationServiceTest {
 		testMember.assignGuardian(testGuardian, GuardianRelation.FAMILY);
 
 		testAlertResult = AlertResult.createAlert(
-			AlertLevel.HIGH, "3일 연속 부정감정 감지", null);
+			AlertLevel.HIGH, AlertType.EMOTION_PATTERN, "3일 연속 부정감정 감지", null);
 
 		testAlertHistory = AlertHistory.builder()
 			.id(123L)
@@ -92,6 +96,15 @@ class AlertNotificationServiceTest {
 			.alertMessage("테스트 알림")
 			.detectionDetails("{\"details\":\"test\"}")
 			.isNotificationSent(false)
+			.build();
+
+		testNotificationHistory = NotificationHistory.builder()
+			.id(1L)
+			.memberId(testGuardian.getId())
+			.title("[HIGH] 알림")
+			.message("테스트 알림 메시지")
+			.channelType(NotificationChannelType.PUSH)
+			.success(true)
 			.build();
 	}
 
@@ -114,8 +127,8 @@ class AlertNotificationServiceTest {
 			.willReturn(testAlertHistory);
 		given(alertConfig.getNotification())
 			.willReturn(notificationConfig);
-		given(notificationService.sendPushNotification(anyLong(), anyString(), anyString()))
-			.willReturn(true);
+		given(notificationHistoryService.recordNotificationWithType(anyLong(), anyString(), anyString(), any(), any(), anyLong()))
+			.willReturn(testNotificationHistory);
 
 		// When
 		Long result = alertNotificationService.triggerAlert(memberId, testAlertResult);
@@ -126,9 +139,10 @@ class AlertNotificationServiceTest {
 		verify(alertServiceUtils, times(2)).validateAndGetMember(memberId);
 		verify(alertServiceUtils).createDetectionDetailsJson(testAlertResult);
 		verify(alertHistoryRepository).save(any(AlertHistory.class));
-		// triggerAlert는 내부적으로 sendGuardianNotification을 호출하므로 알림 발송도 검증
-		verify(notificationService).sendPushNotification(
-			testGuardian.getId(), "[HIGH] 알림", testAlertResult.getMessage());
+		// triggerAlert는 내부적으로 sendGuardianNotificationWithType을 호출하므로 알림 발송도 검증
+		verify(notificationHistoryService).recordNotificationWithType(
+			eq(testGuardian.getId()), eq("[HIGH] 알림"), eq(testAlertResult.getMessage()),
+			any(), any(), eq(expectedHistoryId));
 	}
 
 	@Test
@@ -149,15 +163,15 @@ class AlertNotificationServiceTest {
 			.willReturn(testMember);
 		given(alertConfig.getNotification())
 			.willReturn(notificationConfig);
-		given(notificationService.sendPushNotification(anyLong(), anyString(), anyString()))
-			.willReturn(true);
+		given(notificationHistoryService.recordNotification(anyLong(), anyString(), anyString()))
+			.willReturn(testNotificationHistory);
 
 		// When
 		alertNotificationService.sendGuardianNotification(memberId, alertLevel, alertMessage);
 
 		// Then
 		verify(alertServiceUtils).validateAndGetMember(memberId);
-		verify(notificationService).sendPushNotification(
+		verify(notificationHistoryService).recordNotification(
 			testGuardian.getId(), "[HIGH] 알림", alertMessage);
 	}
 
@@ -184,7 +198,7 @@ class AlertNotificationServiceTest {
 
 		// Then
 		verify(alertServiceUtils).validateAndGetMember(memberId);
-		verifyNoInteractions(notificationService);
+		verifyNoInteractions(notificationHistoryService);
 	}
 
 	@Test
@@ -205,15 +219,15 @@ class AlertNotificationServiceTest {
 			.willReturn(testMember);
 		given(alertConfig.getNotification())
 			.willReturn(notificationConfig);
-		given(notificationService.sendPushNotification(anyLong(), anyString(), anyString()))
-			.willReturn(false);
+		given(notificationHistoryService.recordNotification(anyLong(), anyString(), anyString()))
+			.willReturn(null);
 
 		// When
 		alertNotificationService.sendGuardianNotification(memberId, alertLevel, alertMessage);
 
 		// Then
 		verify(alertServiceUtils).validateAndGetMember(memberId);
-		verify(notificationService).sendPushNotification(
+		verify(notificationHistoryService).recordNotification(
 			testGuardian.getId(), "[HIGH] 알림", alertMessage);
 	}
 
@@ -235,7 +249,7 @@ class AlertNotificationServiceTest {
 			.willReturn(testMember);
 		given(alertConfig.getNotification())
 			.willReturn(notificationConfig);
-		given(notificationService.sendPushNotification(anyLong(), anyString(), anyString()))
+		given(notificationHistoryService.recordNotification(anyLong(), anyString(), anyString()))
 			.willThrow(new RuntimeException("네트워크 오류"));
 
 		// When
@@ -243,7 +257,7 @@ class AlertNotificationServiceTest {
 
 		// Then
 		verify(alertServiceUtils).validateAndGetMember(memberId);
-		verify(notificationService).sendPushNotification(
+		verify(notificationHistoryService).recordNotification(
 			testGuardian.getId(), "[HIGH] 알림", alertMessage);
 	}
 
@@ -265,15 +279,15 @@ class AlertNotificationServiceTest {
 			.willReturn(testMember);
 		given(alertConfig.getNotification())
 			.willReturn(notificationConfig);
-		given(notificationService.sendPushNotification(anyLong(), anyString(), anyString()))
-			.willReturn(true);
+		given(notificationHistoryService.recordNotification(anyLong(), anyString(), anyString()))
+			.willReturn(testNotificationHistory);
 
 		// When
 		alertNotificationService.sendGuardianNotification(memberId, alertLevel, alertMessage);
 
 		// Then
 		verify(alertServiceUtils).validateAndGetMember(memberId);
-		verify(notificationService).sendPushNotification(
+		verify(notificationHistoryService).recordNotification(
 			testGuardian.getId(), "[EMERGENCY] 긴급 알림", alertMessage);
 	}
 
@@ -297,8 +311,8 @@ class AlertNotificationServiceTest {
 
 		given(alertConfig.getNotification())
 			.willReturn(notificationConfig);
-		given(notificationService.sendPushNotification(anyLong(), anyString(), anyString()))
-			.willReturn(true);
+		given(notificationHistoryService.recordNotificationWithType(anyLong(), anyString(), anyString(), any(), any(), anyLong()))
+			.willReturn(testNotificationHistory);
 
 		// When
 		Long result = alertNotificationService.triggerAlert(memberId, testAlertResult);
@@ -306,12 +320,13 @@ class AlertNotificationServiceTest {
 		// Then
 		assertThat(result).isEqualTo(expectedHistoryId);
 
-		// AlertHistory 저장 확인 (validateAndGetMember는 두 번 호출됨: triggerAlert + sendGuardianNotification)
+		// AlertHistory 저장 확인 (validateAndGetMember는 두 번 호출됨: triggerAlert + sendGuardianNotificationWithType)
 		verify(alertServiceUtils, times(2)).validateAndGetMember(memberId);
 		verify(alertHistoryRepository).save(any(AlertHistory.class));
 
 		// 보호자 알림 발송 확인
-		verify(notificationService).sendPushNotification(
-			testGuardian.getId(), "[HIGH] 알림", testAlertResult.getMessage());
+		verify(notificationHistoryService).recordNotificationWithType(
+			eq(testGuardian.getId()), eq("[HIGH] 알림"), eq(testAlertResult.getMessage()),
+			any(), any(), eq(expectedHistoryId));
 	}
 }

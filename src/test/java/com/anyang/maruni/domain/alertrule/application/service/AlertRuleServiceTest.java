@@ -76,7 +76,7 @@ class AlertRuleServiceTest {
         );
 
         testAlertResult = AlertResult.createAlert(
-                AlertLevel.HIGH, "3일 연속 부정감정 감지", null);
+                AlertLevel.HIGH, AlertType.EMOTION_PATTERN, "3일 연속 부정감정 감지", null);
 
         testAlertHistory = AlertHistory.createAlert(
                 testRule, testMember, "테스트 알림", "{\"details\":\"test\"}");
@@ -112,7 +112,7 @@ class AlertRuleServiceTest {
         // Given
         Long memberId = 1L;
         AlertResult expectedResult = AlertResult.createAlert(
-                AlertLevel.EMERGENCY, "긴급 키워드 감지", null);
+                AlertLevel.EMERGENCY, AlertType.KEYWORD_DETECTION, "긴급 키워드 감지", null);
 
         // AlertDetectionService의 응답을 Mock
         given(alertDetectionService.detectKeywordAlert(testMessage, memberId))

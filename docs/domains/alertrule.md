@@ -149,7 +149,7 @@ POST /api/alert-rules/detect
 - **Conversation**: 대화 메시지 분석 → 키워드 감지
 - **DailyCheck**: 응답 패턴 분석 → 무응답 감지
 - **Guardian**: 보호자 알림 발송
-- **Notification**: 푸시 알림 전송
+- **Notification**: NotificationHistoryService를 통한 알림 이력 저장 및 조회
 
 ## 📁 패키지 구조
 

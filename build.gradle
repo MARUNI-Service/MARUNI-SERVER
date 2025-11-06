@@ -57,15 +57,6 @@ dependencies {
 	// Spring AI OpenAI Starter (공식 Spring AI OpenAI 연동)
 	implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
 
-	// === Firebase FCM (푸시 알림) 관련 의존성 ===
-
-	// Firebase Admin SDK (서버에서 푸시 알림 발송용)
-	implementation 'com.google.firebase:firebase-admin:9.5.0'
-
-	// Google Cloud 인증 (Firebase 서비스 계정 인증용)
-	implementation 'com.google.auth:google-auth-library-oauth2-http:1.39.0'
-
-
 	// === DB 드라이버 ===
 
 	// PostgreSQL 드라이버 (JPA와 연동되는 실DB 연결용)

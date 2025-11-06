@@ -36,12 +36,6 @@ public class MemberEntity extends BaseTimeEntity {
 	@Column(nullable = false)
 	private String memberPassword;
 
-	// ========== 기존 필드 ==========
-
-	// 푸시 알림 토큰 (Firebase FCM 토큰)
-	@Column(name = "push_token", length = 1000)
-	private String pushToken;
-
 	// ========== 신규 필드 ==========
 
 	/**
@@ -109,21 +103,6 @@ public class MemberEntity extends BaseTimeEntity {
 	public void updateMemberInfo(String name, String password) {
 		this.memberName = name;
 		this.memberPassword = password;
-	}
-
-	/**
-	 * 푸시 토큰 관리 (기존)
-	 */
-	public void updatePushToken(String pushToken) {
-		this.pushToken = pushToken;
-	}
-
-	public void removePushToken() {
-		this.pushToken = null;
-	}
-
-	public boolean hasPushToken() {
-		return this.pushToken != null && !this.pushToken.trim().isEmpty();
 	}
 
 	/**
