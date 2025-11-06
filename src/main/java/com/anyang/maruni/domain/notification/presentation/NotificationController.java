@@ -1,5 +1,6 @@
 package com.anyang.maruni.domain.notification.presentation;
 
+import com.anyang.maruni.domain.member.infrastructure.security.CustomUserDetails;
 import com.anyang.maruni.domain.notification.application.dto.response.NotificationResponseDto;
 import com.anyang.maruni.domain.notification.application.service.NotificationQueryService;
 import com.anyang.maruni.global.response.annotation.AutoApiResponse;
@@ -9,7 +10,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -49,9 +49,9 @@ public class NotificationController {
             @ApiResponse(responseCode = "401", description = "인증 실패")
     })
     public List<NotificationResponseDto> getAllNotifications(
-            @AuthenticationPrincipal UserDetails userDetails
+            @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Long memberId = Long.parseLong(userDetails.getUsername());
+        Long memberId = userDetails.getMemberId();
         return notificationQueryService.getAllNotifications(memberId);
     }
 
@@ -75,9 +75,9 @@ public class NotificationController {
             @ApiResponse(responseCode = "401", description = "인증 실패")
     })
     public Long getUnreadCount(
-            @AuthenticationPrincipal UserDetails userDetails
+            @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Long memberId = Long.parseLong(userDetails.getUsername());
+        Long memberId = userDetails.getMemberId();
         return notificationQueryService.getUnreadCount(memberId);
     }
 
