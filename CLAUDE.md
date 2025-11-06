@@ -71,7 +71,7 @@ Backend: Spring Boot 3.5.x + Java 21
 Database: PostgreSQL (단일 DB)
 AI: OpenAI GPT-4o (Spring AI)
 Auth: JWT Stateless (Access Token Only, 1시간)
-Notification: 알림 타입 시스템 (5종) + Mock 구현체
+Notification: 알림 타입 시스템 (5종) + 알림 이력 관리
 Testing: TDD Red-Green-Blue
 Architecture: DDD
 Docs: Swagger/OpenAPI 3.0

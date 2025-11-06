@@ -1,9 +1,23 @@
 # 알림 시스템 개선 계획 (Phase 1 - MVP Demo)
 
-**작성일**: 2025-11-05
-**최종 수정**: 2025-11-05 (v2.0 - MVP 단순화)
-**상태**: ✅ MVP 데모 버전
-**우선순위**: 🔴 높음
+> **⚠️ 아카이브 문서**
+>
+> **작성일**: 2025-11-05
+> **구현 완료**: 2025-11-06
+> **상태**: ✅ **구현 완료 (실제 구현은 더 단순화됨)**
+>
+> 이 문서는 초기 계획 문서입니다. **실제 구현 결과는 [docs/domains/notification.md](../domains/notification.md)를 참조하세요.**
+>
+> ### 계획 vs 실제 구현
+>
+> | 항목 | 계획 (이 문서) | 실제 구현 |
+> |------|------------|---------|
+> | **구조** | NotificationService → Decorator → Mock | NotificationHistoryService 직접 호출 |
+> | **제거 파일** | Retry, Fallback만 제거 | + NotificationService, Decorator, Mock 모두 제거 (5개 파일) |
+> | **알림 발송** | Mock이 가짜 발송 | NotificationHistoryService가 이력만 저장 |
+> | **단순성** | 3계층 (Service → Decorator → Mock) | 1계층 (NotificationHistoryService) |
+> | **알림 타입** | 8종 | 9종 (GUARDIAN_ACCEPT, GUARDIAN_REJECT 추가) |
+> | **결과** | MVP 단순화 | **더욱 단순화** (불필요한 추상화 완전 제거) |
 
 ---
 
