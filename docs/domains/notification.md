@@ -275,19 +275,11 @@ notification/
 
 **Note**: `infrastructure` 레이어는 `NotificationHistoryServiceImpl`만 포함합니다. Mock 관련 파일은 모두 제거되었습니다.
 
-## 🎯 REST API
+## 🎯 REST API (3개)
 
-### 1. 읽지 않은 알림 개수
+### 1. 전체 알림 조회
 ```http
-GET /api/notifications/unread/count
-Authorization: Bearer {token}
-
-Response: 5
-```
-
-### 2. 알림 이력 조회
-```http
-GET /api/notifications/history
+GET /api/notifications
 Authorization: Bearer {token}
 
 Response: [
@@ -299,26 +291,49 @@ Response: [
     "sourceType": "DAILY_CHECK",
     "sourceEntityId": 123,
     "isRead": false,
-    "sentAt": "2025-11-06T09:00:00",
+    "sentAt": "2025-11-07T09:00:00",
     "readAt": null
+  },
+  {
+    "id": 2,
+    "title": "보호자 등록 요청",
+    "message": "김순자님이 보호자로 등록을 요청했습니다",
+    "notificationType": "GUARDIAN_REQUEST",
+    "sourceType": "GUARDIAN_REQUEST",
+    "sourceEntityId": 5,
+    "isRead": true,
+    "sentAt": "2025-11-07T10:30:00",
+    "readAt": "2025-11-07T11:00:00"
   }
 ]
+
+Note: 최신순으로 정렬되어 반환
+```
+
+### 2. 안읽은 알림 개수 조회
+```http
+GET /api/notifications/unread-count
+Authorization: Bearer {token}
+
+Response: 5
 ```
 
 ### 3. 알림 읽음 처리
 ```http
-POST /api/notifications/{id}/read
+PATCH /api/notifications/{id}/read
 Authorization: Bearer {token}
 
-Response: { "message": "알림을 읽음 처리했습니다." }
-```
-
-### 4. 모든 알림 읽음 처리
-```http
-POST /api/notifications/read-all
-Authorization: Bearer {token}
-
-Response: { "message": "모든 알림을 읽음 처리했습니다." }
+Response: {
+  "id": 1,
+  "title": "안부 메시지",
+  "message": "안녕하세요! 오늘 하루는 어떻게 지내고 계신가요?",
+  "notificationType": "DAILY_CHECK",
+  "sourceType": "DAILY_CHECK",
+  "sourceEntityId": 123,
+  "isRead": true,
+  "sentAt": "2025-11-07T09:00:00",
+  "readAt": "2025-11-07T11:30:00"
+}
 ```
 
 ## 🧪 테스트 전략
@@ -340,13 +355,14 @@ Response: { "message": "모든 알림을 읽음 처리했습니다." }
 
 ## ✅ 완성도
 
-- [x] 알림 타입 시스템 (9종)
-- [x] 알림 출처 타입 (5종)
-- [x] 알림 이력 영속화
-- [x] 읽음 여부 추적
-- [x] 조회 API (4개)
+- [x] 알림 타입 시스템 (9종: DAILY_CHECK, GUARDIAN_REQUEST/ACCEPT/REJECT, EMOTION/NO_RESPONSE/KEYWORD_ALERT, SYSTEM, CHAT)
+- [x] 알림 출처 타입 (5종: DAILY_CHECK, ALERT_RULE, GUARDIAN_REQUEST, SYSTEM, CHAT)
+- [x] 알림 이력 영속화 (NotificationHistory Entity)
+- [x] 읽음 여부 추적 (isRead, readAt)
+- [x] REST API (3개: 전체 조회, 안읽은 개수, 읽음 처리)
 - [x] NotificationHistoryService 직접 호출 구조
-- [x] Mock 제거 및 단순화 완료
+- [x] Mock 제거 및 단순화 완료 (2025-11-06)
+- [x] NotificationQueryService (조회 전담)
 - [ ] Firebase FCM 연동 (Phase 3)
 - [ ] 실제 푸시 발송 (Phase 3)
 - [ ] 재시도 메커니즘 (Phase 3)

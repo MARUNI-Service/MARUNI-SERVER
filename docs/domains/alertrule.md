@@ -1,7 +1,7 @@
 # AlertRule 도메인
 
-**최종 업데이트**: 2025-10-09
-**상태**: ✅ Phase 1 완료 (3종 알고리즘 구현)
+**최종 업데이트**: 2025-11-07
+**상태**: ✅ Phase 2 완료 (3종 알고리즘 + Strategy Pattern)
 
 ## 📋 개요
 
@@ -49,52 +49,140 @@
 - `MEDIUM`: 중간
 - `LOW`: 낮음
 
-## 🌐 REST API
+## 🌐 REST API (9개)
 
-### 1. 알림 규칙 생성
+### 알림 규칙 관리
+
+#### 1. 알림 규칙 생성
 ```
 POST /api/alert-rules
 Headers: Authorization: Bearer {JWT}
 Body: {
   "alertType": "EMOTION_PATTERN",
   "alertLevel": "HIGH",
+  "condition": {
+    "consecutiveDays": 3,
+    "thresholdCount": null,
+    "keywords": null
+  }
+}
+```
+
+#### 2. 알림 규칙 목록 조회
+```
+GET /api/alert-rules
+Headers: Authorization: Bearer {JWT}
+
+Response: [
+  {
+    "id": 1,
+    "alertType": "EMOTION_PATTERN",
+    "alertLevel": "HIGH",
+    "ruleName": "연속 부정 감정 감지",
+    "description": "3일 연속 부정 감정",
+    "isActive": true,
+    "condition": { ... }
+  }
+]
+```
+
+#### 3. 알림 규칙 상세 조회
+```
+GET /api/alert-rules/{id}
+Headers: Authorization: Bearer {JWT}
+
+Response: {
+  "id": 1,
+  "alertType": "EMOTION_PATTERN",
+  "alertLevel": "HIGH",
+  "ruleName": "연속 부정 감정 감지",
+  "description": "3일 연속 부정 감정",
+  "isActive": true,
   "condition": { ... }
 }
 ```
 
-### 2. 알림 규칙 목록 조회
-```
-GET /api/alert-rules
-```
-
-### 3. 알림 규칙 수정
+#### 4. 알림 규칙 수정
 ```
 PUT /api/alert-rules/{id}
+Headers: Authorization: Bearer {JWT}
+Body: {
+  "ruleName": "수정된 규칙 이름",
+  "description": "수정된 설명",
+  "alertLevel": "MEDIUM"
+}
 ```
 
-### 4. 알림 규칙 삭제
+#### 5. 알림 규칙 삭제
 ```
 DELETE /api/alert-rules/{id}
+Headers: Authorization: Bearer {JWT}
 ```
 
-### 5. 알림 규칙 활성화/비활성화
+#### 6. 알림 규칙 활성화/비활성화
 ```
 POST /api/alert-rules/{id}/toggle?active=true
+Headers: Authorization: Bearer {JWT}
+
+Response: {
+  "id": 1,
+  "isActive": true,
+  ...
+}
 ```
 
-### 6. 알림 이력 조회
+### 알림 이력 관리
+
+#### 7. 알림 이력 조회
 ```
 GET /api/alert-rules/history?days=30
+Headers: Authorization: Bearer {JWT}
+
+Response: [
+  {
+    "id": 1,
+    "alertLevel": "HIGH",
+    "alertMessage": "3일 연속 부정 감정 감지",
+    "detectionDetails": "{...}",
+    "alertDate": "2025-11-07T10:00:00",
+    "isNotificationSent": true
+  }
+]
 ```
 
-### 7. 알림 상세 조회 ✅ 신규
+#### 8. 알림 상세 조회
 ```
 GET /api/alert-rules/history/{alertId}
+Headers: Authorization: Bearer {JWT}
+
+Response: {
+  "id": 1,
+  "alertLevel": "HIGH",
+  "alertMessage": "3일 연속 부정 감정 감지",
+  "detectionDetails": "{...}",
+  "alertDate": "2025-11-07T10:00:00",
+  "isNotificationSent": true
+}
 ```
 
-### 8. 수동 이상징후 감지
+### 이상징후 감지
+
+#### 9. 수동 이상징후 감지
 ```
 POST /api/alert-rules/detect
+Headers: Authorization: Bearer {JWT}
+
+Response: {
+  "memberId": 1,
+  "detectionResults": [
+    {
+      "alertType": "EMOTION_PATTERN",
+      "detected": true,
+      "alertLevel": "HIGH",
+      "message": "3일 연속 부정 감정 감지"
+    }
+  ]
+}
 ```
 
 ## 🔧 핵심 서비스
@@ -164,17 +252,19 @@ alertrule/
 │   ├── entity/               # AlertRule, AlertHistory
 │   └── repository/
 └── presentation/
-    └── controller/           # AlertRuleController (8개 API)
+    └── controller/           # AlertRuleController (9개 API)
 ```
 
 ## ✅ 완성도
 
-- [x] 3종 감지 알고리즘
-- [x] Strategy Pattern 적용
-- [x] 알림 규칙 CRUD
-- [x] 알림 이력 관리
-- [x] REST API (8개)
-- [x] 보호자 알림 연동
+- [x] 3종 감지 알고리즘 (감정 패턴, 무응답, 키워드)
+- [x] Strategy Pattern 적용 (analyzer/strategy/)
+- [x] 알림 규칙 CRUD (생성, 조회, 수정, 삭제, 활성화/비활성화)
+- [x] 알림 이력 관리 (AlertHistory 영속화)
+- [x] REST API (9개: 규칙 관리 6개 + 이력 관리 2개 + 수동 감지 1개)
+- [x] 보호자 알림 연동 (Guardian 도메인)
+- [x] Notification 연동 (알림 이력 저장)
 - [x] JWT 인증
+- [x] TDD 테스트
 
 **상용 서비스 수준 완성**

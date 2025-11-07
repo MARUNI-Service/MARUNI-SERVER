@@ -1,31 +1,29 @@
 # Guardian 도메인
 
-**최종 업데이트**: 2025-10-09
-**상태**: ✅ Phase 2 완성 (TDD 완전 사이클)
+**최종 업데이트**: 2025-11-07
+**상태**: ✅ Phase 2 완성 (보호자 요청 시스템 + Member 자기 참조)
 
 ## 📋 개요
 
-보호자 관리 및 Member 관계 설정 시스템입니다.
+보호자 요청 및 관계 관리 시스템입니다. Member 자기 참조 방식으로 보호자 관계를 구현합니다.
 
 ### 핵심 기능
-- 보호자 CRUD
-- Member-Guardian 관계 설정/해제
-- 알림 설정 관리 (PUSH/EMAIL/SMS/ALL)
-- 소프트 삭제 (isActive)
+- 보호자 요청 생성 (노인 → 보호자)
+- 보호자 요청 수락/거절
+- Member 간 보호자 관계 설정
+- 요청 상태 관리 (PENDING, ACCEPTED, REJECTED)
 
 ## 🏗️ 주요 엔티티
 
-### GuardianEntity
-```java
+### GuardianRequest
 - id: Long
-- guardianName: String        // 보호자 이름
-- guardianEmail: String       // 보호자 이메일 (유니크)
-- guardianPhone: String       // 보호자 전화번호
-- relation: GuardianRelation  // 관계 (가족/친구/돌봄제공자 등)
-- notificationPreference: NotificationPreference  // 알림 설정
-- isActive: Boolean           // 활성 상태
-- members: List<MemberEntity> // 담당 회원 (일대다)
-```
+- requester: MemberEntity (요청한 사람, 노인)
+- guardian: MemberEntity (요청받은 사람, 보호자)
+- relation: GuardianRelation (관계 타입)
+- status: RequestStatus (PENDING, ACCEPTED, REJECTED)
+- createdAt/updatedAt: LocalDateTime
+
+**유니크 제약**: (requester_id, guardian_id) 중복 요청 방지
 
 ### GuardianRelation (Enum)
 - `FAMILY`: 가족
@@ -34,99 +32,133 @@
 - `NEIGHBOR`: 이웃
 - `OTHER`: 기타
 
-### NotificationPreference (Enum)
-- `PUSH`: 푸시알림 (Firebase FCM)
-- `EMAIL`: 이메일
-- `SMS`: SMS (Phase 3)
-- `ALL`: 모든 알림
+### RequestStatus (Enum)
+- `PENDING`: 대기 중
+- `ACCEPTED`: 수락됨
+- `REJECTED`: 거절됨
 
-## 🌐 REST API
+## 🌐 REST API (4개)
 
-### 1. 보호자 생성
+### 1. 보호자 요청 생성
 ```
-POST /api/guardians
+POST /api/guardians/requests
+Headers: Authorization: Bearer {JWT} (요청자 토큰)
 Body: {
-  "guardianName": "김보호",
-  "guardianEmail": "guardian@example.com",
-  "guardianPhone": "010-1234-5678",
-  "relation": "FAMILY",
-  "notificationPreference": "ALL"
+  "guardianId": 2,
+  "relation": "FAMILY"
 }
+
+Response: {
+  "id": 1,
+  "requesterId": 1,
+  "requesterName": "김순자",
+  "guardianId": 2,
+  "guardianName": "김영희",
+  "relation": "FAMILY",
+  "status": "PENDING",
+  "createdAt": "2025-11-07T10:00:00"
+}
+
+Note:
+- 이미 보호자가 있으면 400 에러
+- 중복 요청 시 409 에러
+- 본인에게 요청 시 400 에러
 ```
 
-### 2. 보호자 조회
+### 2. 내가 받은 보호자 요청 목록 조회
 ```
-GET /api/guardians/{guardianId}
+GET /api/guardians/requests
+Headers: Authorization: Bearer {JWT} (보호자 토큰)
+
+Response: [
+  {
+    "id": 1,
+    "requesterId": 1,
+    "requesterName": "김순자",
+    "guardianId": 2,
+    "guardianName": "김영희",
+    "relation": "FAMILY",
+    "status": "PENDING",
+    "createdAt": "2025-11-07T10:00:00"
+  }
+]
+
+Note: PENDING 상태의 요청만 반환
 ```
 
-### 3. 보호자 정보 수정
+### 3. 보호자 요청 수락
 ```
-PUT /api/guardians/{guardianId}
+POST /api/guardians/requests/{requestId}/accept
+Headers: Authorization: Bearer {JWT} (보호자 토큰)
+
+Response: 200 OK
+
+Note:
+- 요청 상태가 ACCEPTED로 변경
+- MemberEntity.guardian 필드에 보호자 설정
+- MemberEntity.guardianRelation 필드에 관계 저장
+- Notification 이력 저장
 ```
 
-### 4. 보호자 비활성화
+### 4. 보호자 요청 거절
 ```
-DELETE /api/guardians/{guardianId}
+POST /api/guardians/requests/{requestId}/reject
+Headers: Authorization: Bearer {JWT} (보호자 토큰)
+
+Response: 200 OK
+
+Note: 요청 상태가 REJECTED로 변경
 ```
 
-### 5. 회원에게 보호자 할당
-```
-POST /api/guardians/{guardianId}/members/{memberId}
-```
+## 🔧 핵심 메서드
 
-### 6. 회원의 보호자 관계 해제
-```
-DELETE /api/guardians/members/{memberId}/guardian
-```
+### GuardianRequest
+- `createRequest(requester, guardian, relation)`: 보호자 요청 생성 (정적 팩토리)
+- `accept()`: 요청 수락 (PENDING → ACCEPTED)
+- `reject()`: 요청 거절 (PENDING → REJECTED)
 
-### 7. 보호자가 담당하는 회원 목록 조회
-```
-GET /api/guardians/{guardianId}/members
-```
+### GuardianRelationService
+- `sendRequest(requesterId, guardianId, relation)`: 보호자 요청 생성
+- `getReceivedRequests(guardianId)`: 받은 요청 목록 조회
+- `acceptRequest(requestId, guardianId)`: 요청 수락 후 Member 관계 설정
+- `rejectRequest(requestId, guardianId)`: 요청 거절
+- `removeGuardian(memberId)`: 보호자 관계 해제
 
-## 🔧 핵심 서비스
-
-### GuardianService
-- `createGuardian()`: 보호자 생성 (이메일 중복 검증)
-- `assignGuardianToMember()`: Member-Guardian 관계 설정
-- `removeGuardianFromMember()`: Member-Guardian 관계 해제
-- `deactivateGuardian()`: 보호자 비활성화 (연결된 모든 Member 해제)
-- `getMembersByGuardian()`: 보호자가 담당하는 회원 목록
+### Member 연동 (MemberEntity)
+- `assignGuardian(guardian, relation)`: 보호자 설정
+- `removeGuardian()`: 보호자 제거
+- `hasGuardian()`: 보호자 존재 여부
+- `getManagedMembers()`: 내가 돌보는 사람들
 
 ## 🔗 도메인 연동
 
-- **Member**: MemberEntity.guardian 필드로 일대다 관계
-- **AlertRule**: 보호자 알림 발송
-- **Notification**: NotificationPreference 기반 알림 채널 선택
-
-## 🧪 테스트 완성도
-
-- ✅ **11개 테스트 시나리오**: Entity(4) + Repository(3) + Service(4)
-- ✅ **TDD 완전 사이클**: Red → Green → Blue
-- ✅ **100% 통과**: 모든 테스트 성공
+- **Member**: MemberEntity.guardian 자기 참조 (보호자 관계)
+- **Member**: MemberEntity.managedMembers 자기 참조 (돌보는 사람들)
+- **AlertRule**: 보호자에게 이상징후 알림 발송
+- **Notification**: 보호자 요청/수락/거절 알림 이력 저장
 
 ## 📁 패키지 구조
 
 ```
 guardian/
 ├── application/
-│   ├── dto/                  # Request/Response DTO
-│   ├── service/              # GuardianService
-│   └── exception/            # GuardianNotFoundException
+│   ├── dto/                  # GuardianRequestDto, GuardianRequestResponse
+│   └── service/              # GuardianRelationService
 ├── domain/
-│   ├── entity/               # GuardianEntity, GuardianRelation, NotificationPreference
-│   └── repository/           # GuardianRepository
+│   ├── entity/               # GuardianRequest, GuardianRelation (Enum), RequestStatus (Enum)
+│   └── repository/           # GuardianRequestRepository
 └── presentation/
-    └── controller/           # GuardianController (7개 API)
+    └── controller/           # GuardianRelationController (4개 API)
 ```
 
 ## ✅ 완성도
 
-- [x] 보호자 CRUD
-- [x] Member-Guardian 관계 관리
-- [x] 4종 알림 채널 설정
-- [x] 소프트 삭제
-- [x] 7개 REST API
-- [x] TDD 완전 적용
+- [x] 보호자 요청 시스템 (요청/수락/거절)
+- [x] Member 자기 참조 보호자 관계
+- [x] 요청 상태 관리 (PENDING, ACCEPTED, REJECTED)
+- [x] 중복 요청 방지 (유니크 제약)
+- [x] REST API (4개: 요청 생성, 받은 요청 조회, 수락, 거절)
+- [x] Notification 연동 (요청/수락/거절 알림)
+- [x] TDD 테스트
 
 **상용 서비스 수준 완성**
