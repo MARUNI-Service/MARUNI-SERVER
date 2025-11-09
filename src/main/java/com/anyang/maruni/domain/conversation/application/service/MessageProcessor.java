@@ -1,5 +1,7 @@
 package com.anyang.maruni.domain.conversation.application.service;
 
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -7,9 +9,9 @@ import com.anyang.maruni.domain.conversation.application.dto.MessageExchangeResu
 import com.anyang.maruni.domain.conversation.domain.entity.ConversationEntity;
 import com.anyang.maruni.domain.conversation.domain.entity.EmotionType;
 import com.anyang.maruni.domain.conversation.domain.entity.MessageEntity;
-import com.anyang.maruni.domain.conversation.domain.repository.MessageRepository;
 import com.anyang.maruni.domain.conversation.domain.port.AIResponsePort;
 import com.anyang.maruni.domain.conversation.domain.port.EmotionAnalysisPort;
+import com.anyang.maruni.domain.conversation.domain.repository.MessageRepository;
 import com.anyang.maruni.domain.conversation.domain.vo.ConversationContext;
 import com.anyang.maruni.domain.conversation.domain.vo.MemberProfile;
 
@@ -47,7 +49,7 @@ public class MessageProcessor {
 
         // 2. 대화 컨텍스트 구성 (최근 히스토리 포함)
         MemberProfile profile = MemberProfile.createDefault(conversation.getMemberId());
-        java.util.List<MessageEntity> recentHistory = conversation.getRecentHistory(5);
+        List<MessageEntity> recentHistory = conversation.getRecentHistory(5);
         ConversationContext context = ConversationContext.forUserMessage(content, recentHistory, profile, emotion);
 
         // 3. 사용자 메시지 저장 (도메인 로직 활용)
