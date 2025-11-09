@@ -1,7 +1,7 @@
 # DailyCheck 도메인
 
-**최종 업데이트**: 2025-10-09
-**상태**: ✅ TDD Red-Green-Blue 완성 (SRP 리팩토링)
+**최종 업데이트**: 2025-11-09
+**상태**: ✅ TDD Red-Green-Blue 완성 (SRP 리팩토링 + 메시지 다양화)
 
 ## 📋 개요
 
@@ -9,6 +9,7 @@
 
 ### 핵심 기능
 - 매일 오전 9시 자동 발송
+- 요일별 + 계절별 다양한 메시지 생성 (500+ 조합)
 - 중복 발송 방지 (DB 제약 조건)
 - 실패 시 자동 재시도 (최대 3회)
 - 점진적 지연 (5분 간격)
@@ -45,10 +46,26 @@
 - `processAllRetries()`: 실패 건 재시도 처리
 - `isAlreadySentToday(memberId)`: 중복 발송 방지 체크
 
+### DailyCheckMessageProvider (메시지 생성)
+- `generateMessage()`: 오늘 날짜 기준 메시지 생성
+- `generateMessage(LocalDate)`: 특정 날짜 기준 메시지 생성 (테스트용)
+- 템플릿 기반 메시지 조합 (`{season}` 플레이스홀더)
+- Seed 기반 의사 랜덤 선택 (결정적 + 예측 불가)
+
 ### RetryService (재시도 관리)
 - `scheduleRetry(memberId, message)`: 재시도 스케줄링
 - `getPendingRetries()`: 대기 중인 재시도 조회
 - `markCompleted(retryRecord)`: 재시도 완료 처리
+
+## 📦 주요 VO
+
+### SeasonType (계절 타입)
+```java
+- SPRING("봄"): 3~5월
+- SUMMER("여름"): 6~8월
+- AUTUMN("가을"): 9~11월
+- WINTER("겨울"): 12~2월
+```
 
 ## 🔗 도메인 연동
 
@@ -77,25 +94,37 @@ maruni:
 
 ```
 dailycheck/
-├── application/scheduler/    # Scheduler 계층
-│   ├── DailyCheckScheduler.java      # 스케줄링 트리거
-│   ├── DailyCheckOrchestrator.java   # 비즈니스 로직
-│   └── RetryService.java             # 재시도 관리
+├── application/
+│   ├── scheduler/            # Scheduler 계층
+│   │   ├── DailyCheckScheduler.java      # 스케줄링 트리거
+│   │   ├── DailyCheckOrchestrator.java   # 비즈니스 로직
+│   │   └── RetryService.java             # 재시도 관리
+│   └── service/              # Application Service
+│       └── DailyCheckMessageProvider.java # 메시지 생성
 └── domain/
     ├── entity/               # DailyCheckRecord, RetryRecord
-    └── repository/           # JPA Repository
+    ├── repository/           # JPA Repository
+    └── vo/                   # Value Object
+        └── SeasonType.java   # 계절 타입 Enum
 ```
 
 ## 🧪 테스트 완성도
 
-- ✅ **15개 테스트 시나리오**: Entity(4) + Repository(4) + Service(7)
+- ✅ **28개 테스트 시나리오**: Entity(4) + Repository(4) + VO(4) + Service(16)
 - ✅ **TDD 완전 사이클**: Red → Green → Blue
 - ✅ **SRP 리팩토링**: 단일 책임 원칙 준수
 - ✅ **100% 통과**: 모든 테스트 성공
 
+### 메시지 다양화 테스트
+- 계절 경계 케이스 (12월→1월→2월 WINTER 연속성)
+- 같은 날짜 결정성 (100회 호출 → 동일 메시지)
+- 28개 조합 완전성 (7요일 × 4계절)
+- 템플릿 플레이스홀더 치환 검증
+
 ## ✅ 완성도
 
 - [x] 매일 자동 발송 (Cron)
+- [x] 요일별 + 계절별 메시지 다양화 (500+ 조합)
 - [x] 중복 발송 방지 (DB 제약)
 - [x] 자동 재시도 (최대 3회)
 - [x] 점진적 지연 (5분 간격)

@@ -1,6 +1,7 @@
 package com.anyang.maruni.domain.dailycheck.application.scheduler;
 
 import com.anyang.maruni.domain.conversation.application.service.SimpleConversationService;
+import com.anyang.maruni.domain.dailycheck.application.service.DailyCheckMessageProvider;
 import com.anyang.maruni.domain.dailycheck.domain.entity.RetryRecord;
 import com.anyang.maruni.domain.dailycheck.domain.repository.DailyCheckRecordRepository;
 import com.anyang.maruni.domain.member.domain.repository.MemberRepository;
@@ -34,6 +35,9 @@ import static org.mockito.BDDMockito.*;
 class DailyCheckOrchestratorTest {
 
     @Mock
+    private DailyCheckMessageProvider messageProvider;
+
+    @Mock
     private MemberRepository memberRepository;
 
     @Mock
@@ -64,7 +68,10 @@ class DailyCheckOrchestratorTest {
     @DisplayName("매일 9시 안부 메시지를 모든 활성 회원에게 발송한다")
     void processAllActiveMembers_shouldSendToAllActiveMembers() {
         // Given
+        String testMessage = "새로운 한 주가 시작됐어요! 따뜻한 봄날, 산책 어떠세요?";
         List<Long> activeMemberIds = Arrays.asList(1L, 2L, 3L);
+
+        given(messageProvider.generateMessage()).willReturn(testMessage);
         given(memberRepository.findDailyCheckEnabledMemberIds()).willReturn(activeMemberIds);
         given(dailyCheckRecordRepository.existsSuccessfulRecordByMemberIdAndDate(anyLong(), any(LocalDate.class)))
                 .willReturn(false);  // 모든 회원에게 아직 발송하지 않음
@@ -75,8 +82,9 @@ class DailyCheckOrchestratorTest {
         dailyCheckOrchestrator.processAllActiveMembers();
 
         // Then
+        verify(messageProvider, times(3)).generateMessage();  // 메시지 생성 확인
         verify(notificationHistoryService, times(3))
-                .recordNotificationWithType(anyLong(), eq("안부 메시지"), contains("안녕하세요"), any(), any(), any());
+                .recordNotificationWithType(anyLong(), eq("안부 메시지"), eq(testMessage), any(), any(), any());
         verify(conversationService, times(3))
                 .processSystemMessage(anyLong(), anyString());
         verify(dailyCheckRecordRepository, times(3))
@@ -87,7 +95,10 @@ class DailyCheckOrchestratorTest {
     @DisplayName("같은 날 중복 발송을 방지한다")
     void processAllActiveMembers_shouldPreventDuplicateOnSameDay() {
         // Given
+        String testMessage = "화요일이에요. 더운 날씨에 건강 조심하세요";
         List<Long> activeMemberIds = Arrays.asList(1L, 2L);
+
+        given(messageProvider.generateMessage()).willReturn(testMessage);
         given(memberRepository.findDailyCheckEnabledMemberIds()).willReturn(activeMemberIds);
         given(dailyCheckRecordRepository.existsSuccessfulRecordByMemberIdAndDate(eq(1L), any(LocalDate.class)))
                 .willReturn(true);   // 1번 회원은 이미 발송됨
@@ -100,6 +111,7 @@ class DailyCheckOrchestratorTest {
         dailyCheckOrchestrator.processAllActiveMembers();
 
         // Then
+        verify(messageProvider, times(2)).generateMessage();  // 2번 호출 (중복 체크 전 생성)
         verify(notificationHistoryService, times(1))
                 .recordNotificationWithType(eq(2L), anyString(), anyString(), any(), any(), any());
         verify(notificationHistoryService, never())
@@ -122,7 +134,10 @@ class DailyCheckOrchestratorTest {
     @DisplayName("푸시 알림 실패 시 재시도 스케줄에 등록한다")
     void processAllActiveMembers_shouldScheduleRetryOnFailure() {
         // Given
+        String testMessage = "금요일이에요, 이번 주도 수고하셨어요. 겨울이에요, 감기 조심하세요";
         List<Long> activeMemberIds = Arrays.asList(1L);
+
+        given(messageProvider.generateMessage()).willReturn(testMessage);
         given(memberRepository.findDailyCheckEnabledMemberIds()).willReturn(activeMemberIds);
         given(dailyCheckRecordRepository.existsSuccessfulRecordByMemberIdAndDate(anyLong(), any(LocalDate.class)))
                 .willReturn(false);
@@ -133,7 +148,8 @@ class DailyCheckOrchestratorTest {
         dailyCheckOrchestrator.processAllActiveMembers();
 
         // Then
-        verify(retryService, times(1)).scheduleRetry(anyLong(), anyString());  // 재시도 기록 스케줄링 확인
+        verify(messageProvider, times(1)).generateMessage();
+        verify(retryService, times(1)).scheduleRetry(anyLong(), eq(testMessage));  // 재시도 기록 스케줄링 확인
         verify(dailyCheckRecordRepository, times(1)).save(any());  // 실패 기록 저장 확인
     }
 
