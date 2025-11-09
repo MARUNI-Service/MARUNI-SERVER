@@ -1,6 +1,7 @@
 package com.anyang.maruni.domain.dailycheck.application.scheduler;
 
 import com.anyang.maruni.domain.conversation.application.service.SimpleConversationService;
+import com.anyang.maruni.domain.dailycheck.application.service.DailyCheckMessageProvider;
 import com.anyang.maruni.domain.dailycheck.domain.entity.DailyCheckRecord;
 import com.anyang.maruni.domain.dailycheck.domain.entity.RetryRecord;
 import com.anyang.maruni.domain.dailycheck.domain.repository.DailyCheckRecordRepository;
@@ -31,10 +32,10 @@ public class DailyCheckOrchestrator {
 
     // 상수 정의
     private static final String DAILY_CHECK_TITLE = "안부 메시지";
-    private static final String DAILY_CHECK_MESSAGE = "안녕하세요! 오늘 하루는 어떻게 지내고 계신가요?";
     private static final int ALLOWED_START_HOUR = 7;
     private static final int ALLOWED_END_HOUR = 21;
 
+    private final DailyCheckMessageProvider messageProvider;
     private final MemberRepository memberRepository;
     private final SimpleConversationService conversationService;
     private final NotificationHistoryService notificationHistoryService;
@@ -75,6 +76,9 @@ public class DailyCheckOrchestrator {
      * 개별 회원 안부 확인 처리
      */
     private void processMemberDailyCheck(Long memberId) {
+        // 메시지 생성 (전체 메서드에서 사용)
+        String message = messageProvider.generateMessage();
+
         try {
             // 중복 발송 체크
             if (isAlreadySentToday(memberId)) {
@@ -84,7 +88,8 @@ public class DailyCheckOrchestrator {
 
             // 안부 메시지 발송 (MVP: 타입 정보 포함)
             String title = DAILY_CHECK_TITLE;
-            String message = DAILY_CHECK_MESSAGE;
+
+            log.info("Daily check message generated for member {}: {}", memberId, message);
 
             var notificationHistory = notificationHistoryService.recordNotificationWithType(
                 memberId,
@@ -103,7 +108,7 @@ public class DailyCheckOrchestrator {
 
         } catch (Exception e) {
             log.error("Error sending daily check message to member {}: {}", memberId, e.getMessage());
-            retryService.scheduleRetry(memberId, DAILY_CHECK_MESSAGE);
+            retryService.scheduleRetry(memberId, message);
         }
     }
 
