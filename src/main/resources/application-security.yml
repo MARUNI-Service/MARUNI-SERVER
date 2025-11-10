@@ -9,6 +9,7 @@ security:
     - "/swagger-ui/**"
     - "/api/join/**"
     - "/api/auth/login"
+    - "/actuator/health"
 
 # 공통 JWT 설정
 jwt:
