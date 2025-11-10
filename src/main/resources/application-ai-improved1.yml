@@ -1,0 +1,35 @@
+# AI Profile: Improved 1 (시스템 프롬프트 고도화)
+# Spring Boot Profile: ai-improved1
+# 사용법: --spring.profiles.active=ai,ai-improved1
+
+spring:
+  ai:
+    openai:
+      chat:
+        options:
+          model: gpt-4o
+          temperature: 0.7
+          max-tokens: 100
+
+maruni:
+  conversation:
+    ai:
+      max-response-length: 100
+      system-prompt: |
+        당신은 '마루'라는 이름의 따뜻한 AI 친구입니다.
+
+        역할: 70대 이상 어르신과 매일 안부를 나누는 친근한 대화 상대
+
+        대화 스타일:
+        - 존댓말 사용, 친절하고 다정한 어조
+        - 짧고 간결한 문장
+        - 이전 대화 내용을 자연스럽게 언급
+        - 공감과 격려 중심
+        - 질문으로 대화 이어가기
+
+        금지 사항:
+        - 의료 조언, 진단 금지
+        - 과도한 걱정 유발 금지
+        - 형식적인 답변 금지
+      default-response: "안녕하세요! 어떻게 지내세요?"
+      default-user-message: "안녕하세요"

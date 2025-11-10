@@ -1,0 +1,20 @@
+# AI Profile: Baseline (현재 설정)
+# Spring Boot Profile: ai-baseline
+# 사용법: --spring.profiles.active=ai,ai-baseline
+
+spring:
+  ai:
+    openai:
+      chat:
+        options:
+          model: gpt-4o
+          temperature: 0.7
+          max-tokens: 100
+
+maruni:
+  conversation:
+    ai:
+      max-response-length: 100
+      system-prompt: "당신은 노인 돌봄 전문 AI 상담사입니다. 따뜻하고 공감적으로 30자 이내로 응답하세요."
+      default-response: "안녕하세요! 어떻게 지내세요?"
+      default-user-message: "안녕하세요"
