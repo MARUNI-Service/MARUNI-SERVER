@@ -1,10 +1,11 @@
 # 🚨 자동 위험 감지 트리거 통합 구현 계획서
 
 **작성일**: 2025-11-12
-**최종 수정**: 2025-11-12
-**상태**: 📋 계획 단계 (검토 완료)
-**담당 도메인**: AlertRule ↔ DailyCheck, AlertRule ↔ Conversation
+**최종 수정**: 2025-11-12 (데모 목적 단순화 반영)
+**상태**: 📋 계획 단계 (리뷰 완료)
+**담당 도메인**: AlertRule (자체 스케줄러) ↔ DailyCheck, AlertRule ↔ Conversation
 **개발 방식**: 선 구현 후 테스트 작성
+**목적**: 데모용 (과한 복잡성 제거)
 
 ---
 
@@ -40,12 +41,17 @@ DailyCheck와 Conversation 도메인에서 AlertRule 도메인을 호출하여 *
 
 #### 구현 위치
 ```
-dailycheck/
+alertrule/
 └── application/
     └── scheduler/
         ├── (신규) AlertScheduler.java       # 스케줄링 트리거
         └── (신규) AlertTriggerService.java  # Alert 호출 전담
 ```
+
+**패키지 위치 선정 이유 (DDD 원칙):**
+- AlertRule이 감지의 주체이므로 스케줄러도 AlertRule 도메인에 위치
+- DailyCheck는 단순히 "데이터 제공자" 역할 (메시지 응답 데이터)
+- 재사용성: Guardian이나 다른 도메인에서도 감지 트리거 가능
 
 ---
 
@@ -424,8 +430,10 @@ public class AlertTriggerService {
 
     /**
      * 전체 활성 회원 이상징후 감지 (예외 격리)
+     *
+     * Note: @Transactional 없음 - 각 회원 처리마다 독립적인 트랜잭션 사용
+     *       (AlertDetectionService, AlertNotificationService가 각자 트랜잭션 관리)
      */
-    @Transactional
     public void detectAnomaliesForAllMembers() {
         List<Long> activeMemberIds = memberRepository.findDailyCheckEnabledMemberIds();
         int successCount = 0;
@@ -515,7 +523,7 @@ maruni:
 
 ---
 
-#### Step 4: 테스트 작성 (구현 완료 후)
+#### Step 4-1: 단위 테스트 작성 (구현 완료 후)
 
 ##### AlertTriggerServiceTest.java
 ```java
@@ -612,6 +620,18 @@ class AlertSchedulerTest {
     }
 }
 ```
+
+---
+
+#### Step 4-2: 통합 테스트 (선택사항 - 데모용 간소화)
+
+**데모 목적 판단: 단위 테스트로 충분, 통합 테스트는 선택사항**
+
+**시간 있으면 작성 (선택사항):**
+- 무응답 감지 → 알림 발송 → DB 저장 E2E
+- 감정 패턴 감지 → 알림 발송 → DB 저장 E2E
+
+**데모 목적 판단:** 단위 테스트로 충분
 
 ---
 
@@ -818,76 +838,82 @@ class SimpleConversationServiceTest {
 
 ## ⚠️ 6. 리스크 및 고려사항
 
-### 6.1. 성능 리스크
+### 6.1. 트랜잭션 분리 (데모용 단순 설계)
 
-#### 문제
-- AlertScheduler가 전체 회원 순회 시 시간 소요
-
-#### 해결 방안
+#### 설계 결정
 ```java
-// Option 1: 배치 단위 처리 (100명씩)
-public void detectAnomaliesForAllMembers() {
-    List<Long> memberIds = memberRepository.findDailyCheckEnabledMemberIds();
-    int batchSize = 100;
+// AlertTriggerService.detectAnomaliesForAllMembers()
+// ✅ @Transactional 없음 - 각 회원 처리마다 독립 트랜잭션
 
-    for (int i = 0; i < memberIds.size(); i += batchSize) {
-        List<Long> batch = memberIds.subList(i, Math.min(i + batchSize, memberIds.size()));
-        processBatch(batch);
+public void detectAnomaliesForAllMembers() {
+    for (Long memberId : memberIds) {
+        alertDetectionService.detectAnomalies(memberId);      // @Transactional
+        alertNotificationService.triggerAlert(memberId, ...); // @Transactional
     }
 }
-
-// Option 2: 비동기 처리 (@Async) - Phase 3
-@Async
-public CompletableFuture<Void> detectAndNotifyAsync(Long memberId) { ... }
 ```
 
-**결정**: MVP에서는 Option 1 (배치 처리) 적용, 향후 회원 1000명 초과 시 Option 2 고려
+**데모 목적 판단:**
+- ✅ 회원 A 실패 → 회원 B 영향 없음 (트랜잭션 독립)
+- ✅ DB 락 최소화
+- ✅ 데모 규모 (회원 10~50명)에서 충분히 빠름
+- ❌ 비동기 처리, 배치 최적화 등은 과한 엔지니어링
 
 ---
 
-### 6.2. 중복 알림 방지
+### 6.2. 중복 알림 방지 (⚠️ 수정 필요)
 
 #### 문제
-- 키워드 감지 (실시간) + 감정 패턴 (배치) 중복 가능
+- 현재 UniqueConstraint: `{member_id, alert_rule_id, alert_date}`
+- **치명적 문제**: MVP에서 `alert_rule_id`가 NULL이므로 중복 방지 실패
+- PostgreSQL은 NULL을 다른 NULL과 다르게 취급 → 같은 날짜에 여러 알림 중복 저장됨
 
-#### 해결 방안
+#### 해결 방안 (데모용 단순 수정)
+
+**AlertHistory.java 수정:**
 ```java
-// AlertHistory 중복 체크 (같은 날짜 + 같은 타입)
-boolean isDuplicate = alertHistoryRepository.existsByMemberIdAndAlertDateAndAlertType(
-    memberId, LocalDate.now(), AlertType.KEYWORD_DETECTION
-);
-
-if (!isDuplicate) {
-    alertNotificationService.triggerAlert(memberId, result);
-}
+@Table(name = "alert_history",
+    uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"member_id", "alert_type", "alert_date"})
+        // alert_rule_id 대신 alert_type 사용 (MVP용)
+    },
+    // ...
+)
 ```
 
-**참고**: AlertHistory 엔티티에 이미 `uniqueConstraints`로 중복 방지 구현됨 (Line 36-38)
+**추가 필드 필요:**
+```java
+@Enumerated(EnumType.STRING)
+@Column(nullable = false)
+private AlertType alertType; // 신규 필드 추가
+```
+
+**변경 이유:**
+- ✅ NULL 문제 해결: alertType은 항상 NOT NULL
+- ✅ 중복 방지: 같은 날짜에 같은 타입의 알림은 1번만 발송
+- ✅ 데모 단순화: 복잡한 AlertRule 생성 로직 불필요
 
 ---
 
-### 6.3. 트랜잭션 경계
-
-#### 문제
-- 대화 저장 실패 시 키워드 감지도 롤백되는가?
+### 6.3. Conversation 트랜잭션 경계 (데모용 단순화)
 
 #### 해결 방안
 ```java
-// Option 1: try-catch로 예외 격리 (현재 계획) ✅
+// try-catch로 예외 격리 (데모용 충분)
 private void detectKeywordInRealtime(...) {
     try {
         // 키워드 감지 로직
     } catch (Exception e) {
         log.error("Keyword detection failed", e);
+        // 예외는 여기서 끝! 대화 흐름은 계속됨
     }
 }
-
-// Option 2: 별도 트랜잭션으로 분리 (Phase 3)
-@Transactional(propagation = Propagation.REQUIRES_NEW)
-private void detectKeywordInRealtime(...) { ... }
 ```
 
-**결정**: MVP에서는 Option 1 (예외 격리), 향후 필요시 Option 2 고려
+**데모 목적 판단:**
+- ✅ 키워드 감지 실패 시 대화 흐름 유지 (사용자 경험 최우선)
+- ✅ 충분히 안전하고 단순한 구현
+- ❌ 복잡한 REQUIRES_NEW 트랜잭션 불필요 (과한 엔지니어링)
 
 ---
 
@@ -909,34 +935,37 @@ if (!hasGuardian(member)) {
 
 ---
 
-## ✅ 7. 완료 조건 (Definition of Done)
+## ✅ 7. 완료 조건 (Definition of Done) - 데모용
 
-### 코드 구현
-- [ ] AlertTriggerService 구현 완료 (예외 격리 포함)
-- [ ] AlertScheduler 구현 완료
-- [ ] SimpleConversationService 확장 완료 (예외 격리 포함)
+### 필수 구현 (Phase 1)
+- [ ] AlertHistory에 alertType 필드 추가
+- [ ] AlertHistory UniqueConstraint 수정 ({member_id, alert_type, alert_date})
+- [ ] AlertTriggerService 구현 (alertrule/application/scheduler/)
+- [ ] AlertScheduler 구현 (alertrule/application/scheduler/)
 - [ ] application.yml 설정 추가
 
-### 테스트
-- [ ] AlertTriggerServiceTest 작성 완료 (최소 8개 시나리오)
+### 필수 구현 (Phase 2)
+- [ ] SimpleConversationService 확장 (키워드 감지 try-catch 추가)
+
+### 핵심 테스트만 (데모용 최소화)
+
+#### 단위 테스트 (필수 3개만)
+- [ ] AlertTriggerServiceTest
   - 전체 회원 감지 성공
   - 일부 회원 실패해도 나머지 처리
   - 위험 신호 없을 때 알림 미발송
-  - 회원 없을 때 정상 종료
-  - 예외 발생 시 로그 기록
-  - 성공/실패 카운트 검증
-  - AlertDetectionService 호출 검증
-  - AlertNotificationService 호출 검증
 
-- [ ] AlertSchedulerTest 작성 완료 (최소 2개 시나리오)
-  - 스케줄러 동작 검증
-  - AlertTriggerService 위임 검증
-
-- [ ] SimpleConversationServiceTest 확장 완료 (최소 4개 시나리오 추가)
+- [ ] SimpleConversationServiceTest (1개 추가)
   - EMERGENCY 키워드 즉시 알림
-  - HIGH 키워드는 알림 미발송
-  - 일반 메시지는 감지 없음
-  - 키워드 감지 실패 시 대화 흐름 유지
+
+#### 통합 테스트 (선택사항)
+- [ ] (선택) 무응답 감지 → 알림 발송 E2E 테스트
+- [ ] (선택) 감정 패턴 감지 → 알림 발송 E2E 테스트
+
+**데모 목적 판단:**
+- ✅ 핵심 기능만 테스트 (정상 케이스 + 예외 격리)
+- ❌ 성능 테스트, 복잡한 시나리오는 과한 엔지니어링
+- ❌ 통합 테스트는 시간 있으면 추가 (선택사항)
 
 ### 문서화
 - [ ] docs/domains/dailycheck.md 업데이트 (AlertRule 연동 명시)
@@ -951,42 +980,45 @@ if (!hasGuardian(member)) {
 
 ---
 
-## 📅 8. 예상 일정
+## 📅 8. 예상 일정 (데모용 단순화)
 
 ```
+Phase 0: 사전 작업 (필수)
+└─ 0.5일: AlertHistory 엔티티 수정 (alertType 필드 + UniqueConstraint)
+
 Phase 1: DailyCheck 연동 (무응답 분석)
 ├─ Day 1: AlertTriggerService + AlertScheduler 구현
-├─ Day 2: 테스트 작성 (AlertTriggerServiceTest 8개 + AlertSchedulerTest 2개)
-└─ Day 3: 통합 테스트 + 검증
+└─ Day 2: 핵심 테스트 3개 작성 + 로컬 검증
 
 Phase 2: Conversation 연동 (키워드 감지)
-├─ Day 4: SimpleConversationService 확장
-├─ Day 5: 테스트 작성 (SimpleConversationServiceTest 4개 추가)
-└─ Day 6: E2E 테스트 + 문서 업데이트
+├─ Day 3: SimpleConversationService 확장 (try-catch 추가)
+└─ Day 4: 핵심 테스트 1개 작성 + 로컬 검증
 
-총 소요 시간: 6일 (선 구현 후 테스트 방식)
+총 소요 시간: 4.5일 (데모 목적 단순화)
 ```
+
+**단축된 이유:**
+- 테스트 개수 축소 (14개 → 4개)
+- 통합 테스트 선택사항 처리
+- 성능 테스트 제거
 
 ---
 
-## 🔮 9. 향후 개선 사항 (Phase 3)
+## 🔮 9. 향후 개선 사항 (데모 이후 고려)
 
-### 9.1. RESOLVED 상태 추가 (보류됨)
-- AlertHistory에 `AlertStatus` Enum 추가
-- 보호자가 "문제 해결 완료" 표시 가능
-- 미해결 알림은 24시간마다 재발송
-- **복잡도**: 백엔드 3개 파일 + 프론트엔드 UI + 정책 수립
-- **우선순위**: Low (MVP 이후)
+**데모 목적 판단: 현재는 구현하지 않음**
 
-### 9.2. 비동기 처리 (@Async)
-- 회원 1000명 초과 시 배치 처리로 전환
-- `@Async` + `CompletableFuture` 활용
-- 스레드 풀 설정 (10~20 스레드)
+### 9.1. 성능 최적화 (회원 100명 초과 시)
+- Fetch Join으로 N+1 쿼리 제거
+- 비동기 처리 (@Async)
 
-### 9.3. 모니터링 시스템 연동
-- 개별 회원 실패 시 Slack/Email 알림
-- Prometheus + Grafana 메트릭 수집
-- 성공률/실패율 대시보드
+### 9.2. 알림 상태 관리
+- AlertHistory에 RESOLVED 상태 추가
+- 보호자가 "확인 완료" 표시
+
+### 9.3. 모니터링 (운영 환경 필요 시)
+- 실패율 모니터링
+- 알림 발송 성공률 추적
 
 ---
 
@@ -1006,8 +1038,16 @@ Phase 2: Conversation 연동 (키워드 감지)
 | 날짜 | 변경 내용 | 작성자 |
 |------|----------|--------|
 | 2025-11-12 | 초안 작성 (TDD 방식) | - |
-| 2025-11-12 | 검토 완료: 예외 격리 추가, 선 구현 후 테스트 방식 변경, 테스터빌리티 섹션 추가 | - |
+| 2025-11-12 | 검토 1차: 예외 격리 추가, 선 구현 후 테스트 방식 변경 | - |
+| 2025-11-12 | 검토 2차: 트랜잭션 경계 수정, 통합 테스트 추가 | - |
+| 2025-11-12 | **리뷰 반영: 데모 목적 단순화** | Claude |
+|  | - UniqueConstraint 수정 (alert_rule_id → alert_type) | |
+|  | - 패키지 위치 변경 (dailycheck → alertrule) | |
+|  | - 테스트 개수 축소 (14개 → 4개) | |
+|  | - 성능 최적화 내용 제거 | |
+|  | - 복잡한 통합 테스트 선택사항 처리 | |
+|  | - 예상 일정 단축 (6일 → 4.5일) | |
 
 ---
 
-**계획 승인 후 구현 시작** ✅
+**✅ 데모용 계획 확정 - 구현 시작 가능**
