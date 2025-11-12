@@ -40,6 +40,8 @@ public class GuardianRelationService {
 	 *
 	 * User Journey 3: 김순자 → 김영희에게 보호자 요청
 	 *
+	 * 거절된 요청이 있으면 자동 삭제 후 새로운 요청을 생성합니다.
+	 *
 	 * @param requesterId 요청자 회원 ID (노인)
 	 * @param guardianId 보호자 회원 ID
 	 * @param relation 관계 (FAMILY, FRIEND 등)
@@ -56,15 +58,25 @@ public class GuardianRelationService {
 		MemberEntity requester = findMemberById(requesterId);
 		MemberEntity guardian = findMemberById(guardianId);
 
-		// 2. 비즈니스 규칙 검증
+		// 2. REJECTED 요청이 있으면 삭제 (재요청 허용)
+		guardianRequestRepository
+			.findByRequesterIdAndGuardianIdAndStatus(
+				requesterId, guardianId, RequestStatus.REJECTED)
+			.ifPresent(rejectedRequest -> {
+				guardianRequestRepository.delete(rejectedRequest);
+				log.info("Deleted rejected guardian request: requestId={}, requester={}, guardian={}",
+					rejectedRequest.getId(), requesterId, guardianId);
+			});
+
+		// 3. 비즈니스 규칙 검증
 		validateCanSendRequest(requester, guardian);
 
-		// 3. GuardianRequest 생성 (상태: PENDING)
+		// 4. GuardianRequest 생성 (상태: PENDING)
 		GuardianRequest request = GuardianRequest.createRequest(
 			requester, guardian, relation);
 		GuardianRequest savedRequest = guardianRequestRepository.save(request);
 
-		// 4. 보호자에게 푸시 알림 발송 (MVP: 타입 정보 포함)
+		// 5. 보호자에게 푸시 알림 발송 (MVP: 타입 정보 포함)
 		String message = String.format("%s님이 보호자로 등록을 요청했습니다",
 			requester.getMemberName());
 		notificationHistoryService.recordNotificationWithType(

@@ -71,4 +71,20 @@ public interface GuardianRequestRepository extends JpaRepository<GuardianRequest
 	 * @return 조건에 맞는 GuardianRequest (Optional)
 	 */
 	Optional<GuardianRequest> findByIdAndGuardianId(Long id, Long guardianId);
+
+	/**
+	 * 특정 요청자가 특정 보호자에게 보낸 특정 상태의 요청 조회
+	 *
+	 * 거절된 요청 삭제용: REJECTED 상태의 요청을 찾아서 삭제합니다.
+	 *
+	 * @param requesterId 요청자 회원 ID
+	 * @param guardianId 보호자 회원 ID
+	 * @param status 요청 상태
+	 * @return 조건에 맞는 GuardianRequest (Optional)
+	 */
+	Optional<GuardianRequest> findByRequesterIdAndGuardianIdAndStatus(
+		Long requesterId,
+		Long guardianId,
+		RequestStatus status
+	);
 }

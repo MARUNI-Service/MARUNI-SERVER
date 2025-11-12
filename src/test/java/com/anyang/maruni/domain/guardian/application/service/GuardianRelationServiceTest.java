@@ -258,6 +258,50 @@ class GuardianRelationServiceTest {
 			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.GUARDIAN_NOT_ASSIGNED);
 	}
 
+	@Test
+	@DisplayName("보호자 요청 재전송 - 거절된 요청이 있으면 삭제 후 새로운 요청 생성")
+	void sendRequest_AfterRejected_DeletesOldAndCreatesNew() {
+		// given
+		Long requesterId = 1L;
+		Long guardianId = 2L;
+		MemberEntity requester = createMember(requesterId, "requester@example.com", "김순자");
+		MemberEntity guardian = createMember(guardianId, "guardian@example.com", "김영희");
+
+		// 기존 REJECTED 요청
+		GuardianRequest rejectedRequest = createRequest(1L, requester, guardian, RequestStatus.REJECTED);
+
+		given(memberRepository.findById(requesterId)).willReturn(Optional.of(requester));
+		given(memberRepository.findById(guardianId)).willReturn(Optional.of(guardian));
+		given(guardianRequestRepository.findByRequesterIdAndGuardianIdAndStatus(
+			requesterId, guardianId, RequestStatus.REJECTED))
+			.willReturn(Optional.of(rejectedRequest));
+		given(guardianRequestRepository.existsByRequesterIdAndGuardianIdAndStatus(
+			requesterId, guardianId, RequestStatus.PENDING))
+			.willReturn(false);
+		given(guardianRequestRepository.save(any(GuardianRequest.class)))
+			.willAnswer(invocation -> {
+				GuardianRequest request = invocation.getArgument(0);
+				return GuardianRequest.builder()
+					.id(2L)  // 새로운 ID
+					.requester(request.getRequester())
+					.guardian(request.getGuardian())
+					.relation(request.getRelation())
+					.status(request.getStatus())
+					.build();
+			});
+
+		// when
+		GuardianRequestResponse response = guardianRelationService.sendRequest(
+			requesterId, guardianId, GuardianRelation.FAMILY);
+
+		// then
+		verify(guardianRequestRepository).delete(rejectedRequest);  // 기존 REJECTED 삭제 확인
+		verify(guardianRequestRepository).save(any(GuardianRequest.class));  // 새 요청 생성 확인
+		verify(notificationHistoryService).recordNotificationWithType(
+			eq(guardianId), anyString(), anyString(), any(), any(), anyLong());
+		assertThat(response.getStatus()).isEqualTo(RequestStatus.PENDING);
+	}
+
 	// ========== Helper Methods ==========
 
 	private MemberEntity createMember(Long id, String email, String name) {
