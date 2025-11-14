@@ -23,7 +23,7 @@ DailyCheck와 Conversation 도메인에서 AlertRule 도메인을 호출하여 *
 #### 📌 구체적 목표
 1. **DailyCheck 연동**: 안부 메시지 발송 후 무응답 패턴 자동 분석
 2. **Conversation 연동**: 사용자 메시지 수신 시 위험 키워드 실시간 감지
-3. **알림 자동화**: 위험 감지 시 보호자에게 즉시 알림 발송
+3. **알림 자동화**: 위험 감지 시 보호자에게 즉시 알림 발송e
 
 ---
 
@@ -61,7 +61,9 @@ alertrule/
 - **실시간**: 사용자 메시지 수신 즉시
 
 #### 감지 알고리즘
-- ✅ **KeywordAnalyzer**: 위험 키워드 실시간 감지 (EMERGENCY/HIGH)
+- ✅ **KeywordAnalyzer**: 위험 키워드 실시간 감지
+  - **EMERGENCY** ("죽고싶다", "자살" 등): 즉시 알림 발송 ✅
+  - **HIGH** ("우울", "외롭다" 등): 로그만 기록 (Phase 3에서 누적 분석 추가 예정) ⚠️
 
 #### 구현 위치
 ```
@@ -416,7 +418,7 @@ public void scheduleNextRetry(LocalDateTime currentTime) {
 #### Step 1: AlertTriggerService 구현
 **목적**: AlertRule 호출을 전담하는 서비스 (SRP)
 
-**파일**: `dailycheck/application/scheduler/AlertTriggerService.java`
+**파일**: `alertrule/application/scheduler/AlertTriggerService.java`
 
 ```java
 @Service
@@ -484,7 +486,7 @@ public class AlertTriggerService {
 #### Step 2: AlertScheduler 구현
 **목적**: 매일 오후 10시 자동 감지 트리거
 
-**파일**: `dailycheck/application/scheduler/AlertScheduler.java`
+**파일**: `alertrule/application/scheduler/AlertScheduler.java`
 
 ```java
 @Component
@@ -689,7 +691,7 @@ public class SimpleConversationService {
                 log.warn("⚠️ EMERGENCY keyword detected for member {}: {}",
                          memberId, keywordResult.getMessage());
             } else if (keywordResult.isAlert()) {
-                log.info("📌 HIGH keyword detected for member {} (배치에서 처리)", memberId);
+                log.info("📌 HIGH keyword detected for member {} (로그만 기록)", memberId);
             }
 
         } catch (Exception e) {
@@ -758,7 +760,7 @@ class SimpleConversationServiceTest {
     }
 
     @Test
-    @DisplayName("HIGH 키워드는 알림 미발송 (배치에서 처리)")
+    @DisplayName("HIGH 키워드는 알림 미발송 (로그만 기록)")
     void processUserMessage_HighKeyword_NoImmediateAlert() {
         // Given
         Long memberId = 1L;
@@ -888,9 +890,25 @@ public void detectAnomaliesForAllMembers() {
 private AlertType alertType; // 신규 필드 추가
 ```
 
+**데이터 흐름 (중요!):**
+```java
+// AlertNotificationService.createAlertHistoryForMVP() 수정 필요
+return AlertHistory.builder()
+    .alertRule(null)
+    .member(member)
+    .alertLevel(alertResult.getAlertLevel())
+    .alertType(alertResult.getAlertType())  // ⭐ 추가 필요!
+    .alertMessage(alertResult.getMessage())
+    .detectionDetails(detectionDetails)
+    .alertDate(LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0))
+    .isNotificationSent(false)
+    .build();
+```
+
 **변경 이유:**
 - ✅ NULL 문제 해결: alertType은 항상 NOT NULL
 - ✅ 중복 방지: 같은 날짜에 같은 타입의 알림은 1번만 발송
+- ✅ 데이터 흐름 명확: AlertResult → AlertHistory로 alertType 전달
 - ✅ 데모 단순화: 복잡한 AlertRule 생성 로직 불필요
 
 ---
@@ -937,9 +955,13 @@ if (!hasGuardian(member)) {
 
 ## ✅ 7. 완료 조건 (Definition of Done) - 데모용
 
-### 필수 구현 (Phase 1)
+### 필수 구현 (Phase 0: 사전 작업)
 - [ ] AlertHistory에 alertType 필드 추가
 - [ ] AlertHistory UniqueConstraint 수정 ({member_id, alert_type, alert_date})
+- [ ] AlertNotificationService.createAlertHistoryForMVP() 수정 (alertType 설정 추가)
+- [ ] alertRule 필드 nullable로 변경 (nullable = false → nullable = true)
+
+### 필수 구현 (Phase 1)
 - [ ] AlertTriggerService 구현 (alertrule/application/scheduler/)
 - [ ] AlertScheduler 구현 (alertrule/application/scheduler/)
 - [ ] application.yml 설정 추가
@@ -1012,11 +1034,28 @@ Phase 2: Conversation 연동 (키워드 감지)
 - Fetch Join으로 N+1 쿼리 제거
 - 비동기 처리 (@Async)
 
-### 9.2. 알림 상태 관리
+### 9.2. 이벤트 기반 키워드 감지 (책임 분리)
+- SimpleConversationService → ApplicationEventPublisher로 이벤트 발행
+- AlertKeywordListener가 이벤트 구독하여 키워드 감지
+- 장점: Conversation과 AlertRule 도메인 완전 분리
+
+```java
+// 이벤트 기반 리팩토링 예시
+@Component
+class AlertKeywordListener {
+    @EventListener
+    @Async
+    void onMessageReceived(MessageReceivedEvent event) {
+        // 키워드 감지 로직 (독립 트랜잭션)
+    }
+}
+```
+
+### 9.3. 알림 상태 관리
 - AlertHistory에 RESOLVED 상태 추가
 - 보호자가 "확인 완료" 표시
 
-### 9.3. 모니터링 (운영 환경 필요 시)
+### 9.4. 모니터링 (운영 환경 필요 시)
 - 실패율 모니터링
 - 알림 발송 성공률 추적
 
@@ -1047,6 +1086,10 @@ Phase 2: Conversation 연동 (키워드 감지)
 |  | - 성능 최적화 내용 제거 | |
 |  | - 복잡한 통합 테스트 선택사항 처리 | |
 |  | - 예상 일정 단축 (6일 → 4.5일) | |
+| 2025-11-14 | **실제 코드 검증 후 문서 정확성 개선** | Claude |
+|  | - HIGH 키워드 처리 설명 수정 ("배치에서 처리" → "로그만 기록") | |
+|  | - AlertDetectionService.java:139 확인 결과 KEYWORD_DETECTION은 배치 제외됨 | |
+|  | - Phase 3에서 HIGH 키워드 누적 분석 추가 예정으로 명시 | |
 
 ---
 
