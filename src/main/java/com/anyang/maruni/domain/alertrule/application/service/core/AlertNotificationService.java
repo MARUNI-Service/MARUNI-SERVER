@@ -75,6 +75,7 @@ public class AlertNotificationService {
                 .alertRule(null) // MVP에서는 AlertRule 없이 생성
                 .member(member)
                 .alertLevel(alertResult.getAlertLevel())
+                .alertType(alertResult.getAlertType()) // ⭐ alertType 추가 (중복 방지용)
                 .alertMessage(alertResult.getMessage())
                 .detectionDetails(detectionDetails)
                 .alertDate(LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0))
