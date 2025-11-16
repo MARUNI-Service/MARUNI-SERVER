@@ -6,6 +6,10 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.anyang.maruni.domain.alertrule.application.analyzer.vo.AlertResult;
+import com.anyang.maruni.domain.alertrule.application.service.core.AlertDetectionService;
+import com.anyang.maruni.domain.alertrule.application.service.core.AlertNotificationService;
+import com.anyang.maruni.domain.alertrule.domain.entity.AlertLevel;
 import com.anyang.maruni.domain.conversation.application.dto.MessageDto;
 import com.anyang.maruni.domain.conversation.application.dto.MessageExchangeResult;
 import com.anyang.maruni.domain.conversation.application.dto.response.ConversationResponseDto;
@@ -36,6 +40,10 @@ public class SimpleConversationService {
     private final MessageRepository messageRepository;
     private final MemberRepository memberRepository;
 
+    // 신규 의존성 (Phase 2: 키워드 감지)
+    private final AlertDetectionService alertDetectionService;
+    private final AlertNotificationService alertNotificationService;
+
     /**
      * 사용자 메시지 처리 및 AI 응답 생성 (간소화됨)
      *
@@ -47,8 +55,13 @@ public class SimpleConversationService {
     public ConversationResponseDto processUserMessage(Long memberId, String content) {
         log.info("Processing user message for member {}: {}", memberId, content);
 
+        // 1. 기존 로직: 메시지 저장 + AI 응답
         ConversationEntity conversation = conversationManager.findOrCreateActive(memberId);
         MessageExchangeResult result = messageProcessor.processMessage(conversation, content);
+
+        // 2. 신규 로직: 키워드 실시간 감지 (예외 격리)
+        detectKeywordInRealtime(result.userMessage(), memberId);
+
         return mapper.toResponseDto(result);
     }
 
@@ -114,5 +127,34 @@ public class SimpleConversationService {
         }
 
         return MessageDto.from(latestMessage);
+    }
+
+    /**
+     * 실시간 키워드 감지 (private, 예외 격리)
+     *
+     * 사용자 메시지에서 키워드를 감지하고, EMERGENCY 레벨만 즉시 알림 발송합니다.
+     * HIGH 레벨은 로그만 기록합니다.
+     *
+     * @param message 사용자 메시지
+     * @param memberId 회원 ID
+     */
+    private void detectKeywordInRealtime(MessageEntity message, Long memberId) {
+        try {
+            AlertResult keywordResult = alertDetectionService.detectKeywordAlert(message, memberId);
+
+            // EMERGENCY 키워드만 즉시 알림 발송
+            if (keywordResult.isAlert() && keywordResult.getAlertLevel() == AlertLevel.EMERGENCY) {
+                alertNotificationService.triggerAlert(memberId, keywordResult);
+                log.warn("⚠️ EMERGENCY keyword detected for member {}: {}",
+                         memberId, keywordResult.getMessage());
+            } else if (keywordResult.isAlert()) {
+                log.info("📌 HIGH keyword detected for member {} (로그만 기록)", memberId);
+            }
+
+        } catch (Exception e) {
+            // 키워드 감지 실패는 대화 흐름에 영향 없음 (로그만 기록)
+            log.error("Keyword detection failed for member {}: {}",
+                      memberId, e.getMessage(), e);
+        }
     }
 }

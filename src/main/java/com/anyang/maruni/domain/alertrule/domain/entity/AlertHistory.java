@@ -34,7 +34,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "alert_history",
     uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"member_id", "alert_rule_id", "alert_date"})
+        @UniqueConstraint(columnNames = {"member_id", "alert_type", "alert_date"})
     },
     indexes = {
         @Index(name = "idx_alert_history_member_date", columnList = "member_id, alert_date"),
@@ -53,10 +53,10 @@ public class AlertHistory extends BaseTimeEntity {
     private Long id;
 
     /**
-     * 알림이 발생한 알림 규칙
+     * 알림이 발생한 알림 규칙 (MVP: nullable)
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "alert_rule_id", nullable = false)
+    @JoinColumn(name = "alert_rule_id", nullable = true)
     private AlertRule alertRule;
 
     /**
@@ -65,6 +65,13 @@ public class AlertHistory extends BaseTimeEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)
     private MemberEntity member;
+
+    /**
+     * 알림 타입 (중복 방지용, MVP 필수)
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "alert_type", nullable = false)
+    private AlertType alertType;
 
     /**
      * 알림 레벨
@@ -124,7 +131,7 @@ public class AlertHistory extends BaseTimeEntity {
             AlertRule alertRule, MemberEntity member,
             String alertMessage, String detectionDetails) {
         LocalDateTime alertDate = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0); // 일자 기준으로 중복 방지
-        return createAlertWithLevelAndDate(alertRule, member, alertRule.getAlertLevel(), alertMessage, detectionDetails, alertDate);
+        return createAlertWithLevelAndDate(alertRule, member, alertRule.getAlertLevel(), alertRule.getAlertType(), alertMessage, detectionDetails, alertDate);
     }
 
     /**
@@ -138,7 +145,7 @@ public class AlertHistory extends BaseTimeEntity {
     public static AlertHistory createEmergencyAlert(
             AlertRule alertRule, MemberEntity member,
             String alertMessage, String detectionDetails) {
-        return createAlertWithLevelAndDate(alertRule, member, AlertLevel.EMERGENCY, alertMessage, detectionDetails, LocalDateTime.now()); // 긴급상황은 실시간으로 기록
+        return createAlertWithLevelAndDate(alertRule, member, AlertLevel.EMERGENCY, alertRule.getAlertType(), alertMessage, detectionDetails, LocalDateTime.now()); // 긴급상황은 실시간으로 기록
     }
 
     /**
@@ -154,7 +161,7 @@ public class AlertHistory extends BaseTimeEntity {
             AlertRule alertRule, MemberEntity member,
             String alertMessage, String detectionDetails,
             LocalDateTime alertDate) {
-        return createAlertWithLevelAndDate(alertRule, member, alertRule.getAlertLevel(), alertMessage, detectionDetails, alertDate);
+        return createAlertWithLevelAndDate(alertRule, member, alertRule.getAlertLevel(), alertRule.getAlertType(), alertMessage, detectionDetails, alertDate);
     }
 
     /**
@@ -162,18 +169,20 @@ public class AlertHistory extends BaseTimeEntity {
      * @param alertRule 알림 규칙
      * @param member 대상 회원
      * @param alertLevel 알림 레벨
+     * @param alertType 알림 타입
      * @param alertMessage 알림 메시지
      * @param detectionDetails 감지 상세 정보
      * @param alertDate 알림 날짜
      * @return AlertHistory
      */
     private static AlertHistory createAlertWithLevelAndDate(
-            AlertRule alertRule, MemberEntity member, AlertLevel alertLevel,
+            AlertRule alertRule, MemberEntity member, AlertLevel alertLevel, AlertType alertType,
             String alertMessage, String detectionDetails, LocalDateTime alertDate) {
         return AlertHistory.builder()
                 .alertRule(alertRule)
                 .member(member)
                 .alertLevel(alertLevel)
+                .alertType(alertType)
                 .alertMessage(alertMessage)
                 .detectionDetails(detectionDetails)
                 .alertDate(alertDate)

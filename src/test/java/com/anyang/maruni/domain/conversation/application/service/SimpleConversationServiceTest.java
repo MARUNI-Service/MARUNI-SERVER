@@ -43,6 +43,13 @@ class SimpleConversationServiceTest {
     @Mock
     private MessageRepository messageRepository;
 
+    // 신규 Mock (Phase 2: 키워드 감지)
+    @Mock
+    private com.anyang.maruni.domain.alertrule.application.service.core.AlertDetectionService alertDetectionService;
+
+    @Mock
+    private com.anyang.maruni.domain.alertrule.application.service.core.AlertNotificationService alertNotificationService;
+
     @InjectMocks
     private SimpleConversationService simpleConversationService;
 
@@ -294,5 +301,200 @@ class SimpleConversationServiceTest {
         inOrder.verify(conversationManager).findOrCreateActive(memberId);
         inOrder.verify(messageProcessor).processMessage(conversation, userContent);
         inOrder.verify(mapper).toResponseDto(exchangeResult);
+    }
+
+    // ========== Phase 2: 키워드 감지 테스트 ==========
+
+    @Test
+    @DisplayName("EMERGENCY 키워드 감지 시 즉시 알림 발송")
+    void processUserMessage_EmergencyKeyword_TriggersAlert() {
+        // Given
+        Long memberId = 6L;
+        String emergencyMessage = "죽고싶어요";
+
+        ConversationEntity conversation = ConversationEntity.builder()
+                .id(600L)
+                .memberId(memberId)
+                .startedAt(LocalDateTime.now())
+                .build();
+
+        MessageEntity userMessage = MessageEntity.builder()
+                .id(10L)
+                .conversationId(600L)
+                .type(MessageType.USER_MESSAGE)
+                .content(emergencyMessage)
+                .emotion(EmotionType.NEGATIVE)
+                .build();
+
+        MessageEntity aiMessage = MessageEntity.builder()
+                .id(11L)
+                .conversationId(600L)
+                .type(MessageType.AI_RESPONSE)
+                .content("걱정하지 마세요. 제가 함께 있어요.")
+                .emotion(EmotionType.NEUTRAL)
+                .build();
+
+        MessageExchangeResult exchangeResult = MessageExchangeResult.builder()
+                .conversation(conversation)
+                .userMessage(userMessage)
+                .aiMessage(aiMessage)
+                .build();
+
+        ConversationResponseDto response = ConversationResponseDto.withId(600L);
+
+        // AlertResult: EMERGENCY 키워드 감지
+        var emergencyAlert = com.anyang.maruni.domain.alertrule.application.analyzer.vo.AlertResult.createAlert(
+                com.anyang.maruni.domain.alertrule.domain.entity.AlertLevel.EMERGENCY,
+                com.anyang.maruni.domain.alertrule.domain.entity.AlertType.KEYWORD_DETECTION,
+                "긴급 키워드 감지: 죽고싶어요",
+                null
+        );
+
+        // Mock 설정
+        when(conversationManager.findOrCreateActive(memberId))
+                .thenReturn(conversation);
+        when(messageProcessor.processMessage(conversation, emergencyMessage))
+                .thenReturn(exchangeResult);
+        when(mapper.toResponseDto(exchangeResult))
+                .thenReturn(response);
+        when(alertDetectionService.detectKeywordAlert(userMessage, memberId))
+                .thenReturn(emergencyAlert);
+
+        // When
+        ConversationResponseDto result = simpleConversationService.processUserMessage(memberId, emergencyMessage);
+
+        // Then: 대화 처리 성공
+        assertThat(result).isEqualTo(response);
+
+        // 키워드 감지 호출됨
+        verify(alertDetectionService).detectKeywordAlert(userMessage, memberId);
+
+        // EMERGENCY 레벨이므로 즉시 알림 발송
+        verify(alertNotificationService).triggerAlert(eq(memberId), any());
+    }
+
+    @Test
+    @DisplayName("HIGH 키워드는 알림 미발송 (로그만 기록)")
+    void processUserMessage_HighKeyword_NoImmediateAlert() {
+        // Given
+        Long memberId = 7L;
+        String highMessage = "우울해요";
+
+        ConversationEntity conversation = ConversationEntity.builder()
+                .id(700L)
+                .memberId(memberId)
+                .startedAt(LocalDateTime.now())
+                .build();
+
+        MessageEntity userMessage = MessageEntity.builder()
+                .id(12L)
+                .conversationId(700L)
+                .type(MessageType.USER_MESSAGE)
+                .content(highMessage)
+                .emotion(EmotionType.NEGATIVE)
+                .build();
+
+        MessageEntity aiMessage = MessageEntity.builder()
+                .id(13L)
+                .conversationId(700L)
+                .type(MessageType.AI_RESPONSE)
+                .content("힘든 일이 있으신가요?")
+                .emotion(EmotionType.NEUTRAL)
+                .build();
+
+        MessageExchangeResult exchangeResult = MessageExchangeResult.builder()
+                .conversation(conversation)
+                .userMessage(userMessage)
+                .aiMessage(aiMessage)
+                .build();
+
+        ConversationResponseDto response = ConversationResponseDto.withId(700L);
+
+        // AlertResult: HIGH 키워드 감지
+        var highAlert = com.anyang.maruni.domain.alertrule.application.analyzer.vo.AlertResult.createAlert(
+                com.anyang.maruni.domain.alertrule.domain.entity.AlertLevel.HIGH,
+                com.anyang.maruni.domain.alertrule.domain.entity.AlertType.KEYWORD_DETECTION,
+                "경고 키워드 감지: 우울해요",
+                null
+        );
+
+        // Mock 설정
+        when(conversationManager.findOrCreateActive(memberId))
+                .thenReturn(conversation);
+        when(messageProcessor.processMessage(conversation, highMessage))
+                .thenReturn(exchangeResult);
+        when(mapper.toResponseDto(exchangeResult))
+                .thenReturn(response);
+        when(alertDetectionService.detectKeywordAlert(userMessage, memberId))
+                .thenReturn(highAlert);
+
+        // When
+        ConversationResponseDto result = simpleConversationService.processUserMessage(memberId, highMessage);
+
+        // Then: 대화 처리 성공
+        assertThat(result).isEqualTo(response);
+
+        // 키워드 감지 호출됨
+        verify(alertDetectionService).detectKeywordAlert(userMessage, memberId);
+
+        // HIGH 레벨은 알림 미발송 (로그만 기록)
+        verify(alertNotificationService, never()).triggerAlert(anyLong(), any());
+    }
+
+    @Test
+    @DisplayName("키워드 감지 실패 시 대화 흐름 유지")
+    void processUserMessage_KeywordDetectionFails_ConversationContinues() {
+        // Given
+        Long memberId = 8L;
+        String message = "테스트 메시지";
+
+        ConversationEntity conversation = ConversationEntity.builder()
+                .id(800L)
+                .memberId(memberId)
+                .startedAt(LocalDateTime.now())
+                .build();
+
+        MessageEntity userMessage = MessageEntity.builder()
+                .id(14L)
+                .conversationId(800L)
+                .type(MessageType.USER_MESSAGE)
+                .content(message)
+                .emotion(EmotionType.NEUTRAL)
+                .build();
+
+        MessageEntity aiMessage = MessageEntity.builder()
+                .id(15L)
+                .conversationId(800L)
+                .type(MessageType.AI_RESPONSE)
+                .content("네, 알겠습니다.")
+                .emotion(EmotionType.NEUTRAL)
+                .build();
+
+        MessageExchangeResult exchangeResult = MessageExchangeResult.builder()
+                .conversation(conversation)
+                .userMessage(userMessage)
+                .aiMessage(aiMessage)
+                .build();
+
+        ConversationResponseDto response = ConversationResponseDto.withId(800L);
+
+        // Mock 설정
+        when(conversationManager.findOrCreateActive(memberId))
+                .thenReturn(conversation);
+        when(messageProcessor.processMessage(conversation, message))
+                .thenReturn(exchangeResult);
+        when(mapper.toResponseDto(exchangeResult))
+                .thenReturn(response);
+
+        // 키워드 감지 실패 (예외 발생)
+        when(alertDetectionService.detectKeywordAlert(userMessage, memberId))
+                .thenThrow(new RuntimeException("Analyzer error"));
+
+        // When & Then: 예외가 전파되지 않고 정상 응답
+        ConversationResponseDto result = simpleConversationService.processUserMessage(memberId, message);
+
+        // 대화 흐름은 정상 유지
+        assertThat(result).isEqualTo(response);
+        verify(mapper).toResponseDto(exchangeResult);
     }
 }

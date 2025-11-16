@@ -12,6 +12,8 @@ maruni:
       cron: "0 */5 * * * *" # 5분마다
       max-retries: 3
       delay-minutes: 5
+    alert-detection:
+      cron: "0 0 22 * * *" # 매일 오후 10시
 
   notification:
     push:
