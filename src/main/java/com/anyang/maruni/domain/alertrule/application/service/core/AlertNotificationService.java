@@ -70,6 +70,12 @@ public class AlertNotificationService {
         // 알림 결과를 JSON 형태로 저장할 상세 정보 구성
         String detectionDetails = alertServiceUtils.createDetectionDetailsJson(alertResult);
 
+        // 키워드 감지는 실시간으로 여러 번 기록 가능 (정확한 시간)
+        // 감정 패턴, 무응답은 하루에 한 번만 (날짜만)
+        LocalDateTime alertDate = alertResult.getAlertType() == AlertType.KEYWORD_DETECTION
+                ? LocalDateTime.now()  // 키워드: 정확한 시간으로 저장 (중복 허용)
+                : LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0);  // 기타: 날짜만 (중복 방지)
+
         // AlertHistory 빌더를 사용하여 직접 생성 (MVP용)
         return AlertHistory.builder()
                 .alertRule(null) // MVP에서는 AlertRule 없이 생성
@@ -78,7 +84,7 @@ public class AlertNotificationService {
                 .alertType(alertResult.getAlertType()) // ⭐ alertType 추가 (중복 방지용)
                 .alertMessage(alertResult.getMessage())
                 .detectionDetails(detectionDetails)
-                .alertDate(LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0))
+                .alertDate(alertDate)
                 .isNotificationSent(false)
                 .build();
     }

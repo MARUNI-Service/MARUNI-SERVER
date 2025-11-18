@@ -286,7 +286,7 @@ public class AlertRuleController {
     @CustomExceptionDescription(SwaggerResponseDescription.COMMON_ERROR)
     @SuccessCodeAnnotation(SuccessCode.SUCCESS)
     public void createDemoAlert(
-            @Parameter(hidden = true) @AuthenticationPrincipal MemberEntity guardian) {
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "member") MemberEntity guardian) {
 
         alertRuleService.createDemoAlert(guardian);
     }

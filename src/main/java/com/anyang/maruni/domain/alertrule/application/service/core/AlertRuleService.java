@@ -37,6 +37,9 @@ public class AlertRuleService {
     private final AlertNotificationService notificationService;
     private final AlertHistoryService historyService;
 
+    // 데모 알림용 MemberRepository
+    private final com.anyang.maruni.domain.member.domain.repository.MemberRepository memberRepository;
+
     // ========== 이상징후 감지 관련 API (→ AlertDetectionService) ==========
 
     /**
@@ -198,8 +201,9 @@ public class AlertRuleService {
      */
     @Transactional
     public void createDemoAlert(MemberEntity guardian) {
-        // 1. 보호자가 돌보는 노인 목록 조회
-        List<MemberEntity> managedMembers = guardian.getManagedMembers();
+        // 1. 보호자가 돌보는 노인 목록 조회 (LazyInitializationException 방지)
+        List<MemberEntity> managedMembers = memberRepository
+            .findManagedMembersByGuardianId(guardian.getId());
 
         if (managedMembers.isEmpty()) {
             throw new com.anyang.maruni.global.exception.BaseException(
