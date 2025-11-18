@@ -184,4 +184,86 @@ public class AlertRuleService {
     public List<AlertHistory> getRecentAlertHistory(Long memberId, int days) {
         return historyService.getRecentAlertHistory(memberId, days);
     }
+
+    // ========== 데모 관련 API ==========
+
+    /**
+     * 데모용 가짜 알림 생성
+     *
+     * 보호자가 돌보는 노인 중 첫 번째 노인에 대한 가짜 위험 알림을 생성합니다.
+     * 실제 AlertHistory가 저장되고 보호자에게 알림이 발송됩니다.
+     *
+     * @param guardian 보호자 회원
+     * @throws com.anyang.maruni.global.exception.BaseException 돌보는 노인이 없는 경우
+     */
+    @Transactional
+    public void createDemoAlert(MemberEntity guardian) {
+        // 1. 보호자가 돌보는 노인 목록 조회
+        List<MemberEntity> managedMembers = guardian.getManagedMembers();
+
+        if (managedMembers.isEmpty()) {
+            throw new com.anyang.maruni.global.exception.BaseException(
+                com.anyang.maruni.global.response.error.ErrorCode.MEMBER_NOT_FOUND
+            );
+        }
+
+        // 2. 첫 번째 노인 선택
+        MemberEntity elder = managedMembers.get(0);
+
+        // 3. 랜덤 AlertType 선택 (EMOTION_PATTERN, NO_RESPONSE, KEYWORD_DETECTION)
+        AlertType[] alertTypes = {
+            AlertType.EMOTION_PATTERN,
+            AlertType.NO_RESPONSE,
+            AlertType.KEYWORD_DETECTION
+        };
+        AlertType randomType = alertTypes[(int) (Math.random() * alertTypes.length)];
+
+        // 4. 랜덤 AlertLevel 선택 (EMERGENCY, HIGH, MEDIUM)
+        AlertLevel[] alertLevels = {
+            AlertLevel.EMERGENCY,
+            AlertLevel.HIGH,
+            AlertLevel.MEDIUM
+        };
+        AlertLevel randomLevel = alertLevels[(int) (Math.random() * alertLevels.length)];
+
+        // 5. AlertType에 따른 데모 메시지 생성
+        String demoMessage = generateDemoMessage(randomType, randomLevel);
+
+        // 6. 가짜 AlertResult 생성
+        AlertResult demoAlertResult = AlertResult.createAlert(
+            randomLevel,
+            randomType,
+            demoMessage,
+            generateAnalysisDetails(randomType)
+        );
+
+        // 7. 실제 알림 트리거 (AlertHistory 저장 + 보호자 알림 발송)
+        notificationService.triggerAlert(elder.getId(), demoAlertResult);
+    }
+
+    /**
+     * AlertType에 따른 데모 메시지 생성 (실제 알림과 동일)
+     */
+    private String generateDemoMessage(AlertType alertType, AlertLevel alertLevel) {
+        return switch (alertType) {
+            case EMOTION_PATTERN -> "3일 연속 부정 감정이 감지되었습니다.";
+            case NO_RESPONSE -> "최근 3일간 안부 메시지에 응답하지 않았습니다.";
+            case KEYWORD_DETECTION -> alertLevel == AlertLevel.EMERGENCY
+                ? "긴급 키워드가 감지되었습니다: '죽고싶다'"
+                : "경고 키워드가 감지되었습니다: '우울해'";
+            default -> "이상징후가 감지되었습니다.";
+        };
+    }
+
+    /**
+     * AlertType에 따른 분석 상세 정보 생성
+     */
+    private String generateAnalysisDetails(AlertType alertType) {
+        return switch (alertType) {
+            case EMOTION_PATTERN -> "최근 3일간 부정 감정 비율 75%";
+            case NO_RESPONSE -> "연속 무응답 일수 3일, 응답률 0%";
+            case KEYWORD_DETECTION -> "위험 키워드 감지됨";
+            default -> "이상징후 감지";
+        };
+    }
 }

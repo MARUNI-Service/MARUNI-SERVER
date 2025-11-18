@@ -271,6 +271,26 @@ public class AlertRuleController {
         );
     }
 
+    @Operation(
+        summary = "데모 알림 생성",
+        description = "보호자가 돌보는 노인에 대한 가짜 위험 알림을 생성합니다. " +
+                     "실제 AlertHistory가 저장되고 보호자에게 알림이 발송됩니다. " +
+                     "데모/테스트 목적으로만 사용하세요."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "데모 알림 생성 성공"),
+        @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content),
+        @ApiResponse(responseCode = "404", description = "돌보는 노인이 없음", content = @Content)
+    })
+    @PostMapping("/demo-alert")
+    @CustomExceptionDescription(SwaggerResponseDescription.COMMON_ERROR)
+    @SuccessCodeAnnotation(SuccessCode.SUCCESS)
+    public void createDemoAlert(
+            @Parameter(hidden = true) @AuthenticationPrincipal MemberEntity guardian) {
+
+        alertRuleService.createDemoAlert(guardian);
+    }
+
     /**
      * AlertConditionDto를 실제 AlertCondition 엔티티로 변환하는 헬퍼 메서드
      * (실제 구현에서는 더 정교한 변환 로직이 필요)
