@@ -13,6 +13,7 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        jdbc.time_zone: UTC
 
 # 개발환경 Swagger 설정
 swagger:

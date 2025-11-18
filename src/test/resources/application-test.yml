@@ -28,6 +28,7 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.H2Dialect
         format_sql: true
+        jdbc.time_zone: UTC
         
   # H2 콘솔 활성화 (테스트 디버깅용)
   h2:
