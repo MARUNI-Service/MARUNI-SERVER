@@ -18,7 +18,7 @@ public class DailyCheckScheduler {
     private final DailyCheckOrchestrator dailyCheckOrchestrator;
 
     /**
-     * 매일 오전 9시 안부 메시지 발송 트리거
+     * 매일 안부 메시지 발송 트리거 (UTC 자정 = KST 오전 9시)
      */
     @Scheduled(cron = "${maruni.scheduling.daily-check.cron}")
     public void triggerDailyCheck() {

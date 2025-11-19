@@ -81,7 +81,7 @@
 maruni:
   scheduling:
     daily-check:
-      cron: "0 0 9 * * *"     # 매일 오전 9시
+      cron: "0 0 0 * * *"     # 매일 UTC 자정 (KST 오전 9시)
     retry:
       cron: "0 */5 * * * *"   # 5분마다 재시도
 ```

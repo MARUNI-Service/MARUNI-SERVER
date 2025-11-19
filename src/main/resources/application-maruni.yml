@@ -5,7 +5,7 @@
 maruni:
   scheduling:
     daily-check:
-      cron: "0 0 9 * * *" # 매일 오전 9시
+      cron: "0 0 0 * * *" # 매일 UTC 자정 (KST 오전 9시)
       batch-size: 50
       timeout-seconds: 30
     retry:
