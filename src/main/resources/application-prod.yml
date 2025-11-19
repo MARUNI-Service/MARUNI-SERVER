@@ -21,7 +21,7 @@ spring:
   # === JPA 설정 (운영) ===
   jpa:
     hibernate:
-      ddl-auto: create  # 운영: 스키마 검증만 (자동 생성 금지)
+      ddl-auto: validate  # 운영: 스키마 검증만 (자동 생성 금지)
     show-sql: false
     properties:
       hibernate:
