@@ -13,80 +13,80 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up JDK 21
-      uses: actions/setup-java@v4
-      with:
-        java-version: '21'
-        distribution: 'temurin'
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
 
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v3
-      with:
-        gradle-version: '8.14.2'
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.14.2'
 
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
 
-    - name: Build with Gradle
-      run: ./gradlew clean build -x test --no-daemon
+      - name: Build with Gradle
+        run: ./gradlew clean build -x test --no-daemon
 
-    - name: Login to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        push: true
-        tags: |
-          ${{ secrets.DOCKERHUB_USERNAME }}/maruni-server:latest
-          ${{ secrets.DOCKERHUB_USERNAME }}/maruni-server:${{ github.sha }}
-        cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/maruni-server:latest
-        cache-to: type=inline
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/maruni-server:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/maruni-server:${{ github.sha }}
+          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/maruni-server:latest
+          cache-to: type=inline
 
-    - name: Deploy to EC2
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USERNAME }}
-        key: ${{ secrets.EC2_SSH_KEY }}
-        port: 22
-        script: |
-          cd ~/maruni
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          script: |
+            cd ~/maruni
+            
+            # Docker Hub에서 최신 이미지 Pull
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/maruni-server:latest
+            
+            # 기존 컨테이너 중지 및 제거 (RDS 분리: app만 존재)
+            docker compose -f docker-compose.prod.yml down
+            
+            # 새 컨테이너 시작 (RDS 연결)
+            docker compose -f docker-compose.prod.yml up -d
+            
+            # 헬스체크 (최대 60초 대기)
+            echo "Waiting for application to be healthy..."
+            for i in {1..12}; do
+              if docker compose -f docker-compose.prod.yml ps app | grep -q "healthy\|Up"; then
+                echo "Application is healthy and connected to RDS!"
+                break
+              fi
+              echo "Waiting... ($i/12)"
+              sleep 5
+            done
+            
+            # 사용하지 않는 이미지 정리
+            docker image prune -f
+            
+            echo "Deployment completed successfully! (Using AWS RDS)"
 
-          # Docker Hub에서 최신 이미지 Pull
-          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/maruni-server:latest
-
-          # 기존 컨테이너 중지 및 제거
-          docker compose -f docker-compose.prod.yml down app
-
-          # 새 컨테이너 시작
-          docker compose -f docker-compose.prod.yml up -d app
-
-          # 헬스체크 (최대 60초 대기)
-          echo "Waiting for application to be healthy..."
-          for i in {1..12}; do
-            if docker compose -f docker-compose.prod.yml ps app | grep -q "healthy\|Up"; then
-              echo "Application is healthy!"
-              break
-            fi
-            echo "Waiting... ($i/12)"
-            sleep 5
-          done
-
-          # 사용하지 않는 이미지 정리
-          docker image prune -f
-
-          echo "Deployment completed successfully!"
-
-    - name: Verify deployment
-      run: |
-        echo "Deployment to https://api.maruni.kro.kr completed"
-        echo "Image: ${{ secrets.DOCKERHUB_USERNAME }}/maruni-server:latest"
-        echo "Commit SHA: ${{ github.sha }}"
+      - name: Verify deployment
+        run: |
+          echo "Deployment to https://api.maruni.kro.kr completed"
+          echo "Image: ${{ secrets.DOCKERHUB_USERNAME }}/maruni-server:latest"
+          echo "Commit SHA: ${{ github.sha }}"
